@@ -391,6 +391,7 @@ public class StateSpanRepository : IStateSpanRepository
             .Where(s => s.Category == pumpModeCategory && s.EndTimestamp == null)
             .Where(s => !nonPrimaryIds.Contains(s.Id))
             .OrderByDescending(s => s.StartTimestamp)
+            .ThenByDescending(s => s.Id)
             .Select(s => s.State)
             .FirstOrDefaultAsync(cancellationToken);
 

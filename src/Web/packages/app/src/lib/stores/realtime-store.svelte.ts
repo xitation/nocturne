@@ -111,10 +111,10 @@ export class RealtimeStore {
   deviceEvents = $state.raw<DeviceEvent[]>([]);
   apsSnapshots = $state.raw<ApsSnapshot[]>([]);
 
-  /** Current pump operational mode, refreshed on init and on each backfill. */
+  /** Current pump operational mode. Fetched once at init; not yet pushed via the realtime channel. */
   currentPumpMode = $state<PumpModeState | null>(null);
 
-  /** Current ISF as % of profile baseline (null when no CCP adjustment is active). */
+  /** Current ISF as % of profile baseline (null when no CCP adjustment is active). Fetched once at init. */
   currentSensitivityPercent = $state<number | null>(null);
 
   /** Connection state (with safe initialization) */

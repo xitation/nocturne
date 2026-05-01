@@ -4,6 +4,7 @@ using Moq;
 using Nocturne.Core.Contracts.Audit;
 using Nocturne.Core.Contracts.Infrastructure;
 using Nocturne.Core.Models;
+using Nocturne.Infrastructure.Data.Entities;
 using Nocturne.Infrastructure.Data.Repositories;
 using Nocturne.Tests.Shared.Infrastructure;
 using Xunit;
@@ -242,5 +243,64 @@ public class StateSpanRepositoryTests : IDisposable
         var current = await _repository.GetCurrentPumpModeAsync();
 
         current.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCurrentPumpModeAsync_IgnoresOpenSpansFromOtherCategories()
+    {
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.Override,
+            State = OverrideState.Custom.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = null,
+            Source = "nightscout",
+            OriginalId = "ov-open",
+        });
+
+        var current = await _repository.GetCurrentPumpModeAsync();
+
+        current.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCurrentPumpModeAsync_ExcludesNonPrimaryDeduplicatedSpans()
+    {
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = PumpModeState.Automatic.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = null,
+            Source = "primary",
+            OriginalId = "pm-primary",
+        });
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = PumpModeState.Manual.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 11, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = null,
+            Source = "duplicate",
+            OriginalId = "pm-duplicate",
+        });
+
+        var duplicateEntity = _context.StateSpans.Single(s => s.OriginalId == "pm-duplicate");
+        _context.LinkedRecords.Add(new LinkedRecordEntity
+        {
+            Id = Guid.NewGuid(),
+            CanonicalId = Guid.NewGuid(),
+            RecordType = "statespan",
+            RecordId = duplicateEntity.Id,
+            SourceTimestamp = 0,
+            DataSource = "duplicate",
+            IsPrimary = false,
+            SysCreatedAt = DateTime.UtcNow,
+        });
+        await _context.SaveChangesAsync();
+
+        var current = await _repository.GetCurrentPumpModeAsync();
+
+        current.Should().Be(PumpModeState.Automatic);
     }
 }
