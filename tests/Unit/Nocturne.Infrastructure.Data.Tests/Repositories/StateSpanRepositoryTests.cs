@@ -180,4 +180,67 @@ public class StateSpanRepositoryTests : IDisposable
         allSpans[0].SupersededById.Should().BeNull();
         allSpans[0].EndTimestamp.Should().Be(new DateTime(2026, 1, 1, 11, 0, 0, DateTimeKind.Utc));
     }
+
+    [Fact]
+    public async Task GetCurrentPumpModeAsync_ReturnsLatestOpenPumpModeSpan()
+    {
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = PumpModeState.Manual.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            Source = "pump",
+            OriginalId = "pm-old",
+        });
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = PumpModeState.Automatic.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = null,
+            Source = "pump",
+            OriginalId = "pm-current",
+        });
+
+        var current = await _repository.GetCurrentPumpModeAsync();
+
+        current.Should().Be(PumpModeState.Automatic);
+    }
+
+    [Fact]
+    public async Task GetCurrentPumpModeAsync_NoOpenSpan_ReturnsNull()
+    {
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = PumpModeState.Manual.ToString(),
+            StartTimestamp = new DateTime(2026, 1, 1, 9, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            Source = "pump",
+            OriginalId = "pm-closed",
+        });
+
+        var current = await _repository.GetCurrentPumpModeAsync();
+
+        current.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetCurrentPumpModeAsync_UnrecognizedState_ReturnsNull()
+    {
+        await _repository.UpsertStateSpanAsync(new StateSpan
+        {
+            Category = StateSpanCategory.PumpMode,
+            State = "NotAModeWeKnow",
+            StartTimestamp = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc),
+            EndTimestamp = null,
+            Source = "pump",
+            OriginalId = "pm-bogus",
+        });
+
+        var current = await _repository.GetCurrentPumpModeAsync();
+
+        current.Should().BeNull();
+    }
 }
