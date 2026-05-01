@@ -22,6 +22,7 @@
   import { createCoachMarkAdapter } from "$lib/coach-marks/adapter";
   import { sequences } from "$lib/coach-marks/sequences";
   import CoachParamHandler from "$lib/coach-marks/CoachParamHandler.svelte";
+  import { STALE_THRESHOLD_MS } from "$lib/constants/staleness";
 
   // LocalStorage key for title/favicon settings
   const SETTINGS_STORAGE_KEY = "nocturne-title-favicon-settings";
@@ -119,9 +120,6 @@
       window.removeEventListener("keydown", handleCommandPaletteKeydown);
     }
   });
-
-  // Stale threshold in milliseconds (10 minutes)
-  const STALE_THRESHOLD_MS = 10 * 60 * 1000;
 
   // Track current time for stale calculation - use shared store
   const now = $derived(realtimeStore.now);
