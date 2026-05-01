@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenApi.Remote.Attributes;
 using Nocturne.Core.Contracts.Glucose;
+using Nocturne.Core.Contracts.Profiles.Resolvers;
 using Nocturne.Core.Models;
 
 namespace Nocturne.API.Controllers.V4.Analytics;
@@ -18,14 +19,18 @@ namespace Nocturne.API.Controllers.V4.Analytics;
 public class CurrentTherapyStateController : ControllerBase
 {
     private readonly IStateSpanService _stateSpanService;
+    private readonly ISensitivityResolver _sensitivityResolver;
 
-    public CurrentTherapyStateController(IStateSpanService stateSpanService)
+    public CurrentTherapyStateController(
+        IStateSpanService stateSpanService,
+        ISensitivityResolver sensitivityResolver)
     {
         _stateSpanService = stateSpanService;
+        _sensitivityResolver = sensitivityResolver;
     }
 
     /// <summary>
-    /// Get the current pump mode and (later) sensitivity for the active tenant.
+    /// Get the current pump mode and sensitivity adjustment for the active tenant.
     /// </summary>
     [HttpGet]
     [RemoteQuery]
@@ -34,9 +39,11 @@ public class CurrentTherapyStateController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var pumpMode = await _stateSpanService.GetCurrentPumpModeAsync(cancellationToken);
+        var sensitivityPercent = await _sensitivityResolver.GetCurrentSensitivityPercentAsync(cancellationToken);
         return Ok(new CurrentTherapyStateResponse
         {
             CurrentPumpMode = pumpMode,
+            SensitivityPercent = sensitivityPercent,
         });
     }
 }
@@ -52,4 +59,11 @@ public class CurrentTherapyStateResponse
     /// pump-mode span is currently open.
     /// </summary>
     public PumpModeState? CurrentPumpMode { get; set; }
+
+    /// <summary>
+    /// Current effective ISF as a percentage of the schedule baseline.
+    /// 100 = at baseline. Below 100 = active CCP makes the pump more aggressive.
+    /// Null when no CircadianPercentageProfile adjustment is active.
+    /// </summary>
+    public double? SensitivityPercent { get; set; }
 }

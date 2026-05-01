@@ -17649,7 +17649,7 @@
         "tags": [
           "Current Therapy State"
         ],
-        "summary": "Get the current pump mode and (later) sensitivity for the active tenant.",
+        "summary": "Get the current pump mode and sensitivity adjustment for the active tenant.",
         "operationId": "CurrentTherapyState_GetCurrentTherapyState",
         "responses": {
           "200": {
@@ -37598,6 +37598,12 @@
                 "$ref": "#/components/schemas/PumpModeState"
               }
             ]
+          },
+          "sensitivityPercent": {
+            "type": "number",
+            "description": "Current effective ISF as a percentage of the schedule baseline.\n100 = at baseline. Below 100 = active CCP makes the pump more aggressive.\nNull when no CircadianPercentageProfile adjustment is active.",
+            "format": "double",
+            "nullable": true
           }
         }
       },

@@ -19051,7 +19051,7 @@ export class CurrentTherapyStateClient {
     }
 
     /**
-     * Get the current pump mode and (later) sensitivity for the active tenant.
+     * Get the current pump mode and sensitivity adjustment for the active tenant.
      */
     getCurrentTherapyState(signal?: AbortSignal): Promise<CurrentTherapyStateResponse> {
         let url_ = this.baseUrl + "/api/v4/current-therapy-state";
@@ -29070,6 +29070,10 @@ export interface CurrentTherapyStateResponse {
 open-ended PumpMode span. Null when no
 pump-mode span is currently open. */
     currentPumpMode?: PumpModeState | undefined;
+    /** Current effective ISF as a percentage of the schedule baseline.
+100 = at baseline. Below 100 = active CCP makes the pump more aggressive.
+Null when no CircadianPercentageProfile adjustment is active. */
+    sensitivityPercent?: number | undefined;
 }
 
 export enum PumpModeState {
