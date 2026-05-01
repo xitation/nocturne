@@ -17287,6 +17287,63 @@
         ]
       }
     },
+    "/api/v4/Actogram": {
+      "get": {
+        "tags": [
+          "Actogram"
+        ],
+        "summary": "Get actogram report data for a time window.",
+        "operationId": "Actogram_GetActogram",
+        "parameters": [
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "Start of the window as Unix milliseconds (inclusive).",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "End of the window as Unix milliseconds (exclusive).\n            Must be greater than startTime.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActogramReportData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": ""
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
     "/api/v4/Analytics/status": {
       "get": {
         "tags": [
@@ -17585,6 +17642,28 @@
             "description": "An anonymous object with typed arrays for each data category\n(SensorGlucose, MeterGlucose, Calibrations, Boluses,\nCarbIntakes, BGChecks, Notes, BolusCalculations).\nArrays are empty when no matching records exist in that category."
           }
         }
+      }
+    },
+    "/api/v4/current-therapy-state": {
+      "get": {
+        "tags": [
+          "Current Therapy State"
+        ],
+        "summary": "Get the current pump mode and (later) sensitivity for the active tenant.",
+        "operationId": "CurrentTherapyState_GetCurrentTherapyState",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentTherapyStateResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "query"
       }
     },
     "/api/v4/year-overview/years": {
@@ -36652,6 +36731,132 @@
           }
         }
       },
+      "ActogramReportData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "glucose": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GlucosePointDto"
+            }
+          },
+          "thresholds": {
+            "$ref": "#/components/schemas/ChartThresholdsDto"
+          },
+          "heartRates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeartRatePointDto"
+            }
+          },
+          "stepCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StepBubbleDto"
+            }
+          },
+          "sleepSpans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActogramSleepSpan"
+            }
+          }
+        }
+      },
+      "GlucosePointDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sgv": {
+            "type": "number",
+            "format": "double"
+          },
+          "direction": {
+            "type": "string",
+            "nullable": true
+          },
+          "dataSource": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ChartThresholdsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "low": {
+            "type": "number",
+            "format": "double"
+          },
+          "high": {
+            "type": "number",
+            "format": "double"
+          },
+          "veryLow": {
+            "type": "number",
+            "format": "double"
+          },
+          "veryHigh": {
+            "type": "number",
+            "format": "double"
+          },
+          "glucoseYMax": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "HeartRatePointDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bpm": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "StepBubbleDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "steps": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ActogramSleepSpan": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "startMills": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "endMills": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
       "PerformanceMetrics": {
         "type": "object",
         "additionalProperties": false,
@@ -37127,54 +37332,6 @@
           "primary"
         ]
       },
-      "GlucosePointDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "time": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sgv": {
-            "type": "number",
-            "format": "double"
-          },
-          "direction": {
-            "type": "string",
-            "nullable": true
-          },
-          "dataSource": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "ChartThresholdsDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "low": {
-            "type": "number",
-            "format": "double"
-          },
-          "high": {
-            "type": "number",
-            "format": "double"
-          },
-          "veryLow": {
-            "type": "number",
-            "format": "double"
-          },
-          "veryHigh": {
-            "type": "number",
-            "format": "double"
-          },
-          "glucoseYMax": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
       "BolusMarkerDto": {
         "type": "object",
         "additionalProperties": false,
@@ -37428,33 +37585,47 @@
           }
         }
       },
-      "HeartRatePointDto": {
+      "CurrentTherapyStateResponse": {
         "type": "object",
+        "description": "Snapshot of \"right now\" therapy state for the Halo Dial.",
         "additionalProperties": false,
         "properties": {
-          "time": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "bpm": {
-            "type": "integer",
-            "format": "int32"
+          "currentPumpMode": {
+            "description": "The active pump operational mode, derived from the most recently started\nopen-ended PumpMode span. Null when no\npump-mode span is currently open.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PumpModeState"
+              }
+            ]
           }
         }
       },
-      "StepBubbleDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "time": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "steps": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
+      "PumpModeState": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Automatic",
+          "Limited",
+          "Manual",
+          "Boost",
+          "EaseOff",
+          "Sleep",
+          "Exercise",
+          "Suspended",
+          "Off"
+        ],
+        "enum": [
+          "Automatic",
+          "Limited",
+          "Manual",
+          "Boost",
+          "EaseOff",
+          "Sleep",
+          "Exercise",
+          "Suspended",
+          "Off"
+        ]
       },
       "DataOverviewYearsResponse": {
         "type": "object",

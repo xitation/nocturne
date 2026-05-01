@@ -20,6 +20,7 @@ import type {
   Note,
   DeviceEvent,
   ApsSnapshot,
+  PumpModeState,
 } from "$lib/api";
 
 /**
@@ -109,6 +110,9 @@ export class RealtimeStore {
   notes = $state.raw<Note[]>([]);
   deviceEvents = $state.raw<DeviceEvent[]>([]);
   apsSnapshots = $state.raw<ApsSnapshot[]>([]);
+
+  /** Current pump operational mode, refreshed on init and on each backfill. */
+  currentPumpMode = $state<PumpModeState | null>(null);
 
   /** Connection state (with safe initialization) */
   connectionStatus = $derived(
@@ -306,6 +310,7 @@ export class RealtimeStore {
         historicalNotes,
         historicalDeviceEvents,
         historicalApsSnapshots,
+        currentTherapyState,
       ] = await Promise.all([
         apiClient.sensorGlucose.getAll(undefined, undefined, 1000).then((r) => (r.data ?? []) as unknown as Entry[]).catch(() => [] as Entry[]),
         Promise.resolve([] as DeviceStatus[]),
@@ -319,6 +324,7 @@ export class RealtimeStore {
         apiClient.note.getAll(oneDayAgo, now, 500).then((r) => r.data ?? []).catch((e) => { console.error("Failed to load notes:", e); return []; }),
         apiClient.deviceEvent.getAll(oneDayAgo, now, 500).then((r) => r.data ?? []).catch((e) => { console.error("Failed to load deviceEvents:", e); return []; }),
         apiClient.apsSnapshot.getAll(oneDayAgo, now, 50).then((r) => r.data ?? []).catch((e) => { console.error("Failed to load apsSnapshots:", e); return []; }),
+        apiClient.currentTherapyState.getCurrentTherapyState().catch((e) => { console.error("Failed to load currentTherapyState:", e); return null; }),
       ]);
 
       // Defer all state updates to a microtask to completely break out of the
@@ -384,6 +390,10 @@ export class RealtimeStore {
           this.apsSnapshots = historicalApsSnapshots.sort(
             (a: ApsSnapshot, b: ApsSnapshot) => (b.mills || 0) - (a.mills || 0)
           );
+        }
+
+        if (currentTherapyState) {
+          this.currentPumpMode = currentTherapyState.currentPumpMode ?? null;
         }
 
         this.isReady = true;

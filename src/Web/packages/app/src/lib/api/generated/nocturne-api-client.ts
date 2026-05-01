@@ -18483,6 +18483,75 @@ export class AuditClient {
     }
 }
 
+export class ActogramClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get actogram report data for a time window.
+     * @param startTime (optional) Start of the window as Unix milliseconds (inclusive).
+     * @param endTime (optional) End of the window as Unix milliseconds (exclusive).
+                Must be greater than startTime.
+     */
+    getActogram(startTime?: number | undefined, endTime?: number | undefined, signal?: AbortSignal): Promise<ActogramReportData> {
+        let url_ = this.baseUrl + "/api/v4/Actogram?";
+        if (startTime === null)
+            throw new globalThis.Error("The parameter 'startTime' cannot be null.");
+        else if (startTime !== undefined)
+            url_ += "startTime=" + encodeURIComponent("" + startTime) + "&";
+        if (endTime === null)
+            throw new globalThis.Error("The parameter 'endTime' cannot be null.");
+        else if (endTime !== undefined)
+            url_ += "endTime=" + encodeURIComponent("" + endTime) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetActogram(_response);
+        });
+    }
+
+    protected processGetActogram(response: Response): Promise<ActogramReportData> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ActogramReportData;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<ActogramReportData>(null as any);
+    }
+}
+
 export class AnalyticsClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -18968,6 +19037,54 @@ export class CorrelationClient {
             });
         }
         return Promise.resolve<void>(null as any);
+    }
+}
+
+export class CurrentTherapyStateClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get the current pump mode and (later) sensitivity for the active tenant.
+     */
+    getCurrentTherapyState(signal?: AbortSignal): Promise<CurrentTherapyStateResponse> {
+        let url_ = this.baseUrl + "/api/v4/current-therapy-state";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetCurrentTherapyState(_response);
+        });
+    }
+
+    protected processGetCurrentTherapyState(response: Response): Promise<CurrentTherapyStateResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CurrentTherapyStateResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<CurrentTherapyStateResponse>(null as any);
     }
 }
 
@@ -28675,6 +28792,45 @@ export interface AuditConfigDto {
     mutationAuditRetentionDays?: number | undefined;
 }
 
+export interface ActogramReportData {
+    glucose?: GlucosePointDto[];
+    thresholds?: ChartThresholdsDto;
+    heartRates?: HeartRatePointDto[];
+    stepCounts?: StepBubbleDto[];
+    sleepSpans?: ActogramSleepSpan[];
+}
+
+export interface GlucosePointDto {
+    time?: number;
+    sgv?: number;
+    direction?: string | undefined;
+    dataSource?: string | undefined;
+}
+
+export interface ChartThresholdsDto {
+    low?: number;
+    high?: number;
+    veryLow?: number;
+    veryHigh?: number;
+    glucoseYMax?: number;
+}
+
+export interface HeartRatePointDto {
+    time?: number;
+    bpm?: number;
+}
+
+export interface StepBubbleDto {
+    time?: number;
+    steps?: number;
+}
+
+export interface ActogramSleepSpan {
+    startMills?: number;
+    endMills?: number;
+    state?: string;
+}
+
 export interface PerformanceMetrics {
     averageResponseTime?: number;
     totalRequests?: number;
@@ -28823,21 +28979,6 @@ export enum ChartColor {
     Primary = "primary",
 }
 
-export interface GlucosePointDto {
-    time?: number;
-    sgv?: number;
-    direction?: string | undefined;
-    dataSource?: string | undefined;
-}
-
-export interface ChartThresholdsDto {
-    low?: number;
-    high?: number;
-    veryLow?: number;
-    veryHigh?: number;
-    glucoseYMax?: number;
-}
-
 export interface BolusMarkerDto {
     time?: number;
     insulin?: number;
@@ -28923,14 +29064,24 @@ export interface TrackerMarkerDto {
     color?: ChartColor;
 }
 
-export interface HeartRatePointDto {
-    time?: number;
-    bpm?: number;
+/** Snapshot of "right now" therapy state for the Halo Dial. */
+export interface CurrentTherapyStateResponse {
+    /** The active pump operational mode, derived from the most recently started
+open-ended PumpMode span. Null when no
+pump-mode span is currently open. */
+    currentPumpMode?: PumpModeState | undefined;
 }
 
-export interface StepBubbleDto {
-    time?: number;
-    steps?: number;
+export enum PumpModeState {
+    Automatic = "Automatic",
+    Limited = "Limited",
+    Manual = "Manual",
+    Boost = "Boost",
+    EaseOff = "EaseOff",
+    Sleep = "Sleep",
+    Exercise = "Exercise",
+    Suspended = "Suspended",
+    Off = "Off",
 }
 
 export interface DataOverviewYearsResponse {
