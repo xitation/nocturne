@@ -36,8 +36,7 @@ describe("PredictionRing", () => {
 			"[data-testid='prediction-ring']",
 		);
 		expect(path).not.toBeNull();
-		const dash = path!.getAttribute("stroke-dasharray");
-		expect(dash === null || dash === "").toBe(true);
+		expect(path!.hasAttribute("stroke-dasharray")).toBe(false);
 	});
 
 	it("renders the ghosted backdrop when predictionValues is empty", () => {

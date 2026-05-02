@@ -1,5 +1,5 @@
 import { render } from "vitest-browser-svelte";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import TrendChevron from "./TrendChevron.svelte";
 import TrendChevronHarness from "./TrendChevronHarness.test.svelte";
 
@@ -39,5 +39,25 @@ describe("TrendChevron", () => {
 
 	it("module export is the component", () => {
 		expect(TrendChevron).toBeTruthy();
+	});
+
+	describe("tween settling", () => {
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it("settles to the eased angle for delta=5 after the tween completes", async () => {
+			vi.useFakeTimers({ shouldAdvanceTime: true });
+			const { container } = render(TrendChevronHarness, {
+				delta: 5,
+				color: "red",
+				stale: false,
+			});
+			await vi.advanceTimersByTimeAsync(700);
+			const g = container.querySelector("g");
+			expect(g).not.toBeNull();
+			const transform = g?.getAttribute("transform") ?? "";
+			expect(transform).toContain("rotate(-30 ");
+		});
 	});
 });

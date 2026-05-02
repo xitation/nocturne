@@ -1,5 +1,5 @@
-<!-- Fallback to <path> due to no polar Chart context yet — revisit when HaloDial is wired in Task 4.8. -->
 <script lang="ts">
+	// Fallback to <path> due to no polar Chart context yet — revisit when HaloDial is wired in Task 4.8.
 	import {
 		RING_RADIUS,
 		polar,
@@ -39,9 +39,7 @@
 		!!predictionValues && predictionValues.length > 0,
 	);
 
-	// Vertices: index 0 anchors at angle 0 with currentBg color; subsequent
-	// indices map to predictionValues[0..n-1]. So we have n+1 vertices total
-	// distributed across [0, sweep] (inclusive).
+	// vertices = [currentBg, ...predictionValues] when non-empty; distributed evenly across [0, sweep].
 	const vertices = $derived.by(() => {
 		if (!predictionValues || predictionValues.length === 0) return [];
 		const values = [currentBg, ...predictionValues];
@@ -79,6 +77,7 @@
 	// a horizontal gradient is the closest pragmatic approximation. When the
 	// polar <Chart> wraps this in Task 4.8, swap to per-vertex Spline coloring.
 	const backdropD = $derived.by(() => {
+		if (hasValues) return "";
 		// Half-circle ghosted backdrop (full sweep up to MIN_GAP cap).
 		const end = polar(sweep, RING_RADIUS);
 		const head = polar(0, RING_RADIUS);
@@ -87,7 +86,7 @@
 	});
 </script>
 
-{#if hasValues}
+{#if hasValues && vertices.length >= 2}
 	<defs>
 		<linearGradient
 			id={gradientId}
@@ -97,7 +96,7 @@
 			x2={vertices[vertices.length - 1]?.x ?? 0}
 			y2={vertices[vertices.length - 1]?.y ?? 0}
 		>
-			{#each gradientStops as stop (stop.offset)}
+			{#each gradientStops as stop, i (i)}
 				<stop offset={stop.offset} stop-color={stop.color} />
 			{/each}
 		</linearGradient>

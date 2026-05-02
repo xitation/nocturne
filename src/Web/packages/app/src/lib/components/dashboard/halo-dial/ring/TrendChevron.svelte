@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { untrack } from "svelte";
 	import { tweened } from "svelte/motion";
 	import { cubicOut } from "svelte/easing";
+	import { browser } from "$app/environment";
 	import { trendAngle, CENTER, RING_RADIUS } from "../geometry";
 
 	let {
@@ -10,11 +10,12 @@
 		stale,
 	}: { delta: number; color: string; stale: boolean } = $props();
 
+	// Captured at mount; preference changes mid-session won't update the tween duration.
 	const reducedMotion =
-		typeof window !== "undefined" &&
+		browser &&
 		window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-	const angle = tweened(untrack(() => trendAngle(delta)), {
+	const angle = tweened(trendAngle(delta), {
 		duration: reducedMotion ? 0 : 600,
 		easing: cubicOut,
 	});
