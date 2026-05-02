@@ -25,7 +25,7 @@ describe("CornerSlot", () => {
 			container.querySelector("[data-testid='loop-label']"),
 		).not.toBeNull();
 		const wrapper = container.querySelector("[data-testid='corner-slot']");
-		expect(wrapper!.textContent).toContain("Steady");
+		expect(wrapper!.textContent).toContain("stable");
 		expect(wrapper!.textContent).toContain("132");
 		expect(wrapper!.textContent).toContain("closed");
 	});
