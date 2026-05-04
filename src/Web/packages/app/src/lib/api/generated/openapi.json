@@ -17894,6 +17894,28 @@
         }
       }
     },
+    "/api/v4/current-therapy-state": {
+      "get": {
+        "tags": [
+          "Current Therapy State"
+        ],
+        "summary": "Get the current pump mode and sensitivity adjustment for the active tenant.",
+        "operationId": "CurrentTherapyState_GetCurrentTherapyState",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentTherapyStateResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
     "/api/v4/year-overview/years": {
       "get": {
         "tags": [
@@ -24778,6 +24800,11 @@
             "format": "guid",
             "nullable": true
           },
+          "patientDeviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
           "pumpRecordId": {
             "type": "string",
             "nullable": true
@@ -29668,6 +29695,9 @@
           },
           "security": {
             "$ref": "#/components/schemas/SecuritySettings"
+          },
+          "haloDial": {
+            "$ref": "#/components/schemas/HaloDialConfig"
           }
         }
       },
@@ -30660,6 +30690,184 @@
             "type": "boolean"
           }
         }
+      },
+      "HaloDialConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "colorMode": {
+            "$ref": "#/components/schemas/HaloDialColorMode"
+          },
+          "historyMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "predictionMinutes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "predictionCurve": {
+            "$ref": "#/components/schemas/HaloDialPredictionCurve"
+          },
+          "centerSub": {
+            "$ref": "#/components/schemas/HaloDialCenterSubElement"
+          },
+          "innerLeftArc": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HaloDialArcElement"
+              }
+            ]
+          },
+          "innerRightArc": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HaloDialArcElement"
+              }
+            ]
+          },
+          "iobMaxUnits": {
+            "type": "number",
+            "format": "double"
+          },
+          "cobMaxGrams": {
+            "type": "number",
+            "format": "double"
+          },
+          "corners": {
+            "$ref": "#/components/schemas/HaloDialCorners"
+          },
+          "elementConfig": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        }
+      },
+      "HaloDialColorMode": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Discrete",
+          "Continuous"
+        ],
+        "enum": [
+          "Discrete",
+          "Continuous"
+        ]
+      },
+      "HaloDialPredictionCurve": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Main",
+          "Iob",
+          "Uam",
+          "Cob",
+          "ZeroTemp"
+        ],
+        "enum": [
+          "Main",
+          "Iob",
+          "Uam",
+          "Cob",
+          "ZeroTemp"
+        ]
+      },
+      "HaloDialCenterSubElement": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "MinutesAndDelta",
+          "MinutesOnly",
+          "DeltaOnly",
+          "Mmol",
+          "None"
+        ],
+        "enum": [
+          "MinutesAndDelta",
+          "MinutesOnly",
+          "DeltaOnly",
+          "Mmol",
+          "None"
+        ]
+      },
+      "HaloDialArcElement": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Iob",
+          "Cob",
+          "BasalPercent",
+          "Sensitivity"
+        ],
+        "enum": [
+          "Iob",
+          "Cob",
+          "BasalPercent",
+          "Sensitivity"
+        ]
+      },
+      "HaloDialCorners": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tl": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HaloDialCornerElement"
+            }
+          },
+          "tr": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HaloDialCornerElement"
+            }
+          },
+          "bl": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HaloDialCornerElement"
+            }
+          },
+          "br": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HaloDialCornerElement"
+            }
+          }
+        }
+      },
+      "HaloDialCornerElement": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "BasalRate",
+          "Reservoir",
+          "SensorAge",
+          "PumpSiteAge",
+          "Battery",
+          "LoopLabel",
+          "LoopDot",
+          "Direction",
+          "Eventual"
+        ],
+        "enum": [
+          "BasalRate",
+          "Reservoir",
+          "SensorAge",
+          "PumpSiteAge",
+          "Battery",
+          "LoopLabel",
+          "LoopDot",
+          "Direction",
+          "Eventual"
+        ]
       },
       "UserPreferencesResponse": {
         "type": "object",
@@ -36760,6 +36968,16 @@
             "type": "string",
             "nullable": true
           },
+          "deviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "patientDeviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
           "app": {
             "type": "string",
             "nullable": true
@@ -37303,6 +37521,16 @@
             "type": "string",
             "nullable": true
           },
+          "deviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "patientDeviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
           "app": {
             "type": "string",
             "nullable": true
@@ -37575,6 +37803,11 @@
             "nullable": true
           },
           "deviceId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "patientDeviceId": {
             "type": "string",
             "format": "guid",
             "nullable": true
@@ -38855,6 +39088,28 @@
           },
           "color": {
             "$ref": "#/components/schemas/ChartColor"
+          }
+        }
+      },
+      "CurrentTherapyStateResponse": {
+        "type": "object",
+        "description": "Snapshot of \"right now\" therapy state for the Halo Dial.",
+        "additionalProperties": false,
+        "properties": {
+          "currentPumpMode": {
+            "description": "The active pump operational mode, derived from the most recently started\nopen-ended PumpMode span. Null when no\npump-mode span is currently open.",
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PumpModeState"
+              }
+            ]
+          },
+          "sensitivityPercent": {
+            "type": "number",
+            "description": "Current effective ISF as a percentage of the schedule baseline.\n100 = at baseline. Below 100 = active CCP makes the pump more aggressive.\nNull when no CircadianPercentageProfile adjustment is active.",
+            "format": "double",
+            "nullable": true
           }
         }
       },

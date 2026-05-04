@@ -28,7 +28,10 @@
   import { getPredictions, type PredictionData } from "$api/predictions.remote";
 
   interface Props {
-    /** Override the resolved config; mainly for tests and the editor live preview. */
+    /**
+     * Override the resolved config; mainly for tests and the editor live
+     * preview.
+     */
     configOverride?: HaloDialConfig | null;
     /** Override the realtime store; mainly for tests. */
     realtimeOverride?: ReturnType<typeof tryGetRealtimeStore>;
@@ -46,12 +49,12 @@
   // `haloDial` as an individual section, so for now we always fall back to the
   // built-in defaults (Phase 6 will hook the real config in via the editor).
   const settingsStore = getContext<SettingsStore | undefined>(
-    Symbol.for("settings-store"),
+    Symbol.for("settings-store")
   );
   void settingsStore; // intentional: read once Phase 6 surfaces haloDial.
 
   const config = $derived<HaloDialConfig>(
-    configOverride ?? defaultHaloDialConfig(),
+    configOverride ?? defaultHaloDialConfig()
   );
 
   // ---------- Live data ----------
@@ -60,7 +63,9 @@
   const lastUpdated = $derived(realtime?.lastUpdated ?? 0);
   const now = $derived(realtime?.now ?? Date.now());
   const pumpMode = $derived(realtime?.currentPumpMode ?? null);
-  const sensitivityPercent = $derived(realtime?.currentSensitivityPercent ?? null);
+  const sensitivityPercent = $derived(
+    realtime?.currentSensitivityPercent ?? null
+  );
   const pills = $derived(realtime?.pillsData ?? null);
   const direction = $derived(realtime?.direction ?? "Flat");
 
@@ -79,7 +84,7 @@
 
   // ---------- Stale detection ----------
   const isStale = $derived(
-    lastUpdated === 0 || now - lastUpdated > STALE_THRESHOLD_MS,
+    lastUpdated === 0 || now - lastUpdated > STALE_THRESHOLD_MS
   );
 
   // ---------- Predictions ----------
@@ -146,8 +151,7 @@
 
   // ---------- Center BG count-up ----------
   const reducedMotion =
-    browser &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    browser && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const tweenedBg = tweened(0, {
     duration: reducedMotion ? 0 : 600,
     easing: cubicOut,
@@ -245,32 +249,26 @@
   const ringColor = $derived(bgColor(currentBg, config.colorMode!));
 </script>
 
-<div
-  class="hd-card relative"
-  data-testid="halo-dial"
-  class:hd-stale={isStale}
-  style="height: 144px; min-width: 144px;"
->
+<div class="hd-card relative" data-testid="halo-dial" class:hd-stale={isStale}>
   <svg
     viewBox="0 0 {VIEWBOX} {VIEWBOX}"
-    width="140"
-    height="140"
+    class="hd-svg"
     role="img"
     aria-label="Glucose dial"
     data-testid="halo-dial-svg"
   >
     <HistoryRing
-      historyValues={historyValues}
+      {historyValues}
       historyMinutes={config.historyMinutes ?? 15}
       predictionMinutes={config.predictionMinutes ?? 45}
       colorMode={config.colorMode!}
     />
     <PredictionRing
-      currentBg={currentBg}
-      predictionValues={predictionValues}
+      {currentBg}
+      {predictionValues}
       predictionMinutes={config.predictionMinutes ?? 45}
       colorMode={config.colorMode!}
-      pumpMode={pumpMode}
+      {pumpMode}
     />
     <NowMarker />
     {#if !isStale}
@@ -352,10 +350,16 @@
 
 <style>
   .hd-card {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-width: 280px;
     padding: 0.25rem;
+  }
+  .hd-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .hd-stale {
     filter: grayscale(1);
@@ -367,10 +371,22 @@
     font-size: 0.75rem;
     line-height: 1;
   }
-  .hd-corner-tl { top: 0.25rem; left: 0.25rem; }
-  .hd-corner-tr { top: 0.25rem; right: 0.25rem; }
-  .hd-corner-bl { bottom: 0.25rem; left: 0.25rem; }
-  .hd-corner-br { bottom: 0.25rem; right: 0.25rem; }
+  .hd-corner-tl {
+    top: 0.25rem;
+    left: 0.25rem;
+  }
+  .hd-corner-tr {
+    top: 0.25rem;
+    right: 0.25rem;
+  }
+  .hd-corner-bl {
+    bottom: 0.25rem;
+    left: 0.25rem;
+  }
+  .hd-corner-br {
+    bottom: 0.25rem;
+    right: 0.25rem;
+  }
   .hd-center-bg {
     font-size: 28px;
     font-weight: 600;

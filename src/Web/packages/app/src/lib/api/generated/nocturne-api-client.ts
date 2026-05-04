@@ -19370,6 +19370,54 @@ export class CorrelationClient {
     }
 }
 
+export class CurrentTherapyStateClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get the current pump mode and sensitivity adjustment for the active tenant.
+     */
+    getCurrentTherapyState(signal?: AbortSignal): Promise<CurrentTherapyStateResponse> {
+        let url_ = this.baseUrl + "/api/v4/current-therapy-state";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetCurrentTherapyState(_response);
+        });
+    }
+
+    protected processGetCurrentTherapyState(response: Response): Promise<CurrentTherapyStateResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CurrentTherapyStateResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<CurrentTherapyStateResponse>(null as any);
+    }
+}
+
 export class DataOverviewClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -25263,6 +25311,7 @@ export interface Bolus {
     insulinContext?: TreatmentInsulinContext | undefined;
     unabsorbed?: number | undefined;
     deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     pumpRecordId?: string | undefined;
     bolusCalculationId?: string | undefined;
     apsSnapshotId?: string | undefined;
@@ -26729,6 +26778,7 @@ export interface UISettingsConfiguration {
     services?: ServicesSettings;
     dataQuality?: DataQualitySettings;
     security?: SecuritySettings;
+    haloDial?: HaloDialConfig;
 }
 
 export interface DeviceSettings {
@@ -27075,6 +27125,68 @@ export interface CompressionLowDetectionSettings {
 export interface SecuritySettings {
     requireAuthForPublicAccess?: boolean;
     hideGlucoseInFavicon?: boolean;
+}
+
+export interface HaloDialConfig {
+    schemaVersion?: number;
+    colorMode?: HaloDialColorMode;
+    historyMinutes?: number;
+    predictionMinutes?: number;
+    predictionCurve?: HaloDialPredictionCurve;
+    centerSub?: HaloDialCenterSubElement;
+    innerLeftArc?: HaloDialArcElement | undefined;
+    innerRightArc?: HaloDialArcElement | undefined;
+    iobMaxUnits?: number;
+    cobMaxGrams?: number;
+    corners?: HaloDialCorners;
+    elementConfig?: { [key: string]: any; };
+}
+
+export enum HaloDialColorMode {
+    Discrete = "Discrete",
+    Continuous = "Continuous",
+}
+
+export enum HaloDialPredictionCurve {
+    Main = "Main",
+    Iob = "Iob",
+    Uam = "Uam",
+    Cob = "Cob",
+    ZeroTemp = "ZeroTemp",
+}
+
+export enum HaloDialCenterSubElement {
+    MinutesAndDelta = "MinutesAndDelta",
+    MinutesOnly = "MinutesOnly",
+    DeltaOnly = "DeltaOnly",
+    Mmol = "Mmol",
+    None = "None",
+}
+
+export enum HaloDialArcElement {
+    Iob = "Iob",
+    Cob = "Cob",
+    BasalPercent = "BasalPercent",
+    Sensitivity = "Sensitivity",
+}
+
+export interface HaloDialCorners {
+    tl?: HaloDialCornerElement[];
+    tr?: HaloDialCornerElement[];
+    bl?: HaloDialCornerElement[];
+    br?: HaloDialCornerElement[];
+}
+
+export enum HaloDialCornerElement {
+    BasalRate = "BasalRate",
+    Reservoir = "Reservoir",
+    SensorAge = "SensorAge",
+    PumpSiteAge = "PumpSiteAge",
+    Battery = "Battery",
+    LoopLabel = "LoopLabel",
+    LoopDot = "LoopDot",
+    Direction = "Direction",
+    Eventual = "Eventual",
 }
 
 /** User preferences response */
@@ -29066,6 +29178,8 @@ export interface ApsSnapshot {
     mills?: number;
     utcOffset?: number | undefined;
     device?: string | undefined;
+    deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     app?: string | undefined;
     dataSource?: string | undefined;
     correlationId?: string | undefined;
@@ -29207,6 +29321,8 @@ export interface DeviceEvent {
     mills?: number;
     utcOffset?: number | undefined;
     device?: string | undefined;
+    deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     app?: string | undefined;
     dataSource?: string | undefined;
     correlationId?: string | undefined;
@@ -29298,6 +29414,7 @@ export interface PumpSnapshot {
     pumpStatus?: string | undefined;
     clock?: string | undefined;
     deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     iob?: number | undefined;
     bolusIob?: number | undefined;
     additionalProperties?: { [key: string]: any; } | undefined;
@@ -29695,6 +29812,18 @@ export interface TrackerMarkerDto {
     time?: number;
     icon?: string | undefined;
     color?: ChartColor;
+}
+
+/** Snapshot of "right now" therapy state for the Halo Dial. */
+export interface CurrentTherapyStateResponse {
+    /** The active pump operational mode, derived from the most recently started
+open-ended PumpMode span. Null when no
+pump-mode span is currently open. */
+    currentPumpMode?: PumpModeState | undefined;
+    /** Current effective ISF as a percentage of the schedule baseline.
+100 = at baseline. Below 100 = active CCP makes the pump more aggressive.
+Null when no CircadianPercentageProfile adjustment is active. */
+    sensitivityPercent?: number | undefined;
 }
 
 export interface DataOverviewYearsResponse {
