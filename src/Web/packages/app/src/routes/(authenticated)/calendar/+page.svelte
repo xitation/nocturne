@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import * as Card from "$lib/components/ui/card";
-  import { getPunchCardData } from "$api/month-to-month.remote";
+  import { getPunchCardData } from "$api/generated/statistics.generated.remote";
   import {
     getActiveInstances,
     getDefinitions,
@@ -63,11 +63,9 @@
 
   // Calculate date range for current view (full month)
   const dateRangeInput = $derived.by(() => {
-    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    return {
-      fromDate: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`,
-      toDate: `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(lastDayOfMonth).padStart(2, "0")}`,
-    };
+    const startDate = new Date(currentYear, currentMonth, 1);
+    const endDate = new Date(currentYear, currentMonth + 1, 0);
+    return { startDate, endDate };
   });
 
   // Query responses

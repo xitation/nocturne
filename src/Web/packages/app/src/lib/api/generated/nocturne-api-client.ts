@@ -21802,6 +21802,57 @@ export class StatisticsClient {
     }
 
     /**
+     * Pre-aggregated month-by-day statistics for the calendar punch-card view. Fetches glucose,
+    boluses, carb intakes, and daily basal totals in a single batch, then computes per-day TIR
+    and treatment summaries inline (no per-day round-trips). Replaces a frontend orchestrator
+    that was issuing ~62 sequential HTTP calls per 31-day month.
+     * @param startDate (optional) Inclusive start of the date range.
+     * @param endDate (optional) Inclusive end of the date range.
+     * @return PunchCardResponse with months, days, and global maxes for chart scaling.
+     */
+    getPunchCardData(startDate?: Date | undefined, endDate?: Date | undefined, signal?: AbortSignal): Promise<PunchCardResponse> {
+        let url_ = this.baseUrl + "/api/v4/Statistics/punch-card?";
+        if (startDate === null)
+            throw new globalThis.Error("The parameter 'startDate' cannot be null.");
+        else if (startDate !== undefined)
+            url_ += "startDate=" + encodeURIComponent(startDate ? "" + startDate.toISOString() : "") + "&";
+        if (endDate === null)
+            throw new globalThis.Error("The parameter 'endDate' cannot be null.");
+        else if (endDate !== undefined)
+            url_ += "endDate=" + encodeURIComponent(endDate ? "" + endDate.toISOString() : "") + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetPunchCardData(_response);
+        });
+    }
+
+    protected processGetPunchCardData(response: Response): Promise<PunchCardResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PunchCardResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PunchCardResponse>(null as any);
+    }
+
+    /**
      * Calculate comprehensive insulin delivery statistics for a date range
      * @param startDate (optional) Start date of the analysis period
      * @param endDate (optional) End date of the analysis period
@@ -30718,6 +30769,64 @@ export interface DailyBasalBolusRatioData {
     total?: number;
     basalPercent?: number;
     bolusPercent?: number;
+}
+
+export interface PunchCardResponse {
+    months?: PunchCardMonth[];
+    dateRange?: PunchCardDateRange;
+    globalMaxCarbs?: number;
+    globalMaxInsulin?: number;
+    globalMaxCarbInsulinDiff?: number;
+}
+
+export interface PunchCardMonth {
+    year?: number;
+    month?: number;
+    monthName?: string;
+    days?: PunchCardDay[];
+    maxCarbs?: number;
+    maxInsulin?: number;
+    maxCarbInsulinDiff?: number;
+    totalReadings?: number;
+    summary?: PunchCardMonthSummary | undefined;
+}
+
+export interface PunchCardDay {
+    date?: string;
+    timestamp?: number;
+    totalReadings?: number;
+    inRangeCount?: number;
+    lowCount?: number;
+    highCount?: number;
+    inRangePercent?: number;
+    lowPercent?: number;
+    highPercent?: number;
+    averageGlucose?: number;
+    totalCarbs?: number;
+    totalInsulin?: number;
+    totalBolus?: number;
+    totalBasal?: number;
+    carbToInsulinRatio?: number;
+    entries?: PunchCardEntry[];
+}
+
+export interface PunchCardEntry {
+    mills?: number;
+    mgdl?: number;
+}
+
+export interface PunchCardMonthSummary {
+    dayCount?: number;
+    totalReadings?: number;
+    inRangePercent?: number;
+    lowPercent?: number;
+    highPercent?: number;
+    avgGlucose?: number;
+}
+
+export interface PunchCardDateRange {
+    from?: string;
+    to?: string;
 }
 
 export interface BasalAnalysisResponse {
