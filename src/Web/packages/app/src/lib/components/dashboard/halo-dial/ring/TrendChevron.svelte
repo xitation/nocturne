@@ -15,7 +15,7 @@
 		browser &&
 		window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-	const angle = new Tween(() => trendAngle(delta), {
+	const angle = Tween.of(() => trendAngle(delta), {
 		duration: reducedMotion ? 0 : 600,
 		easing: cubicOut,
 	});

@@ -152,7 +152,7 @@
   // ---------- Center BG count-up ----------
   const reducedMotion =
     browser && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const tweenedBg = new Tween(() => Math.round(currentBg), {
+  const tweenedBg = Tween.of(() => Math.round(currentBg), {
     duration: reducedMotion ? 0 : 600,
     easing: cubicOut,
   });

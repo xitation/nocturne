@@ -59,7 +59,7 @@
 		return ratio * MAX_SWEEP_DEG;
 	});
 
-	const tweenedSweep = new Tween(() => targetSweep, {
+	const tweenedSweep = Tween.of(() => targetSweep, {
 		duration: reducedMotion ? 0 : 600,
 		easing: cubicOut,
 	});
