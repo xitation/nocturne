@@ -3,7 +3,7 @@
   // can use <Spline>/<Arc> with per-vertex coloring; currently each child
   // falls back to plain <path>. See sibling components' "Fallback to <path>"
   // comments for the matching deferral.
-  import { tweened } from "svelte/motion";
+  import { Tween } from "svelte/motion";
   import { cubicOut } from "svelte/easing";
   import { browser } from "$app/environment";
   import { getContext } from "svelte";
@@ -152,17 +152,9 @@
   // ---------- Center BG count-up ----------
   const reducedMotion =
     browser && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const tweenedBg = tweened(0, {
+  const tweenedBg = new Tween(() => Math.round(currentBg), {
     duration: reducedMotion ? 0 : 600,
     easing: cubicOut,
-  });
-  let lastRoundedBg = $state(-1);
-  $effect(() => {
-    const r = Math.round(currentBg);
-    if (r !== lastRoundedBg) {
-      lastRoundedBg = r;
-      tweenedBg.set(r);
-    }
   });
 
   // ---------- Center sub text ----------
@@ -298,7 +290,7 @@
       class="hd-center-bg"
       data-testid="halo-dial-center-bg"
     >
-      {Math.round($tweenedBg)}
+      {Math.round(tweenedBg.current)}
     </text>
     {#if centerSubText}
       <text

@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Fallback to <path> due to no polar Chart context yet — revisit when HaloDial is wired in Task 4.8.
-	import { tweened } from "svelte/motion";
+	import { Tween } from "svelte/motion";
 	import { cubicOut } from "svelte/easing";
 	import { browser } from "$app/environment";
 	import { polar } from "../geometry";
@@ -59,12 +59,9 @@
 		return ratio * MAX_SWEEP_DEG;
 	});
 
-	const tweenedSweep = tweened(0, {
+	const tweenedSweep = new Tween(() => targetSweep, {
 		duration: reducedMotion ? 0 : 600,
 		easing: cubicOut,
-	});
-	$effect(() => {
-		tweenedSweep.set(targetSweep);
 	});
 
 	function buildArc(sweep: number): string {
@@ -75,7 +72,7 @@
 	}
 
 	const trackD = $derived(buildArc(MAX_SWEEP_DEG));
-	const valueD = $derived(buildArc($tweenedSweep));
+	const valueD = $derived(buildArc(tweenedSweep.current));
 </script>
 
 <g data-testid="inner-arc-slot" data-element={element} data-side={side}>
@@ -96,6 +93,6 @@
 		stroke-linecap="round"
 		data-testid="inner-arc-value"
 		data-target-sweep-deg={targetSweep.toFixed(3)}
-		data-sweep-deg={$tweenedSweep.toFixed(3)}
+		data-sweep-deg={tweenedSweep.current.toFixed(3)}
 	/>
 </g>
