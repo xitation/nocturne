@@ -44,7 +44,7 @@
     xdrip4ios: "jpg",
   };
 
-  const src = $derived(() => {
+  const src = $derived.by(() => {
     const name = icon ?? "device";
     if (name.includes(".")) return `/logos/${name}`;
     const ext = logoExtensions[name] ?? "svg";
@@ -52,4 +52,4 @@
   });
 </script>
 
-<img src={src()} alt="" class="object-cover rounded-[inherit] {className}" draggable="false" />
+<img src={src} alt="" class="object-cover rounded-[inherit] {className}" draggable="false" />
