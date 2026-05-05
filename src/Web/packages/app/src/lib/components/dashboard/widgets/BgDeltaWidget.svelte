@@ -14,7 +14,7 @@
     Wifi,
     WifiOff,
   } from "lucide-svelte";
-  import { getBatteryCardData } from "$api/battery.remote";
+  import { getCurrentBatteryStatus } from "$api/generated/batteries.generated.remote";
 
   interface Props {
     /** Override bgDelta from props instead of realtime store */
@@ -39,8 +39,8 @@
   const connectionStatus = $derived(realtimeStore.connectionStatus);
 
   // Battery data
-  const batteryDataPromise = $derived(
-    getBatteryCardData({ recentMinutes: 30 })
+  const batteryStatusPromise = $derived(
+    getCurrentBatteryStatus({ recentMinutes: 30 })
   );
 
   // Get battery icon component based on level
@@ -91,7 +91,7 @@
   </div>
 
   <!-- Last updated info with battery -->
-  {#await batteryDataPromise}
+  {#await batteryStatusPromise}
     <div class="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
       <span class="text-xs text-muted-foreground">
         {timeAgo(displayLastUpdated)}
@@ -100,8 +100,7 @@
         {formatTime(displayLastUpdated)}
       </span>
     </div>
-  {:then data}
-    {@const currentStatus = data?.currentStatus}
+  {:then currentStatus}
     {@const hasDevices =
       currentStatus && Object.keys(currentStatus.devices ?? {}).length > 0}
     <div class="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
