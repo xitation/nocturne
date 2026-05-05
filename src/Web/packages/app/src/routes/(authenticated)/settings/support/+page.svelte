@@ -50,8 +50,8 @@
 
   let apiBaseUrl = $state<string | null>(null);
 
-  const servicesOverviewQuery = $derived(getServicesOverview());
-  const supportConfigQuery = $derived(getSupportConfig());
+  const servicesOverviewQuery = getServicesOverview();
+  const supportConfigQuery = getSupportConfig();
 
   const services = $derived(servicesOverviewQuery.current as ServicesOverview | undefined);
   const supportConfig = $derived(supportConfigQuery.current as SupportConfigResponse | undefined);
