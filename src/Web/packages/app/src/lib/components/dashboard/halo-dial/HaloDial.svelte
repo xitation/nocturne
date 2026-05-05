@@ -69,13 +69,19 @@
   const pills = $derived(realtime?.pillsData ?? null);
   const direction = $derived(realtime?.direction ?? "Flat");
 
+  // Cutoff rounded to one-minute buckets so the per-second `now` tick doesn't
+  // invalidate `historyValues` (and the whole HistoryRing) 60 times a minute.
+  // CGM entries arrive every 5 min, so a minute of cutoff drift is invisible.
+  const cutoffMills = $derived(
+    Math.floor((now - config.historyMinutes! * 60 * 1000) / 60_000) * 60_000
+  );
+
   // History values (oldest → newest) within the configured window.
   const historyValues = $derived.by<number[]>(() => {
     const entries = realtime?.entries ?? [];
     if (entries.length === 0) return [];
-    const cutoff = now - config.historyMinutes! * 60 * 1000;
     return entries
-      .filter((e) => (e.mills ?? 0) >= cutoff)
+      .filter((e) => (e.mills ?? 0) >= cutoffMills)
       .map((e) => ({ mills: e.mills ?? 0, value: e.sgv ?? e.mgdl ?? 0 }))
       .filter((e) => e.value > 0)
       .sort((a, b) => a.mills - b.mills)
