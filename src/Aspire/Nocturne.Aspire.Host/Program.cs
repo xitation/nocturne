@@ -355,6 +355,7 @@ class Program
             var viteWeb = JavaScriptHostingExtensions
                 .AddViteApp(builder, ServiceNames.NocturneWeb, webPackagePath)
                 .WithPnpm()
+                .WithHttpHealthCheck("/")
                 .WaitFor(api)
                 .WaitFor(bridge)
                 .WithReference(bridge);
