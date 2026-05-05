@@ -209,18 +209,8 @@
           {@render children()}
 
           {#snippet failed(e, reset)}
-            {@const errorId = crypto.randomUUID()}
             {@const message = e instanceof Error ? e.message : typeof e === 'string' ? e : 'An unexpected error occurred'}
             {@const stack = e instanceof Error ? e.stack : undefined}
-            {(() => {
-              console.error(`Error ID: ${errorId}`, e);
-              fetch('/api/otel/errors', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message, stack, url: window.location.href, errorId }),
-              }).catch(() => {});
-              return '';
-            })()}
             <Card.Root class="mx-auto mt-10 max-w-2xl">
               <Card.Header>
                 <Card.Title>Something went wrong</Card.Title>
@@ -230,7 +220,6 @@
                 {#if stack}
                   <pre class="max-h-48 overflow-auto rounded bg-muted p-3 text-xs text-muted-foreground">{stack}</pre>
                 {/if}
-                <p class="text-xs text-muted-foreground">Error ID: {errorId}</p>
                 <div class="flex gap-2">
                   <Button variant="outline" onclick={reset}>Retry</Button>
                   <Button variant="ghost" href="/">Go home</Button>
