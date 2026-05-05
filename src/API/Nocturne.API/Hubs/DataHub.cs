@@ -4,6 +4,7 @@ using Nocturne.API.Extensions;
 using Nocturne.API.Middleware;
 using Nocturne.Connectors.Core.Utilities;
 using Nocturne.API.Services.Devices;
+using Nocturne.Core.Constants;
 using Nocturne.Core.Contracts.Identity;
 using Nocturne.Core.Contracts.Glucose;
 using Nocturne.Core.Contracts.Treatments;
@@ -65,7 +66,13 @@ public class DataHub : TenantAwareHub
                     var configuration = Context
                         .GetHttpContext()
                         ?.RequestServices.GetRequiredService<IConfiguration>();
-                    var configuredSecret = configuration?["Parameters:instance-key"];
+                    // Match InstanceKeyHandler's lookup: Aspire dev sets the
+                    // value under Parameters:instance-key (user-secrets);
+                    // production sets it as the INSTANCE_KEY env var, which
+                    // ASP.NET Core surfaces as a top-level config key.
+                    var configuredSecret =
+                        configuration?[$"Parameters:{ServiceNames.Parameters.InstanceKey}"]
+                        ?? configuration?[ServiceNames.ConfigKeys.InstanceKey];
 
                     if (!string.IsNullOrEmpty(configuredSecret))
                     {
