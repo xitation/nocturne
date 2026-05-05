@@ -7,6 +7,7 @@ using Nocturne.Core.Contracts.Profiles.Resolvers;
 using Nocturne.Core.Contracts.Multitenancy;
 using Nocturne.Core.Contracts.V4.Repositories;
 using Nocturne.Core.Models;
+using Nocturne.Core.Models.Basal;
 using Nocturne.Core.Models.V4;
 using Nocturne.Infrastructure.Cache.Abstractions;
 using OpenApi.Remote.Attributes;
@@ -45,6 +46,7 @@ public class StatisticsController : ControllerBase
     private readonly ICacheService _cacheService;
     private readonly IProfileProjectionService _profileProjectionService;
     private readonly IBasalRateResolver _basalRateResolver;
+    private readonly IBasalSegmentService _basalSegments;
     private readonly ITherapySettingsResolver _therapySettingsResolver;
     private readonly ISensorGlucoseRepository _sensorGlucoseRepository;
     private readonly IBolusRepository _bolusRepository;
@@ -66,6 +68,7 @@ public class StatisticsController : ControllerBase
         ICacheService cacheService,
         IProfileProjectionService profileProjectionService,
         IBasalRateResolver basalRateResolver,
+        IBasalSegmentService basalSegments,
         ITherapySettingsResolver therapySettingsResolver,
         ISensorGlucoseRepository sensorGlucoseRepository,
         IBolusRepository bolusRepository,
@@ -83,6 +86,7 @@ public class StatisticsController : ControllerBase
         _cacheService = cacheService;
         _profileProjectionService = profileProjectionService;
         _basalRateResolver = basalRateResolver;
+        _basalSegments = basalSegments;
         _therapySettingsResolver = therapySettingsResolver;
         _sensorGlucoseRepository = sensorGlucoseRepository;
         _bolusRepository = bolusRepository;
@@ -569,7 +573,7 @@ public class StatisticsController : ControllerBase
     /// entry for each of the five standard periods.</returns>
     /// <remarks>
     /// When no TempBasal or algorithm bolus records are found but a profile is loaded, the method
-    /// falls back to computing scheduled basal from the active profile schedule via <see cref="IBasalRateResolver"/>.
+    /// falls back to integrating scheduled basal across the period via <see cref="IBasalSegmentService"/>.
     /// GMI reliability is assessed per-period using context-appropriate recommended-day minimums
     /// (e.g., 1-day periods cannot require 14 days of data).
     /// </remarks>
@@ -710,11 +714,11 @@ public class StatisticsController : ControllerBase
                         && hasProfileData
                     )
                     {
-                        var profileBasal = await CalculateScheduledBasalForPeriodAsync(
-                            startTimestamp,
-                            endTimestamp,
-                            cancellationToken
-                        );
+                        var fromMs = new DateTimeOffset(startTimestamp, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                        var toMs = new DateTimeOffset(endTimestamp, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                        var profileBasal = Math.Round(
+                            await _basalSegments.GetSegmentsAsync(fromMs, toMs, cancellationToken).SumUnitsAsync(cancellationToken)
+                            * 100) / 100;
                         var totalWithProfile = insulinDelivery.TotalBolus + profileBasal;
                         insulinDelivery.TotalBasal = Math.Round(profileBasal * 100) / 100;
                         insulinDelivery.ScheduledBasal = Math.Round(profileBasal * 100) / 100;
@@ -830,40 +834,6 @@ public class StatisticsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
-    }
-
-    /// <summary>
-    /// Calculate total scheduled basal delivery for a time period based on profile basal schedule,
-    /// accounting for any temporary basal treatments that override the scheduled rate.
-    /// </summary>
-    /// <param name="startTimestamp">Start time as DateTime (UTC)</param>
-    /// <param name="endTimestamp">End time as DateTime (UTC)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Total scheduled basal insulin in units</returns>
-    private async Task<double> CalculateScheduledBasalForPeriodAsync(
-        DateTime startTimestamp,
-        DateTime endTimestamp,
-        CancellationToken cancellationToken = default)
-    {
-        double totalBasal = 0.0;
-
-        // Sample at 5-minute intervals (same as CGM readings)
-        // In v4, temp basal adjustments come from StateSpans (handled by the primary code path).
-        // This fallback uses only the profile schedule when no StateSpans exist.
-        const long intervalMs = 5 * 60 * 1000; // 5 minutes in milliseconds
-        var startMills = new DateTimeOffset(startTimestamp, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var endMills = new DateTimeOffset(endTimestamp, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        var currentTime = startMills;
-
-        while (currentTime < endMills)
-        {
-            var scheduledRate = await _basalRateResolver.GetBasalRateAsync(currentTime, ct: cancellationToken);
-            var insulinDelivered = scheduledRate * (5.0 / 60.0); // 5 minutes = 5/60 hours
-            totalBasal += insulinDelivered;
-            currentTime += intervalMs;
-        }
-
-        return Math.Round(totalBasal * 100) / 100;
     }
 
     /// <summary>
@@ -1096,41 +1066,34 @@ public class StatisticsController : ControllerBase
             );
 
             // Fall back to profile-based scheduled rates when no TempBasals exist.
-            // This matches ChartDataService.BuildBasalSeriesFromStateSpans which also
-            // falls back to BuildBasalSeriesFromProfile, keeping both charts consistent.
-            if (tempBasals.Count == 0 && await _therapySettingsResolver.HasDataAsync())
+            // Each segment becomes one synthetic TempBasal; CalculateBasalAnalysis distributes
+            // each across the user-local hour-of-day buckets it overlaps, weighted by duration.
+            var hasTherapyData = await _therapySettingsResolver.HasDataAsync(HttpContext.RequestAborted);
+            if (tempBasals.Count == 0 && hasTherapyData)
             {
-                for (var day = startUtc.Date; day <= endUtc.Date; day = day.AddDays(1))
+                var fromMs = new DateTimeOffset(startUtc, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                var toMs = new DateTimeOffset(endUtc, TimeSpan.Zero).ToUnixTimeMilliseconds();
+                await foreach (var seg in _basalSegments.GetSegmentsAsync(fromMs, toMs, HttpContext.RequestAborted))
                 {
-                    for (int hour = 0; hour < 24; hour++)
+                    tempBasals.Add(new TempBasal
                     {
-                        var hourStart = day.AddHours(hour);
-                        if (hourStart < startUtc || hourStart >= endUtc)
-                            continue;
-
-                        var hourMills = new DateTimeOffset(
-                            hourStart,
-                            TimeSpan.Zero
-                        ).ToUnixTimeMilliseconds();
-                        var rate = await _basalRateResolver.GetBasalRateAsync(hourMills);
-                        tempBasals.Add(
-                            new TempBasal
-                            {
-                                StartTimestamp = hourStart,
-                                EndTimestamp = hourStart.AddHours(1),
-                                Rate = rate,
-                                Origin = TempBasalOrigin.Scheduled,
-                            }
-                        );
-                    }
+                        StartTimestamp = DateTimeOffset.FromUnixTimeMilliseconds(seg.StartMills).UtcDateTime,
+                        EndTimestamp = DateTimeOffset.FromUnixTimeMilliseconds(seg.EndMills).UtcDateTime,
+                        Rate = seg.UnitsPerHour,
+                        Origin = TempBasalOrigin.Scheduled,
+                    });
                 }
             }
+
+            var tzId = await _therapySettingsResolver.GetTimezoneAsync(ct: HttpContext.RequestAborted);
+            var userTz = string.IsNullOrEmpty(tzId) ? null : TimeZoneHelper.GetTimeZoneInfoFromId(tzId);
 
             var result = _statisticsService.CalculateBasalAnalysis(
                 tempBasals,
                 algorithmBoluses,
                 startUtc,
-                endUtc
+                endUtc,
+                userTz
             );
             return Ok(result);
         }
