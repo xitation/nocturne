@@ -16,6 +16,8 @@ import { PersistedState } from "runed";
 import { setMode, mode, userPrefersMode } from "mode-watcher";
 import supportedLocales from "../../../../../supportedLocales.json";
 import { WidgetId } from "../api/generated/nocturne-api-client";
+import { type HaloDialConfig } from "$lib/components/dashboard/halo-dial/config";
+import { defaultHaloDialConfig } from "$lib/components/dashboard/halo-dial/config";
 
 // ==========================================
 // Type Definitions
@@ -32,6 +34,9 @@ export type GlucoseUnits = "mg/dl" | "mmol";
 
 /** Time format preference */
 export type TimeFormat = "12" | "24";
+
+/** Sidebar widget preference */
+export type SidebarWidget = "graph" | "halo-dial";
 
 /** Supported locale type - derived from supportedLocales.json */
 export type SupportedLocale = (typeof supportedLocales)[number];
@@ -83,6 +88,24 @@ export const nightModeSchedule = new PersistedState<boolean>(
 export const dashboardTopWidgets = new PersistedState<WidgetId[]>(
   "nocturne-dashboard-top-widgets",
   [WidgetId.BgDelta, WidgetId.TirChart, WidgetId.Tdd]
+);
+
+/**
+ * Sidebar widget preference — graph or halo dial
+ * Default: graph (compact glucose chart)
+ */
+export const sidebarWidget = new PersistedState<SidebarWidget>(
+  "nocturne-sidebar-widget",
+  "graph"
+);
+
+/**
+ * Halo dial configuration
+ * Full config for the halo dial sidebar widget
+ */
+export const haloDialConfig = new PersistedState<HaloDialConfig>(
+  "nocturne-halo-dial-config",
+  defaultHaloDialConfig()
 );
 
 // ==========================================
