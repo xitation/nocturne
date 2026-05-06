@@ -12,7 +12,6 @@
   import { createChartDataEngine } from "$lib/components/dashboard/glucose-chart/engine/chart-data-engine.svelte";
   import GlucoseChartShell from "$lib/components/dashboard/glucose-chart/GlucoseChartShell.svelte";
   import GlucoseTrack from "$lib/components/dashboard/glucose-chart/tracks/GlucoseTrack.svelte";
-  import ThresholdRules from "$lib/components/dashboard/glucose-chart/tracks/ThresholdRules.svelte";
 
   const realtimeStore = tryGetRealtimeStore();
 
@@ -54,7 +53,6 @@
     <div class="px-2">
       <GlucoseChartShell engine={sidebarEngine} legend={sidebarLegend} heightClass="h-[200px]">
         {#snippet tracks(_ctx)}
-          <ThresholdRules />
           <GlucoseTrack />
         {/snippet}
       </GlucoseChartShell>
