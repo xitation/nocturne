@@ -18,7 +18,7 @@
 
   // Engine for the sidebar chart — no predictions, no inspection
   // svelte-ignore state_referenced_locally
-  const sidebarEngine = createChartDataEngine({ enablePredictions: false });
+  const sidebarEngine = createChartDataEngine({ enablePredictions: false, focusHours: 3 });
 
   // Collapsed state needs basic BG info
   const rawCurrentBG = $derived(realtimeStore?.currentBG ?? 0);
