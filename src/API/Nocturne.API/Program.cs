@@ -307,7 +307,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
                              | ForwardedHeaders.XForwardedProto
                              | ForwardedHeaders.XForwardedHost;
     // Trust any proxy — the API is only reachable through the gateway.
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
