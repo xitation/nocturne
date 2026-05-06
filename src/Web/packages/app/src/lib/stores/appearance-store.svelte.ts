@@ -16,8 +16,7 @@ import { PersistedState } from "runed";
 import { setMode, mode, userPrefersMode } from "mode-watcher";
 import supportedLocales from "../../../../../supportedLocales.json";
 import { WidgetId } from "../api/generated/nocturne-api-client";
-import { type HaloDialConfig } from "$lib/components/dashboard/halo-dial/config";
-import { defaultHaloDialConfig } from "$lib/components/dashboard/halo-dial/config";
+import { type HaloDialConfig, defaultHaloDialConfig } from "$lib/components/dashboard/halo-dial/config";
 
 // ==========================================
 // Type Definitions

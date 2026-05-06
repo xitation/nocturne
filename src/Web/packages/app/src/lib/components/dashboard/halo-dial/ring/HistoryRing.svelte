@@ -58,8 +58,9 @@
 				// If sampling density drops, switch to per-segment cubic Bézier with control points along the radial.
 				d += ` L ${p.x.toFixed(3)} ${p.y.toFixed(3)}`;
 			} else {
-				// Pure circular arc on the ring; sweep CCW (sweep-flag = 0).
-				d += ` A ${RING_RADIUS} ${RING_RADIUS} 0 0 0 ${p.x.toFixed(3)} ${p.y.toFixed(3)}`;
+				// Pure circular arc on the ring; sweep CW (sweep-flag = 1) since
+				// vertices go from oldest (most CCW) toward newest at 12 o'clock.
+				d += ` A ${RING_RADIUS} ${RING_RADIUS} 0 0 1 ${p.x.toFixed(3)} ${p.y.toFixed(3)}`;
 			}
 		}
 		return d;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { type BasalPoint, BasalDeliveryOrigin } from "$lib/api";
   import type { EntryRecord } from "$lib/constants/entry-categories";
   import { STALE_THRESHOLD_MS } from "$lib/constants/staleness";
@@ -406,7 +407,7 @@
   // Skip if we already have initial data from SSR streaming
   $effect(() => {
     // If we have initial data from SSR, don't refetch
-    if (initialChartData && serverChartData) return;
+    if (initialChartData && untrack(() => serverChartData)) return;
 
     const range = stableFetchRange;
     if (!range) return;
