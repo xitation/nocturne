@@ -217,6 +217,13 @@ export interface ChartDataEngine {
   readonly veryHighThreshold: number;
   readonly veryLowThreshold: number;
   readonly glucoseYMax: number;
+  readonly thresholds: {
+    low: number;
+    high: number;
+    veryLow: number;
+    veryHigh: number;
+    glucoseYMax: number;
+  };
   readonly medianGlucose: number;
 
   // State spans (processed / display-clipped)
@@ -874,6 +881,15 @@ export function createChartDataEngine(
     get veryHighThreshold() { return veryHighThreshold; },
     get veryLowThreshold() { return veryLowThreshold; },
     get glucoseYMax() { return glucoseYMax; },
+    get thresholds() {
+      return {
+        low: lowThreshold,
+        high: highThreshold,
+        veryLow: veryLowThreshold,
+        veryHigh: veryHighThreshold,
+        glucoseYMax,
+      };
+    },
     get medianGlucose() { return medianGlucose; },
     get displayPumpModeSpans() { return displayPumpModeSpans; },
     get displayOverrideSpans() { return displayOverrideSpans; },
