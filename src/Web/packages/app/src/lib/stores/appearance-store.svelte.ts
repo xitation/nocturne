@@ -279,6 +279,9 @@ export type PredictionDisplayMode =
   | "uam"
   | "cob";
 
+export type LineColorMode = "single" | "threshold" | "continuous";
+export type AreaMode = "off" | "baseline" | "deviation";
+
 /**
  * Prediction display mode preference
  */
@@ -308,6 +311,45 @@ export const glucoseChartLookback = new PersistedState<number>(
  * Always fetches this much data regardless of display range
  */
 export const GLUCOSE_CHART_FETCH_HOURS = 48;
+
+// ==========================================
+// Glucose Chart Visual Style
+// ==========================================
+
+export const chartLineColorMode = new PersistedState<LineColorMode>(
+  "nocturne-chart-line-color-mode",
+  "threshold"
+);
+
+export const chartLineColor = new PersistedState<string>(
+  "nocturne-chart-line-color",
+  "#22c55e"
+);
+
+export const chartPointColorMode = new PersistedState<LineColorMode>(
+  "nocturne-chart-point-color-mode",
+  "threshold"
+);
+
+export const chartPointColor = new PersistedState<string>(
+  "nocturne-chart-point-color",
+  "#22c55e"
+);
+
+export const chartShowPoints = new PersistedState<boolean>(
+  "nocturne-chart-show-points",
+  true
+);
+
+export const chartAreaMode = new PersistedState<AreaMode>(
+  "nocturne-chart-area-mode",
+  "off"
+);
+
+export const chartAreaOpacity = new PersistedState<number>(
+  "nocturne-chart-area-opacity",
+  0.5
+);
 
 // ==========================================
 // Language Preference
