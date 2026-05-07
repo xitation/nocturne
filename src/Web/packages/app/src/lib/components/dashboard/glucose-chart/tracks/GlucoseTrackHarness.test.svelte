@@ -41,6 +41,9 @@
 
   let {
     glucoseData = defaultData,
+    // Default to false so test assertions over the rendered DOM don't have to
+    // account for the axis tick `<text>`/`<line>` elements. Component default
+    // is true; tests opt back in by passing showAxis explicitly.
     showAxis = false,
     showPoints,
     areaMode = "off",
@@ -61,20 +64,17 @@
     glucoseYMax: 400,
   };
 
-  // Minimal stub of ChartDataEngine — only the fields GlucoseTrack reads.
+  // Minimal stub of ChartDataEngine — GlucoseTrack only reads `glucoseData`
+  // and `thresholds` from the engine (other fields like `width`/`height` come
+  // from layerchart's own context, not the engine). The `Partial<...> as ...`
+  // cast is intentional: if GlucoseTrack starts touching a new engine field,
+  // it should light up as a type error here rather than as runtime undefined.
   const engineStub = {
     get glucoseData() {
       return glucoseData;
     },
     thresholds,
-    glucoseYMax: thresholds.glucoseYMax,
-    maxBasalRate: 1,
-    maxIOB: 1,
-    displayPumpModeSpans: [],
-    displayOverrideSpans: [],
-    displayProfileSpans: [],
-    displayActivitySpans: [],
-  } as unknown as ChartDataEngine;
+  } as Partial<ChartDataEngine> as ChartDataEngine;
 
   const layout = $derived(
     computeTrackLayout(

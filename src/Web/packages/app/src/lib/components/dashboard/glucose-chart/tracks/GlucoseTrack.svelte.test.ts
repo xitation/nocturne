@@ -90,4 +90,17 @@ describe("GlucoseTrack rendering contract", () => {
 		const circles = container.querySelectorAll("circle");
 		expect(circles.length).toBe(0);
 	});
+
+	it("renders points when showPoints is explicitly true", async () => {
+		// Guards against an inverted-boolean regression in
+		// effectiveShowPoints' density fallback (`showPoints ?? density < 0.5`).
+		const { container } = render(Harness, {
+			lineColorMode: "single",
+			areaMode: "off",
+			showPoints: true,
+		});
+
+		const circles = container.querySelectorAll("circle");
+		expect(circles.length).toBeGreaterThanOrEqual(3);
+	});
 });
