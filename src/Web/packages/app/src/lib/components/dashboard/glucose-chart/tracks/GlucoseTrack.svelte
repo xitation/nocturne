@@ -56,10 +56,13 @@
   const glucoseAxisScale = $derived(ctx.layout.glucose.axisScale);
   const thresholds = $derived(ctx.engine.thresholds);
 
+  // Only show points when density is reasonable (less than 0.5 points per pixel)
   const pointDensity = $derived(glucoseData.length / chartCtx.width);
   const effectiveShowPoints = $derived(showPoints ?? pointDensity < 0.5);
 
-  const effectivePointMode = $derived(pointColorMode ?? lineColorMode);
+  const effectivePointMode = $derived(
+    pointColorMode ?? (pointColor !== undefined ? "single" : lineColorMode),
+  );
   const effectivePointColor = $derived(pointColor ?? lineColor);
 
   const y0 = $derived(
@@ -67,17 +70,17 @@
   );
 
   const lineStops = $derived.by(() => {
-    if (lineColorMode === "single") return null;
+    if (lineColorMode === "single") return undefined;
     if (lineColorMode === "threshold")
       return thresholdLineStops(thresholds, glucoseAxisScale, chartCtx.height);
     return continuousLineStops(glucoseAxisScale, chartCtx.height);
   });
 
   const fillStops = $derived.by(() => {
-    if (areaMode === "off") return null;
+    if (areaMode === "off") return undefined;
     if (lineColorMode === "single")
       return singleColorFillStops(lineColor, areaOpacity);
-    return lineStops ? fillStopsFromLineStops(lineStops, areaOpacity) : null;
+    return lineStops ? fillStopsFromLineStops(lineStops, areaOpacity) : undefined;
   });
 
   function pointFill(sgv: number): string {
@@ -99,60 +102,40 @@
 {/if}
 
 <ChartClipPath>
-  {#if lineColorMode === "single"}
+  {#snippet splineOrArea(stroke: string)}
     {#if areaMode === "off"}
       <Spline
         data={glucoseData}
         x={(d) => d.time}
         y={(d) => glucoseScale(d.sgv)}
-        stroke={lineColor}
+        {stroke}
         class="stroke-2 fill-none"
         motion="spring"
         curve={curveMonotoneX}
       />
     {:else}
-      <LinearGradient stops={fillStops ?? undefined} units="userSpaceOnUse" vertical>
+      <LinearGradient stops={fillStops} units="userSpaceOnUse" vertical>
         {#snippet children({ gradient: fillGrad })}
           <Area
             data={glucoseData}
             x={(d) => d.time}
             y={(d) => glucoseScale(d.sgv)}
             {y0}
-            line={{ stroke: lineColor, class: "stroke-2" }}
+            line={{ stroke, class: "stroke-2" }}
             fill={fillGrad}
             curve={curveMonotoneX}
           />
         {/snippet}
       </LinearGradient>
     {/if}
+  {/snippet}
+
+  {#if lineColorMode === "single"}
+    {@render splineOrArea(lineColor)}
   {:else}
-    <LinearGradient stops={lineStops ?? undefined} units="userSpaceOnUse" vertical>
+    <LinearGradient stops={lineStops} units="userSpaceOnUse" vertical>
       {#snippet children({ gradient: strokeGrad })}
-        {#if areaMode === "off"}
-          <Spline
-            data={glucoseData}
-            x={(d) => d.time}
-            y={(d) => glucoseScale(d.sgv)}
-            stroke={strokeGrad}
-            class="stroke-2 fill-none"
-            motion="spring"
-            curve={curveMonotoneX}
-          />
-        {:else}
-          <LinearGradient stops={fillStops ?? undefined} units="userSpaceOnUse" vertical>
-            {#snippet children({ gradient: fillGrad })}
-              <Area
-                data={glucoseData}
-                x={(d) => d.time}
-                y={(d) => glucoseScale(d.sgv)}
-                {y0}
-                line={{ stroke: strokeGrad, class: "stroke-2" }}
-                fill={fillGrad}
-                curve={curveMonotoneX}
-              />
-            {/snippet}
-          </LinearGradient>
-        {/if}
+        {@render splineOrArea(strokeGrad)}
       {/snippet}
     </LinearGradient>
   {/if}
