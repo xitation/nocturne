@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Nocturne.Aspire.Host;
 using Nocturne.Aspire.Hosting;
+using Nocturne.Aspire.Scalar;
 using Nocturne.Core.Constants;
 using Scalar.Aspire;
 using Yarp.ReverseProxy.Transforms;
@@ -134,7 +135,23 @@ class Program
                 postgres.WithPgAdmin();
             }
 
-            postgres.PublishAsDockerComposeService((_, _) => { });
+            postgres.PublishAsDockerComposeService((_, service) =>
+            {
+                // Rewrite the init-scripts bind-mount source to a relative
+                // path. Without this, Aspire emits the dev-machine absolute
+                // path as a generated NOCTURNE_POSTGRES_SERVER_BINDMOUNT_0
+                // env var, which then has to be renamed in the release
+                // bundle. Hardcoding ./init in compose.yaml lets users drop
+                // 00-init.sh into ./init/ next to compose and removes the
+                // env var entirely.
+                var initVolume = service.Volumes.FirstOrDefault(
+                    v => v.Target == "/docker-entrypoint-initdb.d"
+                );
+                if (initVolume != null)
+                {
+                    initVolume.Source = "./init";
+                }
+            });
 
             managedDatabase = postgres.AddDatabase(ServiceNames.PostgreSql, dbName);
             postgresServer = postgres;
@@ -420,6 +437,7 @@ class Program
                 .AddScalarApiReference("scalar", options =>
                 {
                     options.WithTheme(ScalarTheme.Mars);
+                    options.WithCustomCss(NocturneScalarTheme.Build(solutionRoot));
                     options.EnablePersistentAuthentication();
                     options.AddPreferredSecuritySchemes("oauth2");
                     options.AddAuthorizationCodeFlow(

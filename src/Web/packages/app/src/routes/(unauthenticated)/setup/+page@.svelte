@@ -3,8 +3,8 @@
   import { page } from "$app/state";
   import { ArrowRight, ArrowLeft, Sprout, Cable } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
-  import Github from "lucide-svelte/icons/github";
   import { markSetupComplete } from "./setup.remote";
+  import AppLogo from "$lib/components/AppLogo.svelte";
   import * as migrationRemote from "$api/generated/migrations.generated.remote";
   import {
     getServicesOverview,
@@ -36,7 +36,9 @@
 
   // ── Setup phase (pre-auth) ──────────────────────────────────────────
   let accountCreated = $state(false);
-  const setupRequired = $derived(!accountCreated && page.data?.setupRequired === true);
+  const setupRequired = $derived(
+    !accountCreated && page.data?.setupRequired === true
+  );
 
   const SETUP_STEPS = [
     { id: "tenant", label: "Name your instance", short: "Instance" },
@@ -48,7 +50,9 @@
   let setupStepIndex = $state(page.data?.tenantExists === true ? 1 : 0);
   const setupStep = $derived(SETUP_STEPS[setupStepIndex]);
   const setupProgressPct = $derived(
-    SETUP_STEPS.length <= 1 ? 100 : (setupStepIndex / (SETUP_STEPS.length - 1)) * 100
+    SETUP_STEPS.length <= 1
+      ? 100
+      : (setupStepIndex / (SETUP_STEPS.length - 1)) * 100
   );
 
   function handleTenantCreated(slug: string) {
@@ -92,19 +96,23 @@
   // query() returns reactive objects anchored to this component's lifecycle.
   // They cannot be awaited in event handlers — must live in $derived context.
   const servicesQuery = $derived(!setupRequired ? getServicesOverview() : null);
-  const dataSourcesQuery = $derived(!setupRequired ? getActiveDataSources() : null);
+  const dataSourcesQuery = $derived(
+    !setupRequired ? getActiveDataSources() : null
+  );
   const uploaderSetupQuery = $derived(
     selectedUploader?.id ? getUploaderSetup(selectedUploader.id) : null
   );
 
   const servicesData = $derived(servicesQuery?.current ?? null);
-  const activeDataSources = $derived<DataSourceInfo[]>(dataSourcesQuery?.current ?? []);
+  const activeDataSources = $derived<DataSourceInfo[]>(
+    dataSourcesQuery?.current ?? []
+  );
   const uploaderSetupResponse = $derived(uploaderSetupQuery?.current ?? null);
   const servicesLoading = $derived(
     servicesQuery == null ||
-    servicesQuery.current === undefined ||
-    dataSourcesQuery == null ||
-    dataSourcesQuery.current === undefined
+      servicesQuery.current === undefined ||
+      dataSourcesQuery == null ||
+      dataSourcesQuery.current === undefined
   );
   let importProgress = $state(0);
   let migrationJobId = $state<string | undefined>(undefined);
@@ -512,7 +520,9 @@
                       </em>
                       .
                     </h1>
-                    <p class="max-w-140 text-base leading-relaxed text-white/50">
+                    <p
+                      class="max-w-140 text-base leading-relaxed text-white/50"
+                    >
                       Enter your credentials and we'll start syncing your data.
                     </p>
                   </div>
@@ -539,7 +549,9 @@
                       </em>
                       .
                     </h1>
-                    <p class="max-w-140 text-base leading-relaxed text-white/50">
+                    <p
+                      class="max-w-140 text-base leading-relaxed text-white/50"
+                    >
                       Follow the steps below to connect your phone app to
                       Nocturne.
                     </p>
@@ -567,7 +579,11 @@
                 onComplete={handleImportComplete}
               />
             {:else if currentStep?.id === "finish"}
-              <Finish {path} onEnterDashboard={handleEnterDashboard} onNavigateWithCoach={handleNavigateWithCoach} />
+              <Finish
+                {path}
+                onEnterDashboard={handleEnterDashboard}
+                onNavigateWithCoach={handleNavigateWithCoach}
+              />
             {/if}
           </div>
 
@@ -633,7 +649,7 @@
         target="_blank"
         rel="noopener noreferrer"
       >
-        <Github class="h-3.5 w-3.5" />
+        <AppLogo icon="github" />
         Source
       </a>
     </div>
