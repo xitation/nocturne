@@ -14,6 +14,7 @@
     Area,
     Threshold,
     AnnotationRange,
+    ChartClipPath,
   } from "layerchart";
   import { curveMonotoneX } from "d3-shape";
 
@@ -62,32 +63,34 @@
     padding={{ top: 1, bottom: 1, left: 1, right: 1 }}
   >
     <Svg>
-      <AnnotationRange
-        y={[LOW_THRESHOLD, HIGH_THRESHOLD]}
-        class="fill-glucose-in-range opacity-20"
-      />
-      <Threshold curve={curveMonotoneX}>
-        {#snippet above()}
-          <Area
-            y0={HIGH_THRESHOLD}
-            curve={curveMonotoneX}
-            class="fill-red-500"
-            line={{ class: "stroke-none" }}
-          />
-        {/snippet}
-        {#snippet below()}
-          <Area
-            y0={LOW_THRESHOLD}
-            curve={curveMonotoneX}
-            class="fill-glucose-low opacity-50"
-            line={{ class: "stroke-none" }}
-          />
-        {/snippet}
-        <Spline
-          curve={curveMonotoneX}
-          class="stroke-glucose-in-range stroke-[1.5] fill-none"
+      <ChartClipPath>
+        <AnnotationRange
+          y={[LOW_THRESHOLD, HIGH_THRESHOLD]}
+          class="fill-glucose-in-range opacity-20"
         />
-      </Threshold>
+        <Threshold curve={curveMonotoneX}>
+          {#snippet above()}
+            <Area
+              y0={HIGH_THRESHOLD}
+              curve={curveMonotoneX}
+              class="fill-red-500"
+              line={{ class: "stroke-none" }}
+            />
+          {/snippet}
+          {#snippet below()}
+            <Area
+              y0={LOW_THRESHOLD}
+              curve={curveMonotoneX}
+              class="fill-glucose-low opacity-50"
+              line={{ class: "stroke-none" }}
+            />
+          {/snippet}
+          <Spline
+            curve={curveMonotoneX}
+            class="stroke-glucose-in-range stroke-[1.5] fill-none"
+          />
+        </Threshold>
+      </ChartClipPath>
     </Svg>
   </Chart>
 {/if}

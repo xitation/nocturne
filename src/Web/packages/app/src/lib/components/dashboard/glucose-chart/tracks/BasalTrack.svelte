@@ -210,40 +210,42 @@
 
   <!-- Basal area - render each segment by origin with actual delivered rate -->
   {#if basalData.length > 0}
-    {#each basalSegmentsByOrigin as segment, i (i)}
-      {@const pattern = getBasalPattern(segment.origin)}
-      {@const opacity = getBasalOpacity(segment.origin)}
-      {@const fillColor = segment.points[0].fillColor}
-      {@const strokeColor = segment.points[0].strokeColor}
-      {#if pattern}
-        <!-- Use AnnotationRange for segments with patterns (Inferred) -->
-        {#each segment.points as point, pointIdx (point.timestamp)}
-          {#if pointIdx < segment.points.length - 1}
-            {@const nextPoint = segment.points[pointIdx + 1]}
-            <AnnotationRange
-              x={[point.timestamp ?? 0, nextPoint.timestamp ?? 0]}
-              y={[basalScale(point.rate ?? 0), basalZero]}
-              fill={fillColor}
-              {pattern}
-              style="opacity: {opacity}"
-            />
-          {/if}
-        {/each}
-      {:else}
-        <!-- Use Area for segments without patterns -->
-        <Area
-          data={segment.points}
-          x={(d) => new Date(d.timestamp ?? 0)}
-          y0={() => basalZero}
-          y1={(d) => basalScale(d.rate ?? 0)}
-          curve={curveStepAfter}
-          fill={fillColor}
-          stroke={strokeColor}
-          class="stroke-1"
-          style="opacity: {opacity}"
-        />
-      {/if}
-    {/each}
+    <ChartClipPath>
+      {#each basalSegmentsByOrigin as segment, i (i)}
+        {@const pattern = getBasalPattern(segment.origin)}
+        {@const opacity = getBasalOpacity(segment.origin)}
+        {@const fillColor = segment.points[0].fillColor}
+        {@const strokeColor = segment.points[0].strokeColor}
+        {#if pattern}
+          <!-- Use AnnotationRange for segments with patterns (Inferred) -->
+          {#each segment.points as point, pointIdx (point.timestamp)}
+            {#if pointIdx < segment.points.length - 1}
+              {@const nextPoint = segment.points[pointIdx + 1]}
+              <AnnotationRange
+                x={[point.timestamp ?? 0, nextPoint.timestamp ?? 0]}
+                y={[basalScale(point.rate ?? 0), basalZero]}
+                fill={fillColor}
+                {pattern}
+                style="opacity: {opacity}"
+              />
+            {/if}
+          {/each}
+        {:else}
+          <!-- Use Area for segments without patterns -->
+          <Area
+            data={segment.points}
+            x={(d) => new Date(d.timestamp ?? 0)}
+            y0={() => basalZero}
+            y1={(d) => basalScale(d.rate ?? 0)}
+            curve={curveStepAfter}
+            fill={fillColor}
+            stroke={strokeColor}
+            class="stroke-1"
+            style="opacity: {opacity}"
+          />
+        {/if}
+      {/each}
+    </ChartClipPath>
   {/if}
 
   <!-- Basal highlight for point click -->

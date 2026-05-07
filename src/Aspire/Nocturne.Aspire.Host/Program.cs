@@ -413,10 +413,11 @@ class Program
         // Scalar API reference (optional)
         // ------------------------------------------------------------------
         IResourceBuilder<IResourceWithEndpoints>? scalar = null;
+        IResourceBuilder<IResourceWithEndpoints>? scalarBootstrap = null;
         if (includeScalar)
         {
-            scalar = builder
-                .AddScalarApiReference(options =>
+            var scalarResource = builder
+                .AddScalarApiReference("scalar", options =>
                 {
                     options.WithTheme(ScalarTheme.Mars);
                     options.EnablePersistentAuthentication();
@@ -443,6 +444,19 @@ class Program
                     }
                 )
 ;
+
+            scalar = scalarResource;
+
+            // Tiny ASP.NET reverse proxy that fronts the Scalar.Aspire
+            // sidecar and splices MermaidLazyLoader.HeadContent into the
+            // Scalar HTML head. Needed because Scalar.Aspire 0.8.x has no
+            // head-content hook and Aspire.Hosting.Yarp can't do body
+            // rewriting (JSON-config transforms only).
+            scalarBootstrap = builder
+                .AddProject<Projects.Nocturne_Aspire_ScalarBootstrap>("scalar-bootstrap", launchProfileName: null)
+                .WithHttpEndpoint(name: "http")
+                .WithReference(scalarResource)
+                .WaitFor(scalarResource);
         }
 
         // ------------------------------------------------------------------
@@ -525,9 +539,13 @@ class Program
                 // API docs (Scalar UI)
                 // When the Scalar Aspire container is running (dev with OAuth PKCE),
                 // proxy to it. Otherwise, the API serves Scalar natively.
-                if (scalar != null)
+                if (scalarBootstrap != null && scalar != null)
                 {
-                    yarp.AddRoute("/scalar/{**catch-all}", scalar.GetEndpoint("http"))
+                    // /scalar/* goes via the bootstrap (HTML rewriter), which
+                    // forwards to the Scalar sidecar. /scalar-proxy/* skips
+                    // the rewriter — those are runtime API requests proxied
+                    // by Scalar back to the API and can be large.
+                    yarp.AddRoute("/scalar/{**catch-all}", scalarBootstrap.GetEndpoint("http"))
                         .WithTransformPathRemovePrefix("/scalar")
                         .WithTransformXForwarded("X-Forwarded-", xForwardedAction);
                     yarp.AddRoute("/scalar-proxy/{**catch-all}", scalar.GetEndpoint("http"))

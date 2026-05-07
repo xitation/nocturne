@@ -19,6 +19,7 @@ using Nocturne.API.Multitenancy;
 using OpenApi.Remote.Processors;
 using Nocturne.API.OpenApi;
 using Scalar.AspNetCore;
+using Nocturne.Aspire.Scalar;
 using Nocturne.Core.Constants;
 using Nocturne.Core.Models.Configuration;
 using Nocturne.Infrastructure.Cache.Extensions;

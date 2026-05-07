@@ -334,10 +334,15 @@ export function createChartDataEngine(
   });
 
   // ---- Stable fetch range ----
+  // Fetch only the visible window when no dateRange or preloaded data is
+  // configured. The wider `fullDataRange` (48h) is used by the MiniOverview
+  // on the dashboard, which preloads data via SSR — so consumers that hit
+  // this fetch path (sidebar widget, clock face) don't need the full buffer.
   const stableFetchRange = $derived.by(() => {
     if (!isBrowser) return null;
-    const fromTime = fullDataRange.from.getTime();
-    const toTime = fullDataRange.to.getTime();
+    const range = options.dateRange ? fullDataRange : displayDateRange;
+    const fromTime = range.from.getTime();
+    const toTime = range.to.getTime();
     if (isNaN(fromTime) || isNaN(toTime)) return null;
     const intervalMs = 5 * 60 * 1000;
     const startRounded = Math.floor(fromTime / intervalMs) * intervalMs;
