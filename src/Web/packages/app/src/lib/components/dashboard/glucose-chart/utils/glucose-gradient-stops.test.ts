@@ -54,6 +54,23 @@ describe('thresholdLineStops', () => {
 			expect(stops[i][0]).toBeGreaterThanOrEqual(stops[i - 1][0]);
 		}
 	});
+
+	it('computes offsets as axisScale(threshold) / chartHeight', () => {
+		// axisScale(180) = 220, chartHeight = 400 → offset 0.55
+		expect(stops[3][0]).toBeCloseTo(0.55);
+		// axisScale(70) = 330 → offset 0.825
+		expect(stops[5][0]).toBeCloseTo(0.825);
+	});
+
+	it('clamps thresholds outside the chart domain', () => {
+		// axisScale(500) = -100 → clamps to offset 0
+		const tightThresholds = { veryLow: 55, low: 70, high: 180, veryHigh: 500 };
+		const clampedStops = thresholdLineStops(tightThresholds, axisScale, chartHeight);
+		expect(clampedStops).toHaveLength(10);
+		for (let i = 1; i < clampedStops.length; i++) {
+			expect(clampedStops[i][0]).toBeGreaterThanOrEqual(clampedStops[i - 1][0]);
+		}
+	});
 });
 
 describe('continuousLineStops', () => {
@@ -61,6 +78,13 @@ describe('continuousLineStops', () => {
 		const stops = continuousLineStops(axisScale, chartHeight);
 		expect(stops.length).toBe(10);
 		expect(stops[0][1]).toMatch(/^oklch\(/);
+	});
+
+	it('offsets descend (low mgdl is at the bottom of the chart)', () => {
+		const stops = continuousLineStops(axisScale, chartHeight);
+		// GLUCOSE_SPECTRUM_ANCHORS starts at the low end (→ bottom → high offset)
+		// and ends at the high end (→ top → low offset)
+		expect(stops[0][0]).toBeGreaterThan(stops[stops.length - 1][0]);
 	});
 });
 
@@ -77,6 +101,12 @@ describe('fillStopsFromLineStops', () => {
 		expect(fill[1][1]).toBe(
 			'color-mix(in lch, var(--glucose-very-low) 0%, transparent)'
 		);
+	});
+
+	it('rounds opacity percentage to integer', () => {
+		// offset 0.333, areaOpacity 0.6 → (1 - 0.333) * 0.6 * 100 = 40.02 → 40%
+		const fill = fillStopsFromLineStops([[0.333, 'var(--c)']], 0.6);
+		expect(fill[0][1]).toBe('color-mix(in lch, var(--c) 40%, transparent)');
 	});
 });
 

@@ -6,6 +6,14 @@ import {
 
 export type GradientStop = [offset: number, color: string];
 
+/**
+ * Gradient coordinate convention shared by `thresholdLineStops` and
+ * `continuousLineStops`: callers MUST apply the resulting stops to a
+ * `<LinearGradient vertical units="userSpaceOnUse">` whose y-extent matches
+ * `[0, chartHeight]`. Offsets are computed as `axisScale(mgdl) / chartHeight`,
+ * so offset 0 is the chart's pixel-y origin (top) and offset 1 is the bottom.
+ */
+
 function offsetFor(
 	mgdl: number,
 	axisScale: (m: number) => number,
