@@ -61,8 +61,7 @@
       : (setupStepIndex / (SETUP_STEPS.length - 1)) * 100
   );
 
-  function handleTenantCreated(slug: string) {
-    tenantSlug = slug;
+  function handleTenantCreated(_slug: string) {
     setupStepIndex = 1;
   }
 
@@ -95,7 +94,6 @@
   // ── State ───────────────────────────────────────────────────────────
   let path = $state<"fresh" | "migration">("fresh");
   let stepIndex = $state(0);
-  let tenantSlug = $state<string | null>(null);
   let selectedConnectorId = $state<string | null>(null);
   let selectedUploader = $state<UploaderApp | null>(null);
   // ── Reactive service queries (auto-activate when setup completes) ──
