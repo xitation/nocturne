@@ -104,12 +104,16 @@ public class HttpsRequirementMiddlewareTests
         ctx.Response.StatusCode.Should().Be(301);
     }
 
-    [Fact]
-    public async Task HttpPostRequest_Returns400()
+    [Theory]
+    [InlineData("POST")]
+    [InlineData("PUT")]
+    [InlineData("DELETE")]
+    [InlineData("PATCH")]
+    public async Task HttpMutationMethod_Returns400(string method)
     {
         var called = false;
         var middleware = CreateMiddleware(_ => { called = true; return Task.CompletedTask; }, _defaultConfig);
-        var ctx = CreateHttpContext(method: "POST", host: "example.com", path: "/api/v4/setup/tenant");
+        var ctx = CreateHttpContext(method: method, host: "example.com", path: "/api/v4/setup/tenant");
 
         await middleware.InvokeAsync(ctx);
 
@@ -135,6 +139,20 @@ public class HttpsRequirementMiddlewareTests
         var called = false;
         var middleware = CreateMiddleware(_ => { called = true; return Task.CompletedTask; }, _defaultConfig);
         var ctx = CreateHttpContext(path: "/alive");
+
+        await middleware.InvokeAsync(ctx);
+
+        called.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("/Health")]
+    [InlineData("/ALIVE")]
+    public async Task BypassPaths_AreCaseInsensitive(string path)
+    {
+        var called = false;
+        var middleware = CreateMiddleware(_ => { called = true; return Task.CompletedTask; }, _defaultConfig);
+        var ctx = CreateHttpContext(path: path);
 
         await middleware.InvokeAsync(ctx);
 

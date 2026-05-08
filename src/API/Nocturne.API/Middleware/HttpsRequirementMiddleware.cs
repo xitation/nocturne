@@ -73,7 +73,6 @@ public class HttpsRequirementMiddleware
 
         _logger.LogWarning("Rejecting HTTP {Method} {Path} — HTTPS is required", method, path);
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(new
         {
             error = "https_required",

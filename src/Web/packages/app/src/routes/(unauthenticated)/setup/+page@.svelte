@@ -37,7 +37,7 @@
 
   // ── HTTPS guard ─────────────────────────────────────────────────────
   const httpsRequired = $derived(
-    browser && window.location.protocol !== "https:" && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)
+    browser && window.location.protocol !== "https:" && !window.location.hostname.match(/^(localhost|127\.0\.0\.1|::1|\[::1\])$/)
   );
 
   // ── Setup phase (pre-auth) ──────────────────────────────────────────
