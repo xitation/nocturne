@@ -377,9 +377,6 @@ class Program
                 .WithHttpHealthCheck("/")
                 .WaitFor(api)
                 .WaitFor(bridge)
-#pragma warning disable  ASPIREBROWSERLOGS001
-                .WithBrowserLogs()
-#pragma warning restore ASPIREBROWSERLOGS001
                 .WithReference(bridge);
 
             ConfigureWebEnvironment(viteWeb);
