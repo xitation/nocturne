@@ -35,7 +35,7 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <summary>
         /// Initializes a new instance of the <see cref="TenantSnapshotDto" /> class.
         /// </summary>
-        /// <param name="tenant">The tenant entity itself..</param>
+        /// <param name="tenant">tenant.</param>
         /// <param name="subjects">All subjects (users/service accounts) belonging to this tenant..</param>
         /// <param name="passkeyCredentials">All passkey credentials registered for this tenant&#39;s subjects..</param>
         /// <param name="roles">All tenant-scoped roles..</param>
@@ -56,9 +56,8 @@ namespace NightscoutFoundation.Nocturne.Model
         }
 
         /// <summary>
-        /// The tenant entity itself.
+        /// Gets or Sets Tenant
         /// </summary>
-        /// <value>The tenant entity itself.</value>
         [DataMember(Name = "tenant", EmitDefaultValue = false)]
         public TenantEntityDto Tenant { get; set; }
 

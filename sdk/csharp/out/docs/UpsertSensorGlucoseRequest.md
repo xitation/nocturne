@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **App** | **string** | Name of the application that submitted this record. | [optional] 
 **DataSource** | **string** | Upstream data source identifier. | [optional] 
 **Mgdl** | **double** | Glucose reading in mg/dL (validated 0-10,000). | [optional] 
-**Direction** | **GlucoseDirection** | Glucose trend direction (rising, falling, stable, etc.). | [optional] 
+**Direction** | **GlucoseDirection** |  | [optional] 
 **TrendRate** | **double?** | Rate of glucose change in mg/dL per minute. | [optional] 
 **Noise** | **int?** | Sensor noise level indicator (device-specific scale). | [optional] 
 **Filtered** | **double?** | Raw filtered sensor value (scaled ADC) | [optional] 

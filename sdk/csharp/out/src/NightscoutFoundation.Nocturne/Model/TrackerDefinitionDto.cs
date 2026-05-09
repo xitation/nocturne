@@ -40,23 +40,20 @@ namespace NightscoutFoundation.Nocturne.Model
         public TrackerCategory? Category { get; set; }
 
         /// <summary>
-        /// Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent
+        /// Gets or Sets DashboardVisibility
         /// </summary>
-        /// <value>Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent</value>
         [DataMember(Name = "dashboardVisibility", EmitDefaultValue = false)]
         public DashboardVisibility? DashboardVisibility { get; set; }
 
         /// <summary>
-        /// Visibility level for this tracker (Public, Private, RoleRestricted)
+        /// Gets or Sets Visibility
         /// </summary>
-        /// <value>Visibility level for this tracker (Public, Private, RoleRestricted)</value>
         [DataMember(Name = "visibility", EmitDefaultValue = false)]
         public TrackerVisibility? Visibility { get; set; }
 
         /// <summary>
-        /// Tracker mode: Duration or Event
+        /// Gets or Sets Mode
         /// </summary>
-        /// <value>Tracker mode: Duration or Event</value>
         [DataMember(Name = "mode", EmitDefaultValue = false)]
         public TrackerMode? Mode { get; set; }
         /// <summary>
@@ -72,11 +69,11 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="lifespanHours">lifespanHours.</param>
         /// <param name="notificationThresholds">notificationThresholds.</param>
         /// <param name="isFavorite">isFavorite.</param>
-        /// <param name="dashboardVisibility">Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent.</param>
-        /// <param name="visibility">Visibility level for this tracker (Public, Private, RoleRestricted).</param>
+        /// <param name="dashboardVisibility">dashboardVisibility.</param>
+        /// <param name="visibility">visibility.</param>
         /// <param name="startEventType">Event type to create when tracker is started (for Nightscout compatibility).</param>
         /// <param name="completionEventType">Event type to create when tracker is completed (for Nightscout compatibility).</param>
-        /// <param name="mode">Tracker mode: Duration or Event.</param>
+        /// <param name="mode">mode.</param>
         /// <param name="createdAt">createdAt.</param>
         /// <param name="updatedAt">updatedAt.</param>
         public TrackerDefinitionDto(string id = default, string name = default, string description = default, TrackerCategory? category = default, string icon = default, List<string> triggerEventTypes = default, string triggerNotesContains = default, int? lifespanHours = default, List<NotificationThresholdDto> notificationThresholds = default, bool isFavorite = default, DashboardVisibility? dashboardVisibility = default, TrackerVisibility? visibility = default, string startEventType = default, string completionEventType = default, TrackerMode? mode = default, DateTimeOffset createdAt = default, DateTimeOffset? updatedAt = default)

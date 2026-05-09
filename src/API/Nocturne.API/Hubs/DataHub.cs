@@ -2,11 +2,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Nocturne.API.Extensions;
 using Nocturne.API.Middleware;
-using Nocturne.Connectors.Core.Utilities;
 using Nocturne.API.Services.Devices;
-using Nocturne.Core.Constants;
 using Nocturne.Core.Contracts.Identity;
+using Nocturne.Connectors.Core.Utilities;
+using Nocturne.Core.Constants;
 using Nocturne.Core.Contracts.Glucose;
+using Nocturne.Core.Contracts.Identity;
 using Nocturne.Core.Contracts.Treatments;
 
 namespace Nocturne.API.Hubs;
@@ -73,7 +74,6 @@ public class DataHub : TenantAwareHub
                     var configuredSecret =
                         configuration?[$"Parameters:{ServiceNames.Parameters.InstanceKey}"]
                         ?? configuration?[ServiceNames.ConfigKeys.InstanceKey];
-
                     if (!string.IsNullOrEmpty(configuredSecret))
                     {
                         // Calculate SHA1 hash of the configured secret

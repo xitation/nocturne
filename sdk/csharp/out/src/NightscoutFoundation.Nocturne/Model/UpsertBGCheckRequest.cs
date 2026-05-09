@@ -34,16 +34,14 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Unit of the glucose reading (mg/dL or mmol/L).
+        /// Gets or Sets Units
         /// </summary>
-        /// <value>Unit of the glucose reading (mg/dL or mmol/L).</value>
         [DataMember(Name = "units", EmitDefaultValue = true)]
         public GlucoseUnit? Units { get; set; }
 
         /// <summary>
-        /// Origin of the glucose value (finger stick, sensor, manual, etc.).
+        /// Gets or Sets GlucoseType
         /// </summary>
-        /// <value>Origin of the glucose value (finger stick, sensor, manual, etc.).</value>
         [DataMember(Name = "glucoseType", EmitDefaultValue = true)]
         public GlucoseType? GlucoseType { get; set; }
         /// <summary>
@@ -55,8 +53,8 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="app">Name of the application that submitted this record..</param>
         /// <param name="dataSource">Upstream data source identifier..</param>
         /// <param name="glucose">Blood glucose reading value (validated 0-10,000)..</param>
-        /// <param name="units">Unit of the glucose reading (mg/dL or mmol/L)..</param>
-        /// <param name="glucoseType">Origin of the glucose value (finger stick, sensor, manual, etc.)..</param>
+        /// <param name="units">units.</param>
+        /// <param name="glucoseType">glucoseType.</param>
         /// <param name="syncIdentifier">Upstream sync identifier for deduplication..</param>
         public UpsertBGCheckRequest(DateTimeOffset timestamp = default, int? utcOffset = default, string device = default, string app = default, string dataSource = default, double glucose = default, GlucoseUnit? units = default, GlucoseType? glucoseType = default, string syncIdentifier = default)
         {

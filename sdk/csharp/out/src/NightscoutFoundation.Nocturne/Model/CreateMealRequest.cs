@@ -34,9 +34,8 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Bolus delivery pattern (normal, square wave, dual wave, etc.).
+        /// Gets or Sets BolusType
         /// </summary>
-        /// <value>Bolus delivery pattern (normal, square wave, dual wave, etc.).</value>
         [DataMember(Name = "bolusType", EmitDefaultValue = true)]
         public BolusType? BolusType { get; set; }
         /// <summary>
@@ -46,7 +45,7 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="utcOffset">UTC offset in minutes at the time of the event, for local-time display..</param>
         /// <param name="insulin">Total insulin amount in units for the meal bolus..</param>
         /// <param name="carbs">Amount of carbohydrates consumed in grams..</param>
-        /// <param name="bolusType">Bolus delivery pattern (normal, square wave, dual wave, etc.)..</param>
+        /// <param name="bolusType">bolusType.</param>
         /// <param name="duration">Extended/square bolus duration in minutes..</param>
         /// <param name="absorptionTime">Expected carb absorption duration in minutes..</param>
         /// <param name="carbTime">Minutes from bolus time to expected carb absorption start (pre-bolus offset)..</param>

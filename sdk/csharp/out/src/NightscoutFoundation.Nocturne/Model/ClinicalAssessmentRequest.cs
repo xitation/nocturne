@@ -34,16 +34,15 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Diabetes population type for clinical target assessment
+        /// Gets or Sets Population
         /// </summary>
-        /// <value>Diabetes population type for clinical target assessment</value>
         [DataMember(Name = "population", EmitDefaultValue = false)]
         public DiabetesPopulation? Population { get; set; }
         /// <summary>
         /// Initializes a new instance of the <see cref="ClinicalAssessmentRequest" /> class.
         /// </summary>
-        /// <param name="analytics">Glucose analytics to assess.</param>
-        /// <param name="population">Diabetes population type for clinical target assessment.</param>
+        /// <param name="analytics">analytics.</param>
+        /// <param name="population">population.</param>
         public ClinicalAssessmentRequest(GlucoseAnalytics analytics = default, DiabetesPopulation? population = default)
         {
             this.Analytics = analytics;
@@ -51,9 +50,8 @@ namespace NightscoutFoundation.Nocturne.Model
         }
 
         /// <summary>
-        /// Glucose analytics to assess
+        /// Gets or Sets Analytics
         /// </summary>
-        /// <value>Glucose analytics to assess</value>
         [DataMember(Name = "analytics", EmitDefaultValue = false)]
         public GlucoseAnalytics Analytics { get; set; }
 

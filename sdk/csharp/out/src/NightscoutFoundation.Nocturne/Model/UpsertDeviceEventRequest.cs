@@ -34,9 +34,8 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// The type of device event (e.g. site change, sensor start, pump resume).
+        /// Gets or Sets EventType
         /// </summary>
-        /// <value>The type of device event (e.g. site change, sensor start, pump resume).</value>
         [DataMember(Name = "eventType", EmitDefaultValue = false)]
         public DeviceEventType? EventType { get; set; }
         /// <summary>
@@ -47,7 +46,7 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="device">Identifier of the device involved in the event..</param>
         /// <param name="app">Name of the application that submitted this record..</param>
         /// <param name="dataSource">Upstream data source identifier..</param>
-        /// <param name="eventType">The type of device event (e.g. site change, sensor start, pump resume)..</param>
+        /// <param name="eventType">eventType.</param>
         /// <param name="notes">Free-text notes associated with the event (capped at 10,000 characters)..</param>
         /// <param name="syncIdentifier">Upstream sync identifier for deduplication..</param>
         public UpsertDeviceEventRequest(DateTimeOffset timestamp = default, int? utcOffset = default, string device = default, string app = default, string dataSource = default, DeviceEventType? eventType = default, string notes = default, string syncIdentifier = default)

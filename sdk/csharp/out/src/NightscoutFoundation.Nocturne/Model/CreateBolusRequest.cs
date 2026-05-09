@@ -34,16 +34,14 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Bolus delivery pattern (normal, square wave, dual wave, etc.).
+        /// Gets or Sets BolusType
         /// </summary>
-        /// <value>Bolus delivery pattern (normal, square wave, dual wave, etc.).</value>
         [DataMember(Name = "bolusType", EmitDefaultValue = true)]
         public BolusType? BolusType { get; set; }
 
         /// <summary>
-        /// Whether this bolus was manually entered or originated from a pump/loop system.
+        /// Gets or Sets Kind
         /// </summary>
-        /// <value>Whether this bolus was manually entered or originated from a pump/loop system.</value>
         [DataMember(Name = "kind", EmitDefaultValue = false)]
         public BolusKind? Kind { get; set; }
         /// <summary>
@@ -57,8 +55,8 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="insulin">Total insulin amount in units..</param>
         /// <param name="programmed">Programmed insulin amount in units (may differ from delivered for interrupted boluses)..</param>
         /// <param name="delivered">Actually delivered insulin amount in units..</param>
-        /// <param name="bolusType">Bolus delivery pattern (normal, square wave, dual wave, etc.)..</param>
-        /// <param name="kind">Whether this bolus was manually entered or originated from a pump/loop system..</param>
+        /// <param name="bolusType">bolusType.</param>
+        /// <param name="kind">kind.</param>
         /// <param name="automatic">Whether this bolus was delivered automatically by an APS/loop system..</param>
         /// <param name="duration">Extended/square bolus duration in minutes..</param>
         /// <param name="syncIdentifier">Upstream sync identifier for deduplication, paired with DataSource..</param>

@@ -15152,8 +15152,6 @@ components:
         calculationType:
           allOf:
           - $ref: "#/components/schemas/CalculationType"
-          description: "Type of calculation performed (e.g. correction only, meal\
-            \ only, combined)."
           nullable: true
         insulinRecommendationForCarbs:
           description: Portion of the recommendation attributable to carb coverage.
@@ -15456,7 +15454,7 @@ components:
         utcOffset: 0
         insulinType: insulinType
         insulin: 6.027456183070403
-        kind: ""
+        kind: Manual
         automatic: true
         delivered: 5.962133916683182
         apsSnapshotId: apsSnapshotId
@@ -15514,13 +15512,9 @@ components:
         bolusType:
           allOf:
           - $ref: "#/components/schemas/BolusType"
-          description: "Bolus delivery pattern (normal, square wave, dual wave, etc.)."
           nullable: true
         kind:
-          allOf:
-          - $ref: "#/components/schemas/BolusKind"
-          description: Whether this bolus was manually entered or originated from
-            a pump/loop system.
+          $ref: "#/components/schemas/BolusKind"
         automatic:
           description: Whether this bolus was delivered automatically by an APS/loop
             system.
@@ -16652,7 +16646,6 @@ components:
         bolusType:
           allOf:
           - $ref: "#/components/schemas/BolusType"
-          description: "Bolus delivery pattern (normal, square wave, dual wave, etc.)."
           nullable: true
         duration:
           description: Extended/square bolus duration in minutes.
@@ -17516,13 +17509,13 @@ components:
         group.
       example:
         canonicalId: canonicalId
-        recordType: ""
+        recordType: Entry
         linkedRecords:
         - recordId: recordId
           createdAt: 2000-01-23T04:56:07.000+00:00
           canonicalId: canonicalId
           sourceTimestamp: 0
-          recordType: Entry
+          recordType: null
           isPrimary: true
           id: id
           dataSource: dataSource
@@ -17530,7 +17523,7 @@ components:
           createdAt: 2000-01-23T04:56:07.000+00:00
           canonicalId: canonicalId
           sourceTimestamp: 0
-          recordType: Entry
+          recordType: null
           isPrimary: true
           id: id
           dataSource: dataSource
@@ -17541,9 +17534,7 @@ components:
           format: guid
           type: string
         recordType:
-          allOf:
-          - $ref: "#/components/schemas/RecordType"
-          description: Gets or sets the record type of the canonical group.
+          $ref: "#/components/schemas/RecordType"
         linkedRecords:
           description: Gets or sets the full list of records linked to the canonical
             group.
@@ -17919,7 +17910,7 @@ components:
       description: Parameters for starting a new data migration from Nightscout or
         MongoDB.
       example:
-        mode: ""
+        mode: 0
         nightscoutApiSecret: nightscoutApiSecret
         collections:
         - collections
@@ -17931,9 +17922,7 @@ components:
         nightscoutUrl: nightscoutUrl
       properties:
         mode:
-          allOf:
-          - $ref: "#/components/schemas/MigrationMode"
-          description: Migration mode (API or MongoDB)
+          $ref: "#/components/schemas/MigrationMode"
         nightscoutUrl:
           description: Nightscout URL (for API mode)
           nullable: true
@@ -18078,7 +18067,6 @@ components:
         mode:
           allOf:
           - $ref: "#/components/schemas/MigrationMode"
-          description: Migration mode from MIGRATION_MODE env var
           nullable: true
         nightscoutUrl:
           description: Nightscout URL from MIGRATION_NS_URL env var
@@ -18102,7 +18090,7 @@ components:
       additionalProperties: false
       description: Migration source DTO for API responses
       example:
-        mode: ""
+        mode: 0
         createdAt: 2000-01-23T04:56:07.000+00:00
         lastMigratedDataTimestamp: 2000-01-23T04:56:07.000+00:00
         id: id
@@ -18115,9 +18103,7 @@ components:
           format: guid
           type: string
         mode:
-          allOf:
-          - $ref: "#/components/schemas/MigrationMode"
-          description: Migration mode (Api or MongoDb)
+          $ref: "#/components/schemas/MigrationMode"
         nightscoutUrl:
           description: Nightscout URL (for API mode)
           nullable: true
@@ -21225,14 +21211,17 @@ components:
       additionalProperties: false
       description: Response model for uploader setup instructions
       example:
-        app: ""
+        app:
+          icon: icon
+          id: id
+          category: cgm
+          platform: android
+          url: url
         connectUrl: connectUrl
         baseUrl: baseUrl
       properties:
         app:
-          allOf:
-          - $ref: "#/components/schemas/UploaderApp"
-          description: The uploader app details
+          $ref: "#/components/schemas/UploaderApp"
         baseUrl:
           description: Base URL for this Nocturne instance
           type: string
@@ -21617,19 +21606,15 @@ components:
         code: code
         mills: 0
         description: description
-        eventType: ""
+        eventType: Alarm
         source: source
         originalId: originalId
-        category: ""
+        category: Pump
       properties:
         eventType:
-          allOf:
-          - $ref: "#/components/schemas/SystemEventType"
-          description: "Gets or sets the event type (alarm, warning, or info)."
+          $ref: "#/components/schemas/SystemEventType"
         category:
-          allOf:
-          - $ref: "#/components/schemas/SystemEventCategory"
-          description: Gets or sets the event category.
+          $ref: "#/components/schemas/SystemEventCategory"
         code:
           description: Gets or sets an optional short code identifying the event.
           nullable: true
@@ -22822,14 +22807,14 @@ components:
     TrackerDefinitionDto:
       additionalProperties: false
       example:
-        visibility: ""
+        visibility: Public
         triggerEventTypes:
         - triggerEventTypes
         - triggerEventTypes
         icon: icon
-        dashboardVisibility: ""
+        dashboardVisibility: "Off"
         description: description
-        mode: ""
+        mode: Duration
         createdAt: 2000-01-23T04:56:07.000+00:00
         triggerNotesContains: triggerNotesContains
         startEventType: startEventType
@@ -22896,13 +22881,9 @@ components:
         isFavorite:
           type: boolean
         dashboardVisibility:
-          allOf:
-          - $ref: "#/components/schemas/DashboardVisibility"
-          description: "Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent"
+          $ref: "#/components/schemas/DashboardVisibility"
         visibility:
-          allOf:
-          - $ref: "#/components/schemas/TrackerVisibility"
-          description: "Visibility level for this tracker (Public, Private, RoleRestricted)"
+          $ref: "#/components/schemas/TrackerVisibility"
         startEventType:
           description: Event type to create when tracker is started (for Nightscout
             compatibility)
@@ -22914,9 +22895,7 @@ components:
           nullable: true
           type: string
         mode:
-          allOf:
-          - $ref: "#/components/schemas/TrackerMode"
-          description: "Tracker mode: Duration or Event"
+          $ref: "#/components/schemas/TrackerMode"
         createdAt:
           format: date-time
           type: string
@@ -22928,14 +22907,14 @@ components:
     CreateTrackerDefinitionRequest:
       additionalProperties: false
       example:
-        visibility: ""
+        visibility: Public
         triggerEventTypes:
         - triggerEventTypes
         - triggerEventTypes
         icon: icon
-        dashboardVisibility: ""
+        dashboardVisibility: "Off"
         description: description
-        mode: ""
+        mode: Duration
         triggerNotesContains: triggerNotesContains
         startEventType: startEventType
         lifespanHours: 0
@@ -22998,13 +22977,9 @@ components:
         isFavorite:
           type: boolean
         dashboardVisibility:
-          allOf:
-          - $ref: "#/components/schemas/DashboardVisibility"
-          description: "Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent"
+          $ref: "#/components/schemas/DashboardVisibility"
         visibility:
-          allOf:
-          - $ref: "#/components/schemas/TrackerVisibility"
-          description: "Visibility level for this tracker (Public, Private, RoleRestricted)"
+          $ref: "#/components/schemas/TrackerVisibility"
         startEventType:
           description: Event type to create when tracker is started (for Nightscout
             compatibility)
@@ -23016,9 +22991,7 @@ components:
           nullable: true
           type: string
         mode:
-          allOf:
-          - $ref: "#/components/schemas/TrackerMode"
-          description: "Tracker mode: Duration (time-based) or Event (scheduled datetime)"
+          $ref: "#/components/schemas/TrackerMode"
       required:
       - name
       type: object
@@ -23100,12 +23073,10 @@ components:
         dashboardVisibility:
           allOf:
           - $ref: "#/components/schemas/DashboardVisibility"
-          description: "Dashboard visibility: Off, Always, Info, Warn, Hazard, Urgent"
           nullable: true
         visibility:
           allOf:
           - $ref: "#/components/schemas/TrackerVisibility"
-          description: "Visibility level for this tracker (Public, Private, RoleRestricted)"
           nullable: true
         startEventType:
           description: Event type to create when tracker is started (for Nightscout
@@ -23120,7 +23091,6 @@ components:
         mode:
           allOf:
           - $ref: "#/components/schemas/TrackerMode"
-          description: "Tracker mode: Duration (time-based) or Event (scheduled datetime)"
           nullable: true
       type: object
     TrackerInstanceDto:
@@ -24456,13 +24426,10 @@ components:
         units:
           allOf:
           - $ref: "#/components/schemas/GlucoseUnit"
-          description: Unit of the glucose reading (mg/dL or mmol/L).
           nullable: true
         glucoseType:
           allOf:
           - $ref: "#/components/schemas/GlucoseType"
-          description: "Origin of the glucose value (finger stick, sensor, manual,\
-            \ etc.)."
           nullable: true
         syncIdentifier:
           description: Upstream sync identifier for deduplication.
@@ -25049,7 +25016,6 @@ components:
         direction:
           allOf:
           - $ref: "#/components/schemas/GlucoseDirection"
-          description: "Glucose trend direction (rising, falling, stable, etc.)."
           nullable: true
         trendRate:
           description: Rate of glucose change in mg/dL per minute.
@@ -25413,7 +25379,17 @@ components:
             isKnown: true
             id: id
             updatedAt: 2000-01-23T04:56:07.000+00:00
-          tenant: ""
+          tenant:
+            lastReadingAt: 2000-01-23T04:56:07.000+00:00
+            allowAccessRequests: true
+            displayName: displayName
+            timezone: timezone
+            sysUpdatedAt: 2000-01-23T04:56:07.000+00:00
+            id: id
+            isActive: true
+            slug: slug
+            sysCreatedAt: 2000-01-23T04:56:07.000+00:00
+            subjectName: subjectName
         - connectorConfigurations:
           - schemaVersion: 6
             lastErrorAt: 2000-01-23T04:56:07.000+00:00
@@ -25597,7 +25573,17 @@ components:
             isKnown: true
             id: id
             updatedAt: 2000-01-23T04:56:07.000+00:00
-          tenant: ""
+          tenant:
+            lastReadingAt: 2000-01-23T04:56:07.000+00:00
+            allowAccessRequests: true
+            displayName: displayName
+            timezone: timezone
+            sysUpdatedAt: 2000-01-23T04:56:07.000+00:00
+            id: id
+            isActive: true
+            slug: slug
+            sysCreatedAt: 2000-01-23T04:56:07.000+00:00
+            subjectName: subjectName
         exportedAt: 2000-01-23T04:56:07.000+00:00
       properties:
         exportedAt:
@@ -25872,12 +25858,20 @@ components:
           isKnown: true
           id: id
           updatedAt: 2000-01-23T04:56:07.000+00:00
-        tenant: ""
+        tenant:
+          lastReadingAt: 2000-01-23T04:56:07.000+00:00
+          allowAccessRequests: true
+          displayName: displayName
+          timezone: timezone
+          sysUpdatedAt: 2000-01-23T04:56:07.000+00:00
+          id: id
+          isActive: true
+          slug: slug
+          sysCreatedAt: 2000-01-23T04:56:07.000+00:00
+          subjectName: subjectName
       properties:
         tenant:
-          allOf:
-          - $ref: "#/components/schemas/TenantEntityDto"
-          description: The tenant entity itself.
+          $ref: "#/components/schemas/TenantEntityDto"
         subjects:
           description: All subjects (users/service accounts) belonging to this tenant.
           items:
@@ -26545,7 +26539,7 @@ components:
         utcOffset: 0
         notes: notes
         syncIdentifier: syncIdentifier
-        eventType: ""
+        eventType: SensorStart
         device: device
         dataSource: dataSource
         timestamp: 2000-01-23T04:56:07.000+00:00
@@ -26573,10 +26567,7 @@ components:
           nullable: true
           type: string
         eventType:
-          allOf:
-          - $ref: "#/components/schemas/DeviceEventType"
-          description: "The type of device event (e.g. site change, sensor start,\
-            \ pump resume)."
+          $ref: "#/components/schemas/DeviceEventType"
         notes:
           description: "Free-text notes associated with the event (capped at 10,000\
             \ characters)."
@@ -27929,7 +27920,22 @@ components:
         currentBg: 0.8008281904610115
         iob: 5.962133916683182
         sensitivityRatio: 2.3021358869347655
-        predictions: ""
+        predictions:
+          uam:
+          - 2.027123023002322
+          - 2.027123023002322
+          default:
+          - 9.301444243932576
+          - 9.301444243932576
+          cob:
+          - 4.145608029883936
+          - 4.145608029883936
+          iobOnly:
+          - 3.616076749251911
+          - 3.616076749251911
+          zeroTemp:
+          - 7.386281948385884
+          - 7.386281948385884
         timestamp: 2000-01-23T04:56:07.000+00:00
       properties:
         timestamp:
@@ -27966,9 +27972,7 @@ components:
           format: int32
           type: integer
         predictions:
-          allOf:
-          - $ref: "#/components/schemas/PredictionCurves"
-          description: Prediction curves with different scenarios
+          $ref: "#/components/schemas/PredictionCurves"
       type: object
     PredictionErrorResponse:
       additionalProperties: false
@@ -28545,7 +28549,6 @@ components:
         thresholds:
           allOf:
           - $ref: "#/components/schemas/GlycemicThresholds"
-          description: Optional glycemic thresholds
           nullable: true
       type: object
     TimeInRangeMetrics:
@@ -29430,7 +29433,6 @@ components:
         config:
           allOf:
           - $ref: "#/components/schemas/ExtendedAnalysisConfig"
-          description: Optional extended analysis configuration
           nullable: true
       type: object
     GlucoseAnalytics:
@@ -29741,7 +29743,7 @@ components:
           device: device
           dataSource: dataSource
           pumpRecordId: pumpRecordId
-        population: ""
+        population: 0
       properties:
         entries:
           description: Collection of sensor glucose readings
@@ -29761,13 +29763,10 @@ components:
           nullable: true
           type: array
         population:
-          allOf:
-          - $ref: "#/components/schemas/DiabetesPopulation"
-          description: Diabetes population type for clinical target assessment
+          $ref: "#/components/schemas/DiabetesPopulation"
         config:
           allOf:
           - $ref: "#/components/schemas/ExtendedAnalysisConfig"
-          description: Optional extended analysis configuration
           nullable: true
       type: object
     ExtendedGlucoseAnalytics:
@@ -30219,17 +30218,143 @@ components:
       additionalProperties: false
       description: Request model for clinical assessment
       example:
-        analytics: ""
-        population: ""
+        analytics:
+          dataQuality:
+            gapAnalysis:
+              longestGap: 9.301444243932576
+              averageGap: 3.616076749251911
+              gaps:
+              - duration: 7.061401241503109
+                start: 5
+                end: 2
+              - duration: 7.061401241503109
+                start: 5
+                end: 2
+            noiseLevel: 2.027123023002322
+            dataCompleteness: 1.4658129805029452
+            totalReadings: 0
+            cgmActivePercent: 5.962133916683182
+            calibrationEvents: 4
+            missingReadings: 6
+            sensorWarmups: 7
+          clinicalAssessment: ""
+          reliability: ""
+          basicStats:
+            percentiles:
+              p25: 3.616076749251911
+              p5: 7.061401241503109
+              p90: 7.386281948385884
+              p50: 2.027123023002322
+              p95: 1.2315135367772556
+              p10: 9.301444243932576
+              p75: 4.145608029883936
+            min: 5.962133916683182
+            median: 1.4658129805029452
+            max: 5.637376656633329
+            mean: 6.027456183070403
+            count: 0
+            standardDeviation: 2.3021358869347655
+          time:
+            timeOfAnalysis: 1
+            start: 1
+            end: 1
+          timeInRange:
+            rangeStats:
+              high:
+                max: 6.878052220127876
+                timeBelowRange: 9.018348186070783
+                periodName: periodName
+                coefficientOfVariation: 6.683562403749608
+                timeInRange: 8.762042012749001
+                endHour: 1
+                timeAboveRange: 3.5571952270680973
+                min: 6.778324963048013
+                median: 9.965781217890562
+                startHour: 7
+                readingCount: 4
+                mean: 5.025004791520295
+                hypoglycemiaEvents: 1
+                timeVeryHigh: 6.965117697638846
+                timeVeryLow: 6.438423552598547
+                standardDeviation: 9.369310271410669
+                hyperglycemiaEvents: 2
+              low:
+                max: 6.878052220127876
+                timeBelowRange: 9.018348186070783
+                periodName: periodName
+                coefficientOfVariation: 6.683562403749608
+                timeInRange: 8.762042012749001
+                endHour: 1
+                timeAboveRange: 3.5571952270680973
+                min: 6.778324963048013
+                median: 9.965781217890562
+                startHour: 7
+                readingCount: 4
+                mean: 5.025004791520295
+                hypoglycemiaEvents: 1
+                timeVeryHigh: 6.965117697638846
+                timeVeryLow: 6.438423552598547
+                standardDeviation: 9.369310271410669
+                hyperglycemiaEvents: 2
+              target:
+                max: 6.878052220127876
+                timeBelowRange: 9.018348186070783
+                periodName: periodName
+                coefficientOfVariation: 6.683562403749608
+                timeInRange: 8.762042012749001
+                endHour: 1
+                timeAboveRange: 3.5571952270680973
+                min: 6.778324963048013
+                median: 9.965781217890562
+                startHour: 7
+                readingCount: 4
+                mean: 5.025004791520295
+                hypoglycemiaEvents: 1
+                timeVeryHigh: 6.965117697638846
+                timeVeryLow: 6.438423552598547
+                standardDeviation: 9.369310271410669
+                hyperglycemiaEvents: 2
+            percentages:
+              high: 5.637376656633329
+              low: 6.027456183070403
+              tightTarget: 5.962133916683182
+              veryLow: 0.8008281904610115
+              veryHigh: 2.3021358869347655
+              target: 1.4658129805029452
+            durations:
+              high: 4.145608029883936
+              low: 9.301444243932576
+              tightTarget: 2.027123023002322
+              veryLow: 7.061401241503109
+              veryHigh: 7.386281948385884
+              target: 3.616076749251911
+            episodes:
+              high: 1
+              low: 1
+              veryLow: 1
+              veryHigh: 6
+          glycemicVariability:
+            estimatedA1c: 7.386281948385884
+            gmi: ""
+            meanAmplitudeGlycemicExcursions: 1.4658129805029452
+            patientGlycemicStatus: 4.145608029883936
+            averageDailyRiskRange: 5.637376656633329
+            meanTotalDailyChange: 1.2315135367772556
+            coefficientOfVariation: 0.8008281904610115
+            glycemicVariabilityIndex: 2.027123023002322
+            jIndex: 7.061401241503109
+            highBloodGlucoseIndex: 9.301444243932576
+            labilityIndex: 2.3021358869347655
+            lowBloodGlucoseIndex: 3.616076749251911
+            timeInFluctuation: 1.0246457001441578
+            continuousOverlappingNetGlycemicAction: 5.962133916683182
+            standardDeviation: 6.027456183070403
+        population: 0
       properties:
         analytics:
-          allOf:
-          - $ref: "#/components/schemas/GlucoseAnalytics"
-          description: Glucose analytics to assess
+          $ref: "#/components/schemas/GlucoseAnalytics"
         population:
-          allOf:
-          - $ref: "#/components/schemas/DiabetesPopulation"
-          description: Diabetes population type for clinical target assessment
+          $ref: "#/components/schemas/DiabetesPopulation"
       type: object
     ClinicalTargetAssessment:
       additionalProperties: false
@@ -32083,7 +32208,7 @@ components:
         createdAt: 2000-01-23T04:56:07.000+00:00
         canonicalId: canonicalId
         sourceTimestamp: 0
-        recordType: Entry
+        recordType: null
         isPrimary: true
         id: id
         dataSource: dataSource
@@ -34101,6 +34226,17 @@ components:
     TenantEntityDto:
       additionalProperties: false
       description: Serialized representation of a tenant entity for snapshot export/import.
+      example:
+        lastReadingAt: 2000-01-23T04:56:07.000+00:00
+        allowAccessRequests: true
+        displayName: displayName
+        timezone: timezone
+        sysUpdatedAt: 2000-01-23T04:56:07.000+00:00
+        id: id
+        isActive: true
+        slug: slug
+        sysCreatedAt: 2000-01-23T04:56:07.000+00:00
+        subjectName: subjectName
       properties:
         id:
           format: guid
@@ -35186,6 +35322,22 @@ components:
     PredictionCurves:
       additionalProperties: false
       description: Different prediction curves for visualization.
+      example:
+        uam:
+        - 2.027123023002322
+        - 2.027123023002322
+        default:
+        - 9.301444243932576
+        - 9.301444243932576
+        cob:
+        - 4.145608029883936
+        - 4.145608029883936
+        iobOnly:
+        - 3.616076749251911
+        - 3.616076749251911
+        zeroTemp:
+        - 7.386281948385884
+        - 7.386281948385884
       properties:
         default:
           description: Main prediction curve (mg/dL values at 5-min intervals)

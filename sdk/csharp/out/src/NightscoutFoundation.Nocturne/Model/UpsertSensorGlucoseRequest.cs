@@ -34,9 +34,8 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Glucose trend direction (rising, falling, stable, etc.).
+        /// Gets or Sets Direction
         /// </summary>
-        /// <value>Glucose trend direction (rising, falling, stable, etc.).</value>
         [DataMember(Name = "direction", EmitDefaultValue = true)]
         public GlucoseDirection? Direction { get; set; }
         /// <summary>
@@ -48,7 +47,7 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="app">Name of the application that submitted this record..</param>
         /// <param name="dataSource">Upstream data source identifier..</param>
         /// <param name="mgdl">Glucose reading in mg/dL (validated 0-10,000)..</param>
-        /// <param name="direction">Glucose trend direction (rising, falling, stable, etc.)..</param>
+        /// <param name="direction">direction.</param>
         /// <param name="trendRate">Rate of glucose change in mg/dL per minute..</param>
         /// <param name="noise">Sensor noise level indicator (device-specific scale)..</param>
         /// <param name="filtered">Raw filtered sensor value (scaled ADC).</param>

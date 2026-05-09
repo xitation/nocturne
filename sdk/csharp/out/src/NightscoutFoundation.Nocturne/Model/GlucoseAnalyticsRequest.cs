@@ -38,7 +38,7 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="entries">Collection of sensor glucose readings.</param>
         /// <param name="boluses">Optional collection of bolus deliveries.</param>
         /// <param name="carbIntakes">Optional collection of carb intakes.</param>
-        /// <param name="config">Optional extended analysis configuration.</param>
+        /// <param name="config">config.</param>
         public GlucoseAnalyticsRequest(List<SensorGlucose> entries = default, List<Bolus> boluses = default, List<CarbIntake> carbIntakes = default, ExtendedAnalysisConfig config = default)
         {
             this.Entries = entries;
@@ -69,9 +69,8 @@ namespace NightscoutFoundation.Nocturne.Model
         public List<CarbIntake> CarbIntakes { get; set; }
 
         /// <summary>
-        /// Optional extended analysis configuration
+        /// Gets or Sets Config
         /// </summary>
-        /// <value>Optional extended analysis configuration</value>
         [DataMember(Name = "config", EmitDefaultValue = true)]
         public ExtendedAnalysisConfig Config { get; set; }
 

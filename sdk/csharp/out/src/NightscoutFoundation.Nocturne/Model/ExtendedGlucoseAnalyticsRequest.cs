@@ -34,9 +34,8 @@ namespace NightscoutFoundation.Nocturne.Model
     {
 
         /// <summary>
-        /// Diabetes population type for clinical target assessment
+        /// Gets or Sets Population
         /// </summary>
-        /// <value>Diabetes population type for clinical target assessment</value>
         [DataMember(Name = "population", EmitDefaultValue = false)]
         public DiabetesPopulation? Population { get; set; }
         /// <summary>
@@ -45,8 +44,8 @@ namespace NightscoutFoundation.Nocturne.Model
         /// <param name="entries">Collection of sensor glucose readings.</param>
         /// <param name="boluses">Optional collection of bolus deliveries.</param>
         /// <param name="carbIntakes">Optional collection of carb intakes.</param>
-        /// <param name="population">Diabetes population type for clinical target assessment.</param>
-        /// <param name="config">Optional extended analysis configuration.</param>
+        /// <param name="population">population.</param>
+        /// <param name="config">config.</param>
         public ExtendedGlucoseAnalyticsRequest(List<SensorGlucose> entries = default, List<Bolus> boluses = default, List<CarbIntake> carbIntakes = default, DiabetesPopulation? population = default, ExtendedAnalysisConfig config = default)
         {
             this.Entries = entries;
@@ -78,9 +77,8 @@ namespace NightscoutFoundation.Nocturne.Model
         public List<CarbIntake> CarbIntakes { get; set; }
 
         /// <summary>
-        /// Optional extended analysis configuration
+        /// Gets or Sets Config
         /// </summary>
-        /// <value>Optional extended analysis configuration</value>
         [DataMember(Name = "config", EmitDefaultValue = true)]
         public ExtendedAnalysisConfig Config { get; set; }
 
