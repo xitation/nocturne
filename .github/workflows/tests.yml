@@ -78,6 +78,8 @@ jobs:
         with:
           path: ~/.pnpm-store
           key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: Install Aspire workload
+        run: dotnet workload install aspire
       - name: Install web dependencies
         run: pnpm install --frozen-lockfile
         working-directory: src/Web
