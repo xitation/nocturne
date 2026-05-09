@@ -30,16 +30,19 @@ jobs:
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Packages.props') }}
-      - name: Restore
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --no-restore -p:GenerateNSwagClient=false
       - name: Test
         run: |
           # Nocturne.API.Tests excluded: 29 unit test failures pending fix (#157)
-          dotnet test --no-build \
-            --filter "Category!=Integration&Category!=Performance&Category!=E2E&FullyQualifiedName!~Nocturne.API.Tests" \
-            --logger "trx;LogFileName=unit.trx"
+          # Build per-project to avoid Windows-only projects (Desktop, Widgets)
+          for proj in tests/Unit/*/; do
+            csproj=$(find "$proj" -maxdepth 1 -name "*.csproj" | head -1)
+            [ -z "$csproj" ] && continue
+            dotnet test "$csproj" \
+              --filter "Category!=Integration&Category!=Performance&Category!=E2E&FullyQualifiedName!~Nocturne.API.Tests" \
+              --logger "trx;LogFileName=unit.trx" \
+              -p:GenerateNSwagClient=false \
+              || exit 1
+          done
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -75,15 +78,12 @@ jobs:
         with:
           path: ~/.pnpm-store
           key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-      - name: Restore
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --no-restore -p:GenerateNSwagClient=false
       - name: Test E2E
         run: |
-          dotnet test tests/E2E/Nocturne.E2E.Tests/Nocturne.E2E.Tests.csproj --no-build \
+          dotnet test tests/E2E/Nocturne.E2E.Tests/Nocturne.E2E.Tests.csproj \
             --filter "Category=E2E" \
-            --logger "trx;LogFileName=e2e.trx"
+            --logger "trx;LogFileName=e2e.trx" \
+            -p:GenerateNSwagClient=false
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
