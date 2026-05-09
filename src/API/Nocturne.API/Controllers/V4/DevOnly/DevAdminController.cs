@@ -949,7 +949,10 @@ public class DevAdminController : ControllerBase
         [FromServices] ISubjectService subjectService,
         CancellationToken ct)
     {
-        _logger.LogInformation("Dev seed-tenant: slug={Slug}", request.Slug);
+        var sanitizedSlugForLog = (request.Slug ?? string.Empty)
+            .Replace("\r", string.Empty)
+            .Replace("\n", string.Empty);
+        _logger.LogInformation("Dev seed-tenant: slug={Slug}", sanitizedSlugForLog);
 
         var validation = await _tenantService.ValidateSlugAsync(request.Slug, ct);
         if (!validation.IsValid)
