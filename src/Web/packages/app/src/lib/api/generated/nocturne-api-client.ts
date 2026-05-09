@@ -16784,6 +16784,48 @@ export class DevAdminClient {
         }
         return Promise.resolve<FileResponse>(null as any);
     }
+
+    /**
+     * Create a tenant, owner subject, owner membership, and a session in one call.
+    Used exclusively by the E2E test suite to bypass passkey/OIDC ceremonies.
+     */
+    seedTenant(request: DevSeedTenantRequest, signal?: AbortSignal): Promise<DevSeedTenantResponse> {
+        let url_ = this.baseUrl + "/api/v4/dev-only/admin/seed-tenant";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSeedTenant(_response);
+        });
+    }
+
+    protected processSeedTenant(response: Response): Promise<DevSeedTenantResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DevSeedTenantResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<DevSeedTenantResponse>(null as any);
+    }
 }
 
 export class ApsSnapshotClient {
@@ -25111,6 +25153,12 @@ export interface ConnectorStatusDto {
     lastSuccessfulSync?: Date | undefined;
     /** When the last error occurred */
     lastErrorAt?: Date | undefined;
+    /** Whether the connector is enabled in configuration. */
+    isEnabled?: boolean;
+    /** Whether a configuration exists in the database. */
+    hasDatabaseConfig?: boolean;
+    /** Whether the connector has secrets configured. */
+    hasSecrets?: boolean;
     /** Breakdown of total items processed by data type
 Keys are data type names (e.g., "Glucose", "Treatments", "Food") */
     totalItemsBreakdown?: { [key: string]: number; } | undefined;
@@ -29216,6 +29264,20 @@ export interface DevConnectorSummaryDto {
 export interface DevCreateTenantRequest {
     slug?: string;
     displayName?: string;
+}
+
+export interface DevSeedTenantResponse {
+    tenantId?: string;
+    subjectId?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresInSeconds?: number;
+}
+
+export interface DevSeedTenantRequest {
+    slug?: string;
+    displayName?: string;
+    ownerUsername?: string;
 }
 
 export interface PaginatedResponseOfApsSnapshot {

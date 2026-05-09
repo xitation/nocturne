@@ -15392,6 +15392,39 @@
         }
       }
     },
+    "/api/v4/dev-only/admin/seed-tenant": {
+      "post": {
+        "tags": [
+          "Dev Admin"
+        ],
+        "summary": "Create a tenant, owner subject, owner membership, and a session in one call.\nUsed exclusively by the E2E test suite to bypass passkey/OIDC ceremonies.",
+        "operationId": "DevAdmin_SeedTenant",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevSeedTenantRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevSeedTenantResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v4/device-status/aps": {
       "get": {
         "tags": [
@@ -24066,6 +24099,18 @@
             "description": "When the last error occurred",
             "format": "date-time",
             "nullable": true
+          },
+          "isEnabled": {
+            "type": "boolean",
+            "description": "Whether the connector is enabled in configuration."
+          },
+          "hasDatabaseConfig": {
+            "type": "boolean",
+            "description": "Whether a configuration exists in the database."
+          },
+          "hasSecrets": {
+            "type": "boolean",
+            "description": "Whether the connector has secrets configured."
           },
           "totalItemsBreakdown": {
             "type": "object",
@@ -36971,6 +37016,45 @@
             "type": "string"
           },
           "displayName": {
+            "type": "string"
+          }
+        }
+      },
+      "DevSeedTenantResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "subjectId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DevSeedTenantRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "ownerUsername": {
             "type": "string"
           }
         }
