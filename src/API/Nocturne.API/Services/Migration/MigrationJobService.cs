@@ -852,71 +852,89 @@ internal class MigrationJob
     )
     {
         _currentOperation = "Migrating food";
-        var collectionName = "food";
+        const string collectionName = "food";
+        var knownTotal = _collectionProgress.TryGetValue(collectionName, out var existing)
+            ? existing.TotalDocuments : 0;
 
         var totalMigrated = 0L;
         var totalFailed = 0L;
+        var totalSkipped = 0;
+        const int pageSize = 10000;
 
         try
         {
-            var response = await httpClient.GetAsync("/api/v1/food.json?count=10000", ct);
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("Failed to fetch food: {StatusCode}", response.StatusCode);
-                return;
-            }
-
-            var content = await response.Content.ReadAsStringAsync(ct);
-            var foods = System.Text.Json.JsonSerializer.Deserialize<Food[]>(content) ?? [];
-
-            UpdateCollectionProgress(collectionName, foods.Length, 0, 0, false);
-            UpdateOverallProgress();
-
-            foreach (var food in foods)
+            while (true)
             {
                 ct.ThrowIfCancellationRequested();
 
-                try
-                {
-                    var exists = await dbContext.Foods.AnyAsync(
-                        f => f.Name == (food.Name ?? "") && f.Type == (food.Type ?? "food"),
-                        ct
-                    );
+                var url = $"/api/v1/food.json?count={pageSize}&skip={totalSkipped}";
 
-                    if (!exists)
-                    {
-                        dbContext.Foods.Add(
-                            new Infrastructure.Data.Entities.FoodEntity
-                            {
-                                Id = Guid.CreateVersion7(),
-                                Type = food.Type ?? "food",
-                                Category = food.Category ?? "",
-                                Subcategory = food.Subcategory ?? "",
-                                Name = food.Name ?? "",
-                                Portion = food.Portion,
-                                Carbs = food.Carbs,
-                                Fat = food.Fat,
-                                Protein = food.Protein,
-                                Energy = food.Energy,
-                                Gi = (Infrastructure.Data.Entities.GlycemicIndex)(food.Gi > 0 ? food.Gi : 2),
-                                Unit = food.Unit ?? "g",
-                                Foods = food.Foods != null ? System.Text.Json.JsonSerializer.Serialize(food.Foods) : null,
-                                HideAfterUse = food.HideAfterUse,
-                                Hidden = food.Hidden,
-                                Position = food.Position,
-                            }
-                        );
-                    }
-                    totalMigrated++;
-                }
-                catch
+                var response = await httpClient.GetAsync(url, ct);
+                if (!response.IsSuccessStatusCode)
                 {
-                    totalFailed++;
+                    _logger.LogError("Failed to fetch food: {StatusCode}", response.StatusCode);
+                    break;
                 }
+
+                var content = await response.Content.ReadAsStringAsync(ct);
+                var foods = System.Text.Json.JsonSerializer.Deserialize<Food[]>(content) ?? [];
+
+                if (foods.Length == 0) break;
+
+                foreach (var food in foods)
+                {
+                    try
+                    {
+                        var exists = await dbContext.Foods.AnyAsync(
+                            f => f.Name == (food.Name ?? "") && f.Type == (food.Type ?? "food"),
+                            ct
+                        );
+
+                        if (!exists)
+                        {
+                            dbContext.Foods.Add(
+                                new Infrastructure.Data.Entities.FoodEntity
+                                {
+                                    Id = Guid.CreateVersion7(),
+                                    Type = food.Type ?? "food",
+                                    Category = food.Category ?? "",
+                                    Subcategory = food.Subcategory ?? "",
+                                    Name = food.Name ?? "",
+                                    Portion = food.Portion,
+                                    Carbs = food.Carbs,
+                                    Fat = food.Fat,
+                                    Protein = food.Protein,
+                                    Energy = food.Energy,
+                                    Gi = (Infrastructure.Data.Entities.GlycemicIndex)(food.Gi > 0 ? food.Gi : 2),
+                                    Unit = food.Unit ?? "g",
+                                    Foods = food.Foods != null ? System.Text.Json.JsonSerializer.Serialize(food.Foods) : null,
+                                    HideAfterUse = food.HideAfterUse,
+                                    Hidden = food.Hidden,
+                                    Position = food.Position,
+                                }
+                            );
+                        }
+                        totalMigrated++;
+                    }
+                    catch
+                    {
+                        totalFailed++;
+                    }
+                }
+
+                await dbContext.SaveChangesAsync(ct);
+                totalSkipped += foods.Length;
+
+                UpdateCollectionProgress(collectionName,
+                    Math.Max(knownTotal, totalSkipped),
+                    totalMigrated, totalFailed, false);
+                UpdateOverallProgress();
+
+                if (foods.Length < pageSize) break;
             }
 
-            await dbContext.SaveChangesAsync(ct);
-            UpdateCollectionProgress(collectionName, foods.Length, totalMigrated, totalFailed, true);
+            UpdateCollectionProgress(collectionName, Math.Max(knownTotal, totalMigrated + totalFailed),
+                totalMigrated, totalFailed, true);
             UpdateOverallProgress();
         }
         catch (Exception ex)

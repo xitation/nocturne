@@ -143,18 +143,66 @@ public class ActivityDecomposer : IActivityDecomposer, IDecomposer<Activity>
 
         if (heartRateList.Count > 0)
         {
-            var entities = heartRateList.Select(HeartRateMapper.ToEntity).ToList();
-            await _dbContext.HeartRates.AddRangeAsync(entities, ct);
-            await _dbContext.SaveChangesAsync(ct);
-            result.CreatedRecords.AddRange(entities.Select(HeartRateMapper.ToDomainModel));
+            // Filter out records that already exist by OriginalId to avoid duplicates on re-migration
+            var hrOriginalIds = heartRateList
+                .Where(hr => hr.Id != null)
+                .Select(hr => hr.Id!)
+                .ToHashSet();
+
+            var existingHrIds = hrOriginalIds.Count > 0
+                ? (await _dbContext.HeartRates
+                    .Where(h => h.OriginalId != null && hrOriginalIds.Contains(h.OriginalId))
+                    .Select(h => h.OriginalId!)
+                    .ToListAsync(ct))
+                    .ToHashSet()
+                : new HashSet<string>();
+
+            var newHeartRates = heartRateList
+                .Where(hr => hr.Id == null || !existingHrIds.Contains(hr.Id))
+                .ToList();
+
+            if (newHeartRates.Count > 0)
+            {
+                var entities = newHeartRates.Select(HeartRateMapper.ToEntity).ToList();
+                await _dbContext.HeartRates.AddRangeAsync(entities, ct);
+                await _dbContext.SaveChangesAsync(ct);
+                result.CreatedRecords.AddRange(entities.Select(HeartRateMapper.ToDomainModel));
+            }
+
+            if (existingHrIds.Count > 0)
+                _logger.LogDebug("Skipped {Count} duplicate heart rate records by OriginalId", existingHrIds.Count);
         }
 
         if (stepCountList.Count > 0)
         {
-            var entities = stepCountList.Select(StepCountMapper.ToEntity).ToList();
-            await _dbContext.StepCounts.AddRangeAsync(entities, ct);
-            await _dbContext.SaveChangesAsync(ct);
-            result.CreatedRecords.AddRange(entities.Select(StepCountMapper.ToDomainModel));
+            // Filter out records that already exist by OriginalId to avoid duplicates on re-migration
+            var scOriginalIds = stepCountList
+                .Where(sc => sc.Id != null)
+                .Select(sc => sc.Id!)
+                .ToHashSet();
+
+            var existingScIds = scOriginalIds.Count > 0
+                ? (await _dbContext.StepCounts
+                    .Where(s => s.OriginalId != null && scOriginalIds.Contains(s.OriginalId))
+                    .Select(s => s.OriginalId!)
+                    .ToListAsync(ct))
+                    .ToHashSet()
+                : new HashSet<string>();
+
+            var newStepCounts = stepCountList
+                .Where(sc => sc.Id == null || !existingScIds.Contains(sc.Id))
+                .ToList();
+
+            if (newStepCounts.Count > 0)
+            {
+                var entities = newStepCounts.Select(StepCountMapper.ToEntity).ToList();
+                await _dbContext.StepCounts.AddRangeAsync(entities, ct);
+                await _dbContext.SaveChangesAsync(ct);
+                result.CreatedRecords.AddRange(entities.Select(StepCountMapper.ToDomainModel));
+            }
+
+            if (existingScIds.Count > 0)
+                _logger.LogDebug("Skipped {Count} duplicate step count records by OriginalId", existingScIds.Count);
         }
 
         if (regularActivities.Count > 0)

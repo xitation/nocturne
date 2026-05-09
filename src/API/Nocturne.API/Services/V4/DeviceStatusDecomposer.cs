@@ -525,7 +525,9 @@ public class DeviceStatusDecomposer : IDeviceStatusDecomposer, IDecomposer<Devic
             result.CreatedRecords.AddRange(created);
         }
 
-        // Upsert override state spans individually (overrides are rare)
+        // Upsert override state spans individually — IStateSpanService only exposes
+        // single-item UpsertStateSpanAsync; BulkUpsertAsync lives on IStateSpanRepository
+        // (returns count, not the upserted entities) and overrides are rare in practice.
         foreach (var span in overrideSpans)
         {
             var upserted = await _stateSpanService.UpsertStateSpanAsync(span, ct);
