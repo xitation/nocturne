@@ -294,34 +294,42 @@ class Program
         // ------------------------------------------------------------------
         // Demo data service (optional)
         // ------------------------------------------------------------------
-        var demoService = builder.AddDemoService<Projects.Nocturne_Services_Demo>(
-            api,
-            managedDatabase,
-            options => { }
+        var includeDemoService = builder.Configuration.GetValue(
+            "Aspire:OptionalServices:DemoService:Enabled",
+            true
         );
 
-        if (demoService != null)
+        if (includeDemoService)
         {
-            if (
-                managedDatabase != null
-                && postgresServer != null
-                && postgresAppPassword != null
-                && postgresMigratorPassword != null
-            )
+            var demoService = builder.AddDemoService<Projects.Nocturne_Services_Demo>(
+                api,
+                managedDatabase,
+                options => { }
+            );
+
+            if (demoService != null)
             {
-                demoService.WithNocturneDatabase(
-                    postgresServer,
-                    dbName,
-                    postgresAppPassword,
-                    postgresMigratorPassword
-                );
-            }
-            else if (remoteAppConnectionString != null && remoteMigratorConnectionString != null)
-            {
-                demoService.WithNocturneRemoteDatabase(
-                    remoteAppConnectionString,
-                    remoteMigratorConnectionString
-                );
+                if (
+                    managedDatabase != null
+                    && postgresServer != null
+                    && postgresAppPassword != null
+                    && postgresMigratorPassword != null
+                )
+                {
+                    demoService.WithNocturneDatabase(
+                        postgresServer,
+                        dbName,
+                        postgresAppPassword,
+                        postgresMigratorPassword
+                    );
+                }
+                else if (remoteAppConnectionString != null && remoteMigratorConnectionString != null)
+                {
+                    demoService.WithNocturneRemoteDatabase(
+                        remoteAppConnectionString,
+                        remoteMigratorConnectionString
+                    );
+                }
             }
         }
 
