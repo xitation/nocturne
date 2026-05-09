@@ -18,7 +18,7 @@ public sealed class AppHostFixture : IAsyncLifetime
         NightscoutMock = WireMockServer.Start();
         WireMockNightscoutFixtures.Load(NightscoutMock);
 
-        Console.WriteLine("[E2E] Creating AppHost builder...");
+        Console.Error.WriteLine("[E2E] Creating AppHost builder...");
         var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.Nocturne_Aspire_Host>();
 
@@ -26,13 +26,13 @@ public sealed class AppHostFixture : IAsyncLifetime
         builder.Configuration["Aspire:OptionalServices:Scalar:Enabled"] = "false";
         builder.Configuration["Aspire:OptionalServices:AspireDashboard:Enabled"] = "false";
 
-        Console.WriteLine("[E2E] Building AppHost...");
+        Console.Error.WriteLine("[E2E] Building AppHost...");
         App = await builder.BuildAsync();
 
-        Console.WriteLine("[E2E] Starting AppHost...");
+        Console.Error.WriteLine("[E2E] Starting AppHost...");
         await App.StartAsync();
 
-        Console.WriteLine("[E2E] Waiting for gateway to become healthy (up to 5 min)...");
+        Console.Error.WriteLine("[E2E] Waiting for gateway to become healthy (up to 5 min)...");
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         await App.ResourceNotifications
             .WaitForResourceHealthyAsync("gateway", cts.Token);
@@ -40,7 +40,7 @@ public sealed class AppHostFixture : IAsyncLifetime
         var gatewayEndpoint = App.GetEndpoint("gateway", "https");
         GatewayBaseUrl = gatewayEndpoint.ToString().TrimEnd('/');
         GatewayHost = gatewayEndpoint.Host + ":" + gatewayEndpoint.Port;
-        Console.WriteLine($"[E2E] Gateway ready at {GatewayBaseUrl}");
+        Console.Error.WriteLine($"[E2E] Gateway ready at {GatewayBaseUrl}");
     }
 
     public HttpClient CreateGatewayClient(string? tenantSlug = null, string? bearerToken = null)
