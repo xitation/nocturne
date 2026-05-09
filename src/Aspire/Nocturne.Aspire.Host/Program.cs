@@ -135,23 +135,25 @@ class Program
                 postgres.WithPgAdmin();
             }
 
-            postgres.PublishAsDockerComposeService((_, service) =>
-            {
-                // Rewrite the init-scripts bind-mount source to a relative
-                // path. Without this, Aspire emits the dev-machine absolute
-                // path as a generated NOCTURNE_POSTGRES_SERVER_BINDMOUNT_0
-                // env var, which then has to be renamed in the release
-                // bundle. Hardcoding ./init in compose.yaml lets users drop
-                // 00-init.sh into ./init/ next to compose and removes the
-                // env var entirely.
-                var initVolume = service.Volumes.FirstOrDefault(
-                    v => v.Target == "/docker-entrypoint-initdb.d"
-                );
-                if (initVolume != null)
+            postgres.PublishAsDockerComposeService(
+                (_, service) =>
                 {
-                    initVolume.Source = "./init";
+                    // Rewrite the init-scripts bind-mount source to a relative
+                    // path. Without this, Aspire emits the dev-machine absolute
+                    // path as a generated NOCTURNE_POSTGRES_SERVER_BINDMOUNT_0
+                    // env var, which then has to be renamed in the release
+                    // bundle. Hardcoding ./init in compose.yaml lets users drop
+                    // 00-init.sh into ./init/ next to compose and removes the
+                    // env var entirely.
+                    var initVolume = service.Volumes.FirstOrDefault(v =>
+                        v.Target == "/docker-entrypoint-initdb.d"
+                    );
+                    if (initVolume != null)
+                    {
+                        initVolume.Source = "./init";
+                    }
                 }
-            });
+            );
 
             managedDatabase = postgres.AddDatabase(ServiceNames.PostgreSql, dbName);
             postgresServer = postgres;
@@ -375,6 +377,9 @@ class Program
                 .WithHttpHealthCheck("/")
                 .WaitFor(api)
                 .WaitFor(bridge)
+#pragma warning disable  ASPIREBROWSERLOGS001
+                .WithBrowserLogs()
+#pragma warning restore ASPIREBROWSERLOGS001
                 .WithReference(bridge);
 
             ConfigureWebEnvironment(viteWeb);
@@ -405,9 +410,10 @@ class Program
             // SvelteKit needs ORIGIN when running behind a reverse proxy so SSR
             // constructs URLs with the public domain instead of the container hostname.
             // Derive from PUBLIC_BASE_DOMAIN (bare host or host:port).
-            dockerWeb.WithEnvironment("ORIGIN", ReferenceExpression.Create(
-                $"https://{publicBaseDomain}"
-            ));
+            dockerWeb.WithEnvironment(
+                "ORIGIN",
+                ReferenceExpression.Create($"https://{publicBaseDomain}")
+            );
 
             if (postgresServer != null && postgresWebPassword != null)
             {
@@ -434,23 +440,26 @@ class Program
         if (includeScalar)
         {
             var scalarResource = builder
-                .AddScalarApiReference("scalar", options =>
-                {
-                    options.WithTheme(ScalarTheme.Mars);
-                    options.WithCustomCss(NocturneScalarTheme.Build(solutionRoot));
-                    options.EnablePersistentAuthentication();
-                    options.AddPreferredSecuritySchemes("oauth2");
-                    options.AddAuthorizationCodeFlow(
-                        "oauth2",
-                        flow =>
-                        {
-                            flow.WithAuthorizationUrl("/api/oauth/authorize");
-                            flow.WithTokenUrl("/api/oauth/token");
-                            flow.WithPkce(Pkce.Sha256);
-                            flow.WithSelectedScopes(["*"]);
-                        }
-                    );
-                })
+                .AddScalarApiReference(
+                    "scalar",
+                    options =>
+                    {
+                        options.WithTheme(ScalarTheme.Mars);
+                        options.WithCustomCss(NocturneScalarTheme.Build(solutionRoot));
+                        options.EnablePersistentAuthentication();
+                        options.AddPreferredSecuritySchemes("oauth2");
+                        options.AddAuthorizationCodeFlow(
+                            "oauth2",
+                            flow =>
+                            {
+                                flow.WithAuthorizationUrl("/api/oauth/authorize");
+                                flow.WithTokenUrl("/api/oauth/token");
+                                flow.WithPkce(Pkce.Sha256);
+                                flow.WithSelectedScopes(["*"]);
+                            }
+                        );
+                    }
+                )
                 .WithApiReference(
                     api,
                     options =>
@@ -460,8 +469,7 @@ class Program
                             .AddDocument("nightscout", "Nightscout API")
                             .WithOpenApiRoutePattern("/openapi/{documentName}.json");
                     }
-                )
-;
+                );
 
             scalar = scalarResource;
 
@@ -471,7 +479,10 @@ class Program
             // head-content hook and Aspire.Hosting.Yarp can't do body
             // rewriting (JSON-config transforms only).
             scalarBootstrap = builder
-                .AddProject<Projects.Nocturne_Aspire_ScalarBootstrap>("scalar-bootstrap", launchProfileName: null)
+                .AddProject<Projects.Nocturne_Aspire_ScalarBootstrap>(
+                    "scalar-bootstrap",
+                    launchProfileName: null
+                )
                 .WithHttpEndpoint(name: "http")
                 .WithReference(scalarResource)
                 .WaitFor(scalarResource);
@@ -521,7 +532,8 @@ class Program
         // "transport close" disconnects.
         gateway.WithEnvironment(
             "REVERSEPROXY__CLUSTERS__cluster_nocturne-web__HTTPREQUEST__ACTIVITYTIMEOUT",
-            "00:05:00");
+            "00:05:00"
+        );
 
         // In dev mode, YARP is the TLS-terminating edge proxy — it must Set
         // the X-Forwarded-* headers from its own connection info. In publish
@@ -592,13 +604,17 @@ class Program
         // Aspire dashboard instead of the raw localhost endpoint.
         if (builder.ExecutionContext.IsRunMode && !string.IsNullOrEmpty(customDomain))
         {
-            gateway.WithUrlForEndpoint("https", url =>
-            {
-                url.DisplayText = customDomain;
-                url.Url = url.Endpoint!.Port == 443
-                    ? $"https://{customDomain}"
-                    : $"https://{customDomain}:{url.Endpoint.Port}";
-            });
+            gateway.WithUrlForEndpoint(
+                "https",
+                url =>
+                {
+                    url.DisplayText = customDomain;
+                    url.Url =
+                        url.Endpoint!.Port == 443
+                            ? $"https://{customDomain}"
+                            : $"https://{customDomain}:{url.Endpoint.Port}";
+                }
+            );
         }
 
         // Inject Multitenancy:BaseDomain into the API so it can derive the
@@ -646,9 +662,12 @@ class Program
             }
             else
             {
-                web.WithUrl(ReferenceExpression.Create(
-                    $"https://{gatewayEndpoint.Property(EndpointProperty.Host)}:{gatewayEndpoint.Property(EndpointProperty.Port)}"
-                ), "Gateway");
+                web.WithUrl(
+                    ReferenceExpression.Create(
+                        $"https://{gatewayEndpoint.Property(EndpointProperty.Host)}:{gatewayEndpoint.Property(EndpointProperty.Port)}"
+                    ),
+                    "Gateway"
+                );
             }
 
             // Warn if custom domain doesn't resolve
