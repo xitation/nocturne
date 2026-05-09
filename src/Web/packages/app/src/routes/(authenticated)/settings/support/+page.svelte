@@ -12,9 +12,9 @@
   import { Switch } from "$lib/components/ui/switch";
   import { Label } from "$lib/components/ui/label";
   import { Textarea } from "$lib/components/ui/textarea";
+  import GithubIcon from "$lib/components/icons/GithubIcon.svelte";
   import {
     HeartHandshake,
-    Github,
     MessageCircle,
     FileText,
     Bug,
@@ -83,7 +83,7 @@
     {
       name: "GitHub Repository",
       description: "Source code, issues, and feature requests",
-      icon: Github,
+      icon: GithubIcon,
       href: "https://github.com/nightscout/nocturne",
       badge: "Open Source",
     },
@@ -466,7 +466,7 @@
           rel="noopener noreferrer"
         >
           <Button variant="ghost" size="sm" class="gap-2">
-            <Github class="h-4 w-4" />
+            <GithubIcon class="h-4 w-4" />
             Star on GitHub
           </Button>
         </a>
