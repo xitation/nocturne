@@ -36,7 +36,7 @@ jobs:
         run: dotnet build --no-restore -p:GenerateNSwagClient=false
       - name: Test
         run: |
-          # Nocturne.API.Tests excluded: 29 unit test failures pending fix (see #TBD)
+          # Nocturne.API.Tests excluded: 29 unit test failures pending fix (#157)
           dotnet test --no-build \
             --filter "Category!=Integration&Category!=Performance&Category!=E2E&FullyQualifiedName!~Nocturne.API.Tests" \
             --logger "trx;LogFileName=unit.trx"
@@ -46,9 +46,9 @@ jobs:
           name: unit-trx
           path: "**/*.trx"
 
-  # Integration tests deferred: all integration test projects either have
+  # Integration tests deferred (#158): all integration test projects either have
   # no integration-tagged tests, Testcontainers issues, or broken project
-  # references. Will be added once individual projects are fixed (see follow-up issues).
+  # references. Will be added once individual projects are fixed.
 
   e2e:
     runs-on: ubuntu-latest
