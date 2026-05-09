@@ -1149,7 +1149,8 @@ internal class MigrationJob
         CancellationToken ct
     )
     {
-        // Legacy treatments table has been dropped; BSON treatment import is a no-op.
+        // MongoDB BSON treatment decomposition is not yet implemented (MongoDB mode is out of scope).
+        // The API migration path handles treatments via ITreatmentDecomposer.DecomposeBatchAsync.
         return Task.CompletedTask;
     }
 
