@@ -102,7 +102,7 @@
 >
   <!-- X-axis labels (top) -->
   <div class="flex">
-    <div class="w-16 shrink-0 flex items-center justify-center">
+    <div class="w-20 shrink-0 flex items-center justify-center">
       {#if visibleCount !== undefined}
         <button
           class="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
@@ -163,7 +163,7 @@
 
   {#if visibleCount !== undefined}
     <div class="flex">
-      <div class="w-16 shrink-0 flex items-center justify-center">
+      <div class="w-20 shrink-0 flex items-center justify-center">
         <button
           class="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-0.5"
           disabled={offset >= maxOffset}

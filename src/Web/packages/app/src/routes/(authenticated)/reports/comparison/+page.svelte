@@ -86,18 +86,30 @@
   let preset = $state<Preset>("last14-prior14");
   let openPopover = $state<"a" | "b" | null>(null);
   let periods = $state<Periods>(computePreset("last14-prior14"));
+  /** The period values that queries are actually reading from. */
+  let committed = $state<Periods>(computePreset("last14-prior14"));
 
   function applyPreset(p: Preset) {
     preset = p;
-    if (p !== "custom") periods = computePreset(p);
+    if (p !== "custom") {
+      periods = computePreset(p);
+      committed = periods;
+    }
   }
 
   function swap() {
     periods = { a: periods.b, b: periods.a };
   }
 
-  const inputA = $derived<DateRangeInput>({ from: periods.a.from, to: periods.a.to });
-  const inputB = $derived<DateRangeInput>({ from: periods.b.from, to: periods.b.to });
+  const inputA = $derived<DateRangeInput>({ from: committed.a.from, to: committed.a.to });
+  const inputB = $derived<DateRangeInput>({ from: committed.b.from, to: committed.b.to });
+
+  const isDirty = $derived(
+    periods.a.from !== committed.a.from ||
+    periods.a.to !== committed.a.to ||
+    periods.b.from !== committed.b.from ||
+    periods.b.to !== committed.b.to
+  );
 
   // Call queries directly in reactive context — SvelteKit query() returns a
   // reactive QueryResult, not a Promise. Using $derived ensures the queries
@@ -375,6 +387,14 @@
         <Button variant="outline" size="sm" onclick={swap} class="gap-2">
           <ArrowLeftRight class="h-4 w-4" />
           Swap
+        </Button>
+        <Button
+          size="sm"
+          disabled={!isDirty}
+          onclick={() => { committed = { ...periods }; }}
+          class="gap-2"
+        >
+          Load
         </Button>
       </div>
 
