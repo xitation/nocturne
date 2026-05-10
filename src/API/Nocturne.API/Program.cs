@@ -407,6 +407,20 @@ app.MapScalarApiReference(options =>
     options.AddDocument("nocturne", "Nocturne API", isDefault: true);
     options.AddDocument("nightscout", "Nightscout API");
     options.AddHeadContent(MermaidLazyLoader.HeadContent);
+
+    // Pre-configure authentication so Scalar's "Authorize" UI works out of the box.
+    options
+        .AddPreferredSecuritySchemes("oauth2", "bearer", "apiSecret")
+        .AddAuthorizationCodeFlow("oauth2", flow =>
+        {
+            flow.ClientId = "scalar";
+            flow.Pkce = Pkce.Sha256;
+            flow.SelectedScopes = ["*"];
+        })
+        .AddApiKeyAuthentication("apiSecret", apiKey =>
+        {
+            apiKey.Value = string.Empty;
+        });
 });
 
 // Add root endpoint to serve a basic info page
