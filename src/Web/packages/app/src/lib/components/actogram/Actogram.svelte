@@ -10,6 +10,7 @@
   import ActogramRow from './ActogramRow.svelte';
   import { untrack } from 'svelte';
   import { fly } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
   import { cubicOut } from 'svelte/easing';
   import { ChevronUp, ChevronDown } from 'lucide-svelte';
 
@@ -24,6 +25,7 @@
     onVisibleRangeChange?: (from: Date, to: Date) => void;
     row: Snippet<[ActogramRowContext]>;
     tooltipValue?: Snippet<[{ point: ActogramPoint; day: Date }]>;
+    rowLabel?: Snippet<[{ day: Date }]>;
   }
 
   let {
@@ -37,6 +39,7 @@
     onVisibleRangeChange,
     row,
     tooltipValue,
+    rowLabel,
   }: Props = $props();
 
   const dataRows = $derived(sliceIntoRows(data, days));
@@ -129,12 +132,19 @@
     <div
       class="flex items-center"
       style:height="{rowHeight}px"
+      animate:flip={{ duration: 300, easing: cubicOut }}
       in:fly={{ y: direction === 'down' ? rowHeight : -rowHeight, duration: 300, easing: cubicOut }}
       out:fly={{ y: direction === 'down' ? -rowHeight : rowHeight, duration: 300, easing: cubicOut }}
     >
       <!-- Date label -->
-      <div class="w-16 shrink-0 text-xs text-muted-foreground text-right pr-2">
-        {formatDate(dataRow.day)}
+      <div class="w-20 shrink-0">
+        {#if rowLabel}
+          {@render rowLabel({ day: dataRow.day })}
+        {:else}
+          <span class="block text-xs text-muted-foreground text-right pr-2">
+            {formatDate(dataRow.day)}
+          </span>
+        {/if}
       </div>
       <!-- Chart row -->
       <div class="flex-1 h-full border-b border-border/30">
