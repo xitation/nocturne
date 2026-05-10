@@ -88,7 +88,8 @@
 
   // --- State machine ---
   type Step = "selection" | "configuring" | "syncing" | "results";
-  let step = $state<Step>(connectorId != null ? "configuring" : "selection");
+  const initialStep: Step = connectorId != null ? "configuring" : "selection";
+  let step = $state<Step>(initialStep);
 
   // --- User-selected connector (when picking from the grid) ---
   let manuallySelectedId = $state<string | undefined>(undefined);
