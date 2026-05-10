@@ -109,7 +109,7 @@ static void GenerateEnvExample(
     // Required config (not secrets, but must be set)
     var requiredConfig = new HashSet<string>
     {
-        "PUBLIC_BASE_DOMAIN",
+        "BASE_DOMAIN",
     };
 
     // Optional vars
@@ -186,7 +186,7 @@ static void GenerateEnvExample(
         writer.WriteLine("NOCTURNE_API_PORT=8080");
         writer.WriteLine("POSTGRES_USERNAME=nocturne");
         writer.WriteLine();
-        writer.WriteLine("PUBLIC_BASE_DOMAIN=");
+        writer.WriteLine("BASE_DOMAIN=");
         writer.WriteLine("POSTGRES_PASSWORD=");
         writer.WriteLine("POSTGRES_MIGRATOR_PASSWORD=");
         writer.WriteLine("POSTGRES_APP_PASSWORD=");

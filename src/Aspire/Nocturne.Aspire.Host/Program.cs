@@ -210,9 +210,10 @@ class Program
         );
         var discordClientSecret = builder.AddParameter("discord-client-secret", "", secret: true);
 
-        // Public base domain used by the bot package to build /connect and OAuth2
-        // redirect URLs. Production should set this to e.g. "nocturne.run" via user-secrets.
-        var publicBaseDomain = builder.AddParameter("public-base-domain", "");
+        // Platform base domain — the single hostname all services derive URLs from.
+        // Production should set this to e.g. "nocturne.run" via user-secrets.
+        // Injected as "BaseDomain" into both the API and SvelteKit.
+        var baseDomain = builder.AddParameter("base-domain", "");
 
         // Chat platform credentials. All optional — a deployment that only
         // uses Discord shouldn't need to supply Telegram/Slack/WhatsApp
@@ -351,7 +352,7 @@ class Program
                 .WithEnvironment("DISCORD_PUBLIC_KEY", discordPublicKey)
                 .WithEnvironment("DISCORD_APPLICATION_ID", discordApplicationId)
                 .WithEnvironment("DISCORD_CLIENT_SECRET", discordClientSecret)
-                .WithEnvironment("PUBLIC_BASE_DOMAIN", publicBaseDomain)
+                .WithEnvironment("BASE_DOMAIN", baseDomain)
                 // NOTE: BOT_LINK_HMAC_SECRET is not injected — oauth-state.ts
                 // reuses INSTANCE_KEY (already wired above) to sign the
                 // Discord OAuth2 state parameter. See src/Web/packages/app/
@@ -414,10 +415,10 @@ class Program
 
             // SvelteKit needs ORIGIN when running behind a reverse proxy so SSR
             // constructs URLs with the public domain instead of the container hostname.
-            // Derive from PUBLIC_BASE_DOMAIN (bare host or host:port).
+            // Derive from BaseDomain (bare host or host:port).
             dockerWeb.WithEnvironment(
                 "ORIGIN",
-                ReferenceExpression.Create($"https://{publicBaseDomain}")
+                ReferenceExpression.Create($"https://{baseDomain}")
             );
 
             if (postgresServer != null && postgresWebPassword != null)
@@ -626,16 +627,15 @@ class Program
             );
         }
 
-        // Inject Multitenancy:BaseDomain into the API so it can derive the
-        // WebAuthn RP ID and build correct URLs. In run mode, derive from the
-        // gateway's live HTTPS endpoint. In publish mode, use the
-        // public-base-domain parameter (set via env var / user-secrets).
-        // Note: consumers expect a bare host:port (e.g. "localhost:1612"),
+        // Inject BaseDomain into the API and web so they can derive WebAuthn RP ID,
+        // tenant URLs, bot links, etc. In run mode, derive from the gateway's live
+        // HTTPS endpoint. In publish mode, use the base-domain parameter.
+        // Consumers expect a bare host:port (e.g. "localhost:1612"),
         // not a full URL — they prepend the scheme themselves.
         if (!builder.ExecutionContext.IsRunMode)
         {
             // Publish mode: inject from the user-supplied parameter
-            api.WithEnvironment("Multitenancy__BaseDomain", publicBaseDomain);
+            api.WithEnvironment("BASE_DOMAIN", baseDomain);
         }
 
         if (builder.ExecutionContext.IsRunMode)
@@ -647,11 +647,11 @@ class Program
                     $"{gatewayEndpoint.Property(EndpointProperty.Host)}:{gatewayEndpoint.Property(EndpointProperty.Port)}"
                 );
 
-            // Inject Multitenancy:BaseDomain into the API (single source of truth)
-            api.WithEnvironment("Multitenancy__BaseDomain", baseDomainExpr);
+            // Single source of truth for both API and web
+            api.WithEnvironment("BASE_DOMAIN", baseDomainExpr);
 
             ((IResourceBuilder<IResourceWithEnvironment>)web).WithEnvironment(
-                "PUBLIC_BASE_DOMAIN",
+                "BASE_DOMAIN",
                 baseDomainExpr
             );
 

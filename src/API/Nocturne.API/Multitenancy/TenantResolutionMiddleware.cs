@@ -17,14 +17,14 @@ public class TenantResolutionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<TenantResolutionMiddleware> _logger;
-    private readonly MultitenancyConfiguration _config;
+    private readonly BaseDomainOptions _config;
     private readonly IMemoryCache _cache;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     public TenantResolutionMiddleware(
         RequestDelegate next,
         ILogger<TenantResolutionMiddleware> logger,
-        IOptions<MultitenancyConfiguration> config,
+        IOptions<BaseDomainOptions> config,
         IMemoryCache cache)
     {
         _next = next;
