@@ -108,7 +108,7 @@
   const statusQuery = getAllConnectorStatus();
 
   // --- Derived data from queries ---
-  const servicesOverview = $derived(servicesOverviewQuery.current as ServicesOverview | null);
+  const servicesOverview = $derived(servicesOverviewQuery.current);
 
   const connectorInfo = $derived(
     activeId && servicesOverview

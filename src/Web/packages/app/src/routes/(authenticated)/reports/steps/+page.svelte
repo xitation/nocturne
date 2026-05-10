@@ -39,10 +39,6 @@
     { errorTitle: "Error Loading Step Count Report" }
   );
 
-  const stepCounts = $derived(actogramResource.current?.stepCounts ?? []);
-  const glucoseData = $derived(actogramResource.current?.glucoseData ?? []);
-  const thresholds = $derived(actogramResource.current?.thresholds);
-
   // Build day array from date range
   const days = $derived.by(() => {
     const start = new Date(fetchRange.from);
@@ -69,7 +65,7 @@
     });
   });
 
-  const dayTotals = $derived(computeDayTotals(stepCounts, days));
+  const dayTotals = $derived(computeDayTotals(actogramResource.current?.stepCounts ?? [], days));
 
   function formatDate(date: Date): string {
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -87,17 +83,17 @@
 
   // Step data as ActogramPoints
   const stepPoints = $derived(
-    stepCounts.map((s) => ({ mills: s.mills, steps: s.metric }))
+    (actogramResource.current?.stepCounts ?? []).map((s) => ({ mills: s.mills, steps: s.metric }))
   );
 
   // BG data as GlucosePoints
   const bgPoints = $derived(
-    glucoseData.map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
+    (actogramResource.current?.glucoseData ?? []).map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
   );
 
   // Summary statistics scoped to the currently visible period (not the padded fetch window)
   const visibleStepCounts = $derived(
-    stepCounts.filter(
+    (actogramResource.current?.stepCounts ?? []).filter(
       (s) =>
         s.mills >= reportsParams.dateRangeMillis.from &&
         s.mills <= reportsParams.dateRangeMillis.to + MS_PER_DAY - 1
@@ -115,11 +111,10 @@
   const dailyAverage = $derived(
     dayCount > 0 ? Math.round(totalSteps / dayCount) : 0
   );
-  const maxStepsInHour = $derived(
-    stepCounts.length > 0
-      ? Math.max(...stepCounts.map((s) => s.metric))
-      : 1000
-  );
+  const maxStepsInHour = $derived.by(() => {
+    const counts = actogramResource.current?.stepCounts ?? [];
+    return counts.length > 0 ? Math.max(...counts.map((s) => s.metric)) : 1000;
+  });
   // Cap bar scale at a reasonable max
   const barScale = $derived(Math.max(maxStepsInHour, 1000));
 </script>
@@ -132,7 +127,8 @@
   />
 </svelte:head>
 
-{#if actogramResource.current}
+{#await actogramResource then actogramData}
+  {#if actogramData}
   <div class="container mx-auto space-y-6 px-4 py-6 max-w-7xl">
     <!-- Header -->
     <div>
@@ -206,7 +202,7 @@
           data={stepPoints}
           bgData={bgPoints}
           {days}
-          {thresholds}
+          thresholds={actogramResource.current?.thresholds}
           rowHeight={64}
           visibleCount={VISIBLE_DAYS}
           {initialOffset}
@@ -249,4 +245,5 @@
       </CardContent>
     </Card>
   </div>
-{/if}
+  {/if}
+{/await}
