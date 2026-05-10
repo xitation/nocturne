@@ -14,6 +14,8 @@
   import { getActogramData } from "$api/actogram.remote";
   import { requireDateParamsContext } from "$lib/hooks/date-params.svelte";
   import { contextResource } from "$lib/hooks/resource-context.svelte";
+  import { computeDayTotals, computeInitialOffset } from './steps.utils';
+  import { untrack } from 'svelte';
 
   const VISIBLE_DAYS = 14;
   const PADDING_DAYS = 14;
@@ -21,7 +23,9 @@
 
   const reportsParams = requireDateParamsContext(14);
 
-  const dateRangeMillis = $derived({
+  // Frozen at mount — does NOT react to reportsParams changes caused by actogram navigation.
+  // This prevents a re-fetch every time the user scrolls the actogram.
+  let fetchRange = $state({
     from: reportsParams.dateRangeMillis.from - PADDING_DAYS * MS_PER_DAY,
     to: reportsParams.dateRangeMillis.to + PADDING_DAYS * MS_PER_DAY,
   });
@@ -29,8 +33,8 @@
   const actogramResource = contextResource(
     () =>
       getActogramData({
-        from: dateRangeMillis.from,
-        to: dateRangeMillis.to,
+        from: fetchRange.from,
+        to: fetchRange.to,
       }),
     { errorTitle: "Error Loading Step Count Report" }
   );
@@ -38,11 +42,12 @@
   const stepCounts = $derived(actogramResource.current?.stepCounts ?? []);
   const glucoseData = $derived(actogramResource.current?.glucoseData ?? []);
   const thresholds = $derived(actogramResource.current?.thresholds);
+  const dayTotals = $derived(computeDayTotals(stepCounts, days));
 
   // Build day array from date range
   const days = $derived.by(() => {
-    const start = new Date(dateRangeMillis.from);
-    const end = new Date(dateRangeMillis.to);
+    const start = new Date(fetchRange.from);
+    const end = new Date(fetchRange.to);
     const startMidnight = new Date(
       start.getFullYear(),
       start.getMonth(),
@@ -63,6 +68,20 @@
       d.setDate(d.getDate() + i);
       return d;
     });
+  });
+
+  function formatDate(date: Date): string {
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  // Read once at mount — not reactive. Sets the starting scroll position from URL params.
+  // Uses local midnight from the days array to avoid UTC/local timezone mismatch.
+  const initialOffset = untrack(() => {
+    const targetDate = reportsParams.from;
+    const targetMs = targetDate
+      ? new Date(targetDate).setHours(0, 0, 0, 0)
+      : fetchRange.from;
+    return computeInitialOffset(days, targetMs, VISIBLE_DAYS);
   });
 
   // Step data as ActogramPoints
@@ -175,10 +194,24 @@
           bgData={bgPoints}
           {days}
           {thresholds}
-          rowHeight={48}
+          rowHeight={64}
           visibleCount={VISIBLE_DAYS}
-          initialOffset={PADDING_DAYS}
+          {initialOffset}
+          onVisibleRangeChange={(from, to) => {
+            reportsParams.setCustomRange(
+              `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`,
+              `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`,
+            );
+          }}
         >
+          {#snippet rowLabel({ day })}
+            <div class="text-right pr-2">
+              <div class="text-xs text-muted-foreground">{formatDate(day)}</div>
+              <div class="text-xs font-medium tabular-nums">
+                {(dayTotals.get(day.getTime()) ?? 0).toLocaleString()}
+              </div>
+            </div>
+          {/snippet}
           {#snippet tooltipValue({ point })}
             {@const steps = (point as { mills: number; steps: number }).steps ?? 0}
             <span class="text-muted-foreground">Steps</span>
