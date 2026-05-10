@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { ArrowLeftRight, ArrowRight } from "lucide-svelte";
+  import { ArrowLeftRight, ArrowRight, CalendarDays } from "lucide-svelte";
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
+  import * as Popover from "$lib/components/ui/popover";
   import * as Select from "$lib/components/ui/select";
+  import GlucoseRangeCalendarPicker from "$lib/components/alerts/GlucoseRangeCalendarPicker.svelte";
   import TIRStackedChart from "$lib/components/reports/TIRStackedChart.svelte";
   import { getReportsData, type DateRangeInput } from "$api/reports.remote";
   import { bg, bgLabel } from "$lib/utils/formatting";
@@ -82,6 +84,7 @@
   ];
 
   let preset = $state<Preset>("last14-prior14");
+  let openPopover = $state<"a" | "b" | null>(null);
   let periods = $state<Periods>(computePreset("last14-prior14"));
 
   function applyPreset(p: Preset) {
@@ -397,35 +400,39 @@
                 {daysBetween(p.from, p.to)}d
               </span>
             </div>
-            <div class="flex items-center gap-2">
-              <Input
-                type="date"
-                value={p.from}
-                max={p.to}
-                onchange={(e) => {
-                  preset = "custom";
-                  periods = {
-                    ...periods,
-                    [cfg.side]: { ...p, from: e.currentTarget.value },
-                  };
-                }}
-                class="h-8 text-xs"
-              />
-              <span class="text-xs text-muted-foreground">→</span>
-              <Input
-                type="date"
-                value={p.to}
-                min={p.from}
-                onchange={(e) => {
-                  preset = "custom";
-                  periods = {
-                    ...periods,
-                    [cfg.side]: { ...p, to: e.currentTarget.value },
-                  };
-                }}
-                class="h-8 text-xs"
-              />
-            </div>
+            <Popover.Root
+              open={openPopover === cfg.side}
+              onOpenChange={(v) => (openPopover = v ? cfg.side : null)}
+            >
+              <Popover.Trigger>
+                {#snippet child({ props }: { props: Record<string, unknown> })}
+                  <button
+                    {...props}
+                    class="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-xs text-left hover:bg-muted/40 transition-colors"
+                  >
+                    <CalendarDays class="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span class="font-mono">
+                      {rangeDisplay(p.from, p.to)}
+                    </span>
+                  </button>
+                {/snippet}
+              </Popover.Trigger>
+              <Popover.Content class="p-0 w-auto" align="start">
+                <GlucoseRangeCalendarPicker
+                  startDate={p.from}
+                  endDate={p.to}
+                  maxDate={fmtIso(new Date())}
+                  onRangeChange={(start, end) => {
+                    preset = "custom";
+                    periods = {
+                      ...periods,
+                      [cfg.side]: { ...p, from: start, to: end },
+                    };
+                    openPopover = null;
+                  }}
+                />
+              </Popover.Content>
+            </Popover.Root>
           </div>
         {/each}
       </div>
