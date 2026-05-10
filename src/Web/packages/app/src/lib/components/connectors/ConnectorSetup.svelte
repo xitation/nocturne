@@ -64,6 +64,8 @@
     showCapabilities?: boolean;
     /** Override primary action. Default: "save-and-sync" for setup, "save-only" for manage */
     primaryAction?: "save-and-sync" | "save-only";
+    /** Whether to show .env variable name hints in the config form. False for non-platform-admin users. */
+    showEnvVarHints?: boolean;
     /** Extra UI after config form */
     extras?: Snippet<
       [{ connector: AvailableConnector; isActive: boolean; isSaving: boolean }]
@@ -82,6 +84,7 @@
     showDangerZone = false,
     showCapabilities = false,
     primaryAction = connectorId ? "save-only" : "save-and-sync",
+    showEnvVarHints = true,
     extras,
     resultActions,
   }: Props = $props();
@@ -390,6 +393,7 @@
           bind:secrets
           {effectiveConfig}
           {hasSecrets}
+          {showEnvVarHints}
           onSave={handleSave}
         />
       {:else}
