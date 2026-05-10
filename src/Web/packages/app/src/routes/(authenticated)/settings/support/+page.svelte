@@ -33,6 +33,7 @@
     GraduationCap,
   } from "lucide-svelte";
   import { getServicesOverview } from "$api/generated/services.generated.remote";
+  import { getVersion } from "$api/generated/versions.generated.remote";
   import type { ServicesOverview, SupportConfigResponse } from "$api";
   import { getSupportConfig } from "$lib/api/support.remote";
   import IssueCreatorDialog from "$lib/components/support/IssueCreatorDialog.svelte";
@@ -52,6 +53,7 @@
 
   const servicesOverviewQuery = getServicesOverview();
   const supportConfigQuery = getSupportConfig();
+  const versionQuery = getVersion(undefined);
 
   const services = $derived(servicesOverviewQuery.current as ServicesOverview | undefined);
   const supportConfig = $derived(supportConfigQuery.current as SupportConfigResponse | undefined);
@@ -437,6 +439,14 @@
           <span class="font-mono text-sm">{apiBaseUrl}</span>
         </div>
       {/if}
+      {#await versionQuery then version}
+        {#if version?.head && version.head !== "unknown"}
+          <div class="flex items-center justify-between py-2 border-b">
+            <span class="text-muted-foreground">Commit</span>
+            <span class="font-mono text-sm">{version.head.slice(0, 7)}</span>
+          </div>
+        {/if}
+      {/await}
       <div class="flex items-center justify-between py-2 border-b">
         <span class="text-muted-foreground">License</span>
         <span>AGPL-3.0</span>
