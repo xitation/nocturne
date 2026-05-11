@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import lingo from 'vite-plugin-lingo';
 import { blogManifest } from '@nocturne/cms/blog/vite-plugin';
 import { resolve } from 'node:path';
-import { cpSync, rmSync, existsSync } from 'node:fs';
+import { cpSync, rmSync, existsSync, mkdirSync } from 'node:fs';
 import { defineConfig, type Plugin, type PluginOption } from 'vite';
 
 function sharedLogos(): Plugin {
@@ -29,9 +29,39 @@ function sharedLogos(): Plugin {
   };
 }
 
+function releaseAssets(): Plugin {
+  return {
+    name: 'release-assets',
+    buildStart() {
+      const deployPortainerDir = resolve(__dirname, '../../../../deploy/portainer');
+      const dest = resolve(__dirname, 'src/lib/release');
+
+      if (!existsSync(deployPortainerDir)) {
+        this.warn(`release-assets: deploy/portainer not found at ${deployPortainerDir}; skipping`);
+        return;
+      }
+
+      if (existsSync(dest)) {
+        rmSync(dest, { recursive: true, force: true });
+      }
+      mkdirSync(dest, { recursive: true });
+
+      for (const file of ['docker-compose.yaml', '.env.example']) {
+        const src = resolve(deployPortainerDir, file);
+        if (existsSync(src)) {
+          cpSync(src, resolve(dest, file));
+        } else {
+          this.warn(`release-assets: ${file} not found in deploy/portainer; skipping`);
+        }
+      }
+    }
+  };
+}
+
 export default defineConfig({
   plugins: [
     sharedLogos(),
+    releaseAssets(),
     tailwindcss(),
     lingo({
       route: '/_translations',
