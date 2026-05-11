@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Search, Check } from "@lucide/svelte";
+  import { Search, Check, Clock } from "@lucide/svelte";
 
   interface Connector {
     file: string;
@@ -270,30 +270,37 @@
 
   <!-- Connector grid -->
   <div
-    class="flex-1 p-3.5 overflow-hidden grid content-start gap-2"
+    class="flex-1 p-3.5 overflow-y-auto grid content-start gap-2"
     style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr))"
   >
-    {#each filtered.slice(0, 18) as c (c.file)}
-      {@const isMatch =
-        !!query && c.name.toLowerCase().includes(query.toLowerCase())}
-      <div
+    {#each filtered as c (c.file)}
+      {@const isMatch = !!query && matches(c, query)}
+      <svelte:element
+        this={c.comingSoon && c.issue ? 'a' : 'div'}
+        href={c.comingSoon && c.issue ? `https://github.com/nightscout/nocturne/issues/${c.issue}` : undefined}
+        target={c.comingSoon && c.issue ? "_blank" : undefined}
+        rel={c.comingSoon && c.issue ? "noopener noreferrer" : undefined}
         class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border transition-all duration-200
-                    {isMatch
-          ? 'bg-glucose-in-range/[0.14] border-glucose-in-range/50'
-          : 'bg-white/[0.04] border-white/[0.06]'}"
+                    {c.comingSoon
+          ? 'opacity-50 bg-white/2 border-white/4 cursor-pointer hover:opacity-70'
+          : isMatch
+            ? 'bg-glucose-in-range/[0.14] border-glucose-in-range/50'
+            : 'bg-white/4 border-white/6'}"
       >
         <img
           src="/logos/{c.file}"
           alt={c.name}
-          class="size-5 rounded object-cover shrink-0"
+          class="size-5 rounded object-cover shrink-0 {c.comingSoon ? 'grayscale' : ''}"
         />
         <span class="text-[13px] text-foreground font-medium truncate"
           >{c.name}</span
         >
-        {#if isMatch}
+        {#if c.comingSoon}
+          <Clock class="size-3.5 text-muted-foreground shrink-0 ml-auto" />
+        {:else if isMatch}
           <Check class="size-3.5 text-glucose-in-range shrink-0 ml-auto" />
         {/if}
-      </div>
+      </svelte:element>
     {/each}
   </div>
 </div>
