@@ -56,14 +56,28 @@
 
   const groups: PermissionGroup[] = [
     {
+      header: "Patient Record",
       categories: [
-        { name: "Blood Glucose", levels: rw("entries") },
+        { name: "Blood Glucose", levels: rw("glucose") },
         { name: "Treatments", levels: rw("treatments") },
-        { name: "Devices", levels: rw("devicestatus") },
-        { name: "Profile", levels: rw("profile") },
-        { name: "Notifications", levels: rw("notifications") },
+        { name: "Device Status", levels: rw("devices") },
+        { name: "Heart Rate", levels: rw("heartrate") },
+        { name: "Step Count", levels: rw("stepcount") },
+        { name: "Food & Meals", levels: rw("food") },
+        { name: "Statistics", levels: readOnly("statistics") },
         { name: "Reports", levels: readOnly("reports") },
-        { name: "Health", levels: readOnly("health") },
+      ],
+    },
+    {
+      header: "Therapy Settings",
+      categories: [
+        { name: "Treatment Profile", levels: rw("therapy") },
+        { name: "Alerts", levels: rw("alerts") },
+      ],
+    },
+    {
+      header: "Account",
+      categories: [
         { name: "Identity", levels: readOnly("identity") },
       ],
     },
