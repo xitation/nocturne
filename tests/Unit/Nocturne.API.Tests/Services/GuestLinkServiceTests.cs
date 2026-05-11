@@ -76,7 +76,7 @@ public class GuestLinkServiceTests : IDisposable
     {
         var act = () => _service.CreateGuestLinkAsync(
             _dataOwnerId, _creatorId, "Bad Scopes", "https://example.com",
-            [OAuthScopes.EntriesReadWrite]);
+            [OAuthScopes.GlucoseReadWrite]);
 
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*not allowed*");
@@ -102,7 +102,7 @@ public class GuestLinkServiceTests : IDisposable
         var result = await _service.CreateGuestLinkAsync(_dataOwnerId, _creatorId, "Defaults", "https://example.com");
 
         result.Info.Scopes.Should().Contain(OAuthScopes.HealthRead);
-        result.Info.Scopes.Should().Contain(OAuthScopes.ProfileRead);
+        result.Info.Scopes.Should().Contain(OAuthScopes.TherapyRead);
         result.Info.Scopes.Should().Contain(OAuthScopes.ReportsRead);
         result.Info.Scopes.Should().NotContain(s => s.Contains("readwrite", StringComparison.OrdinalIgnoreCase));
     }
