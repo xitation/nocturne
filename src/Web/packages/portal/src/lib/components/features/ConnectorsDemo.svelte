@@ -51,8 +51,10 @@
     let { height = 340 }: Props = $props();
 
     let query = $state("");
+    let userTyping = $state(false);
 
     $effect(() => {
+        if (userTyping) return;
         let cancelled = false;
         let ti = 0;
         let i = 0;
@@ -116,14 +118,18 @@
     <!-- Search bar -->
     <div class="px-[18px] py-3.5 border-b border-white/[0.08] flex items-center gap-3 bg-[oklch(0.12_0.025_261)] shrink-0">
         <Search class="size-5 text-muted-foreground shrink-0" />
-        <div class="flex-1 text-[17px] text-foreground font-medium flex items-center min-h-7">
-            {#if query}
-                <span>{query}</span>
-            {:else}
-                <span class="text-muted-foreground/60">Find your device or app…</span>
-            {/if}
-            <span class="cursor-blink ml-0.5 inline-block w-0.5 h-5 bg-glucose-in-range align-middle" aria-hidden="true"></span>
-        </div>
+        <input
+            class="flex-1 bg-transparent border-none outline-none text-[17px] text-foreground font-medium placeholder:text-muted-foreground/60 min-h-7 w-0"
+            placeholder="Find your device or app…"
+            bind:value={query}
+            onfocus={() => (userTyping = true)}
+            onblur={() => { if (!query) userTyping = false; }}
+            autocomplete="off"
+            spellcheck="false"
+        />
+        {#if !userTyping}
+            <span class="cursor-blink ml-0.5 inline-block w-0.5 h-5 bg-glucose-in-range align-middle pointer-events-none" aria-hidden="true"></span>
+        {/if}
         <span class="font-mono text-[12px] text-glucose-in-range px-2.5 py-1 rounded-full bg-glucose-in-range/15 border border-glucose-in-range/30 shrink-0">
             {filtered.length} match{filtered.length === 1 ? "" : "es"}
         </span>
