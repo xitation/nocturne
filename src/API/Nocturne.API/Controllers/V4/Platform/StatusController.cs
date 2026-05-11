@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Nocturne.Core.Contracts.Platform;
 using Nocturne.Core.Models;
+using OpenApi.Remote.Attributes;
 
 namespace Nocturne.API.Controllers.V4.Platform;
 
@@ -35,6 +36,7 @@ public class StatusController : ControllerBase
     /// </summary>
     /// <returns>Comprehensive system status including settings, api status, and server information</returns>
     [HttpGet]
+    [RemoteQuery]
     [ProducesResponseType(typeof(StatusResponse), 200)]
     public async Task<ActionResult<StatusResponse>> GetStatus()
     {

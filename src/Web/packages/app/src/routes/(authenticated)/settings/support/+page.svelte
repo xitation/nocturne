@@ -33,7 +33,7 @@
     GraduationCap,
   } from "lucide-svelte";
   import { getServicesOverview } from "$api/generated/services.generated.remote";
-  import { getVersion } from "$api/generated/versions.generated.remote";
+  import { getStatus } from "$api/generated/statuses.generated.remote";
   import { getSupportConfig } from "$lib/api/support.remote";
   import IssueCreatorDialog from "$lib/components/support/IssueCreatorDialog.svelte";
   import { getCoachMarkContext } from "@nocturne/coach";
@@ -50,7 +50,7 @@
 
   const servicesOverviewQuery = getServicesOverview();
   const supportConfigQuery = getSupportConfig();
-  const versionQuery = getVersion(undefined);
+  const statusQuery = getStatus();
 
   let useOperatorSupport = $state(false);
 
@@ -430,11 +430,11 @@
           </div>
         {/if}
       {/await}
-      {#await versionQuery then version}
-        {#if version?.head && version.head !== "unknown"}
+      {#await statusQuery then status}
+        {#if status?.head && status.head !== "unknown"}
           <div class="flex items-center justify-between py-2 border-b">
             <span class="text-muted-foreground">Commit</span>
-            <span class="font-mono text-sm">{version.head.slice(0, 7)}</span>
+            <span class="font-mono text-sm">{status.head.slice(0, 7)}</span>
           </div>
         {/if}
       {/await}
