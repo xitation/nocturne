@@ -5,15 +5,33 @@ import tailwindcss from '@tailwindcss/vite';
 import lingo from 'vite-plugin-lingo';
 import { blogManifest } from '@nocturne/cms/blog/vite-plugin';
 import { resolve } from 'node:path';
-import { defineConfig, type PluginOption } from 'vite';
+import { cpSync } from 'node:fs';
+import { defineConfig, type Plugin, type PluginOption } from 'vite';
 
+function sharedLogos(): Plugin {
+  return {
+    name: 'shared-logos',
+    buildStart() {
+      cpSync(
+        resolve(__dirname, '../app/static/logos'),
+        resolve(__dirname, 'static/logos'),
+        { recursive: true }
+      );
+    }
+  };
+}
 
 export default defineConfig({
-  plugins: [tailwindcss(),
+  plugins: [
+    sharedLogos(),
+    tailwindcss(),
     lingo({
-      route: '/_translations',  // Route where editor UI is served
-      localesDir: '../../locales',  // Path to .po files
-    }) as PluginOption, blogManifest({ contentDir: resolve(__dirname, 'src/content/blog') }), sveltekit()],
+      route: '/_translations',
+      localesDir: '../../locales',
+    }) as PluginOption,
+    blogManifest({ contentDir: resolve(__dirname, 'src/content/blog') }),
+    sveltekit()
+  ],
   server: {
     host: "0.0.0.0",
     port: parseInt(process.env.PORT || "5173", 10),
