@@ -74,7 +74,7 @@
     <AuroraPool textBlock={textBlockEl} />
     <div class="absolute bottom-0 inset-x-0 h-[280px] pointer-events-none bg-gradient-to-b from-transparent to-background" aria-hidden="true"></div>
 
-    <div class="absolute inset-0 pt-16">
+    <div class="absolute inset-0 pt-16 pointer-events-none">
         <div class="absolute top-[calc(4rem+20px)] left-6 flex flex-col gap-0.5 font-mono text-[9px] tracking-[0.12em] uppercase text-[oklch(0.6_0.01_261)]">
             <span>NCTRN / HOMEPAGE</span>
             <span>v0.4 &middot; public preview</span>
@@ -101,7 +101,7 @@
                 self-hosted dashboard. Fast, multitenant, real-time, and built by
                 the diabetes community.
             </p>
-            <div class="flex flex-wrap gap-3 justify-center">
+            <div class="flex flex-wrap gap-3 justify-center pointer-events-auto">
                 <Button href="/docs/installation" size="lg" class="gap-2 text-base hero-btn-primary">
                     Get started <ArrowRight class="w-4 h-4" />
                 </Button>

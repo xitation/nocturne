@@ -4,7 +4,7 @@
   }
   let { textBlock = null }: Props = $props();
 
-  import { sampleFlow } from '$lib/utils/aurora-noise';
+  import { sampleFlow } from "$lib/utils/aurora-noise";
 
   // ── Chip definitions ──────────────────────────────────────────────────────
   // hPos: left or right as % of container width. Preserved from the original
@@ -82,14 +82,15 @@
   const BOB_AMP_V = 10; // px/s² force amplitude (vertical)
   const BOB_FREQ_H = 0.45; // rad/s — horizontal drift frequency
   const BOB_AMP_H = 2; // px/s² force amplitude (horizontal)
-  const LINEAR_DAMP = 0.06; // fraction of velocity lost per frame (not per second)
-  const ANGULAR_DAMP = 0.025; // same for rotation
-  const RESTITUTION = 0.55; // bounciness (0 = dead stop, 1 = perfectly elastic)
+  const LINEAR_DAMP = 0.03; // fraction of velocity lost per frame (not per second)
+  const ANGULAR_DAMP = 0.07; // same for rotation
+  const RESTITUTION = 0.2; // bounciness (0 = dead stop, 1 = perfectly elastic)
   const SPRING_K = 600; // drag spring constant (px/s² per px of offset)
   const MAX_DT = 0.05; // seconds — cap to prevent tunnelling on hidden tabs
-  const ANG_KICK = 30; // deg/s angular impulse added on collision
-  const TEXT_PAD = 10; // px padding added around text block collision rect
-  const TIDE_AMP = 12; // px/s² — tidal force amplitude from aurora flow field
+  const ANG_KICK = 2; // deg/s angular impulse added on collision
+  const TEXT_PAD = 1; // px padding added around text block collision rect
+  const TIDE_AMP = 250; // px/s² — tidal force amplitude from aurora flow field
+  const TOP_GUARD = 72; // px — keeps chips below the fixed nav header
 
   // ── Physics state (plain JS — NOT $state, no reactivity overhead) ─────────
   interface CS {
@@ -100,9 +101,8 @@
     rot: number;
     rotV: number; // rotation deg, angular velocity deg/s
     phase: number; // bobbing phase offset (0–2π), unique per chip
-    r: number;
     w: number;
-    h: number; // collision radius, measured pixel size
+    h: number; // measured pixel size (AABB half-extents: w/2, h/2)
     isDragged: boolean;
   }
 
@@ -120,7 +120,6 @@
     rot: INIT_ROTS[i],
     rotV: 0,
     phase: (i / CHIP_DEFS.length) * Math.PI * 2,
-    r: 30,
     w: 60,
     h: 30,
     isDragged: false,
@@ -150,9 +149,6 @@
       const r = el.getBoundingClientRect();
       cs[i].w = r.width;
       cs[i].h = r.height;
-      // Treat the pill as a circle with radius = half the longest dimension.
-      // Overestimates a little but gives a pleasant "bubble" feel on collision.
-      cs[i].r = Math.max(r.width, r.height) / 2;
     });
   }
 
@@ -190,23 +186,24 @@
     if (!containerEl) return;
     const cw = containerEl.offsetWidth;
     const ch = containerEl.offsetHeight;
-    if (c.cx - c.r < 0) {
-      c.cx = c.r;
+    const hw = c.w / 2, hh = c.h / 2;
+    if (c.cx - hw < 0) {
+      c.cx = hw;
       c.vx = Math.abs(c.vx) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cx + c.r > cw) {
-      c.cx = cw - c.r;
+    if (c.cx + hw > cw) {
+      c.cx = cw - hw;
       c.vx = -Math.abs(c.vx) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cy - c.r < 0) {
-      c.cy = c.r;
+    if (c.cy - hh < TOP_GUARD) {
+      c.cy = TOP_GUARD + hh;
       c.vy = Math.abs(c.vy) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cy + c.r > ch) {
-      c.cy = ch - c.r;
+    if (c.cy + hh > ch) {
+      c.cy = ch - hh;
       c.vy = -Math.abs(c.vy) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
@@ -215,70 +212,53 @@
   function chipCollide(a: CS, b: CS) {
     const dx = b.cx - a.cx;
     const dy = b.cy - a.cy;
-    const dist2 = dx * dx + dy * dy;
-    const minD = a.r + b.r;
-    if (dist2 >= minD * minD || dist2 < 1e-6) return;
+    const overlapX = (a.w + b.w) / 2 - Math.abs(dx);
+    const overlapY = (a.h + b.h) / 2 - Math.abs(dy);
+    if (overlapX <= 0 || overlapY <= 0) return;
 
-    const dist = Math.sqrt(dist2);
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const overlap = minD - dist;
-
-    // Push apart (each takes half if neither is dragged)
-    if (!a.isDragged) {
-      a.cx -= nx * overlap * 0.5;
-      a.cy -= ny * overlap * 0.5;
-    }
-    if (!b.isDragged) {
-      b.cx += nx * overlap * 0.5;
-      b.cy += ny * overlap * 0.5;
-    }
-
-    // Relative velocity along collision normal
-    const relV = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-    if (relV > 0) return; // already separating — skip impulse
-
-    // Equal-mass impulse exchange
-    const j = (-(1 + RESTITUTION) * relV) / 2;
-    if (!a.isDragged) {
-      a.vx -= j * nx;
-      a.vy -= j * ny;
-      a.rotV += ANG_KICK * Math.sign(a.vx || 1);
-    }
-    if (!b.isDragged) {
-      b.vx += j * nx;
-      b.vy += j * ny;
-      b.rotV += ANG_KICK * Math.sign(b.vx || 1);
+    // Resolve along the axis of least penetration
+    if (overlapX < overlapY) {
+      const nx = Math.sign(dx) || 1;
+      if (!a.isDragged) a.cx -= nx * overlapX * 0.5;
+      if (!b.isDragged) b.cx += nx * overlapX * 0.5;
+      const relV = (b.vx - a.vx) * nx;
+      if (relV < 0) {
+        const j = -(1 + RESTITUTION) * relV / 2;
+        if (!a.isDragged) { a.vx -= j * nx; a.rotV += ANG_KICK * Math.sign(a.vx || 1); }
+        if (!b.isDragged) { b.vx += j * nx; b.rotV += ANG_KICK * Math.sign(b.vx || 1); }
+      }
+    } else {
+      const ny = Math.sign(dy) || 1;
+      if (!a.isDragged) a.cy -= ny * overlapY * 0.5;
+      if (!b.isDragged) b.cy += ny * overlapY * 0.5;
+      const relV = (b.vy - a.vy) * ny;
+      if (relV < 0) {
+        const j = -(1 + RESTITUTION) * relV / 2;
+        if (!a.isDragged) { a.vy -= j * ny; a.rotV += ANG_KICK * Math.sign(a.vy || 1); }
+        if (!b.isDragged) { b.vy += j * ny; b.rotV += ANG_KICK * Math.sign(b.vy || 1); }
+      }
     }
   }
 
   function textCollide(c: CS) {
     if (!textRect) return;
     const { x, y, w, h } = textRect;
+    const hw = c.w / 2, hh = c.h / 2;
 
-    // Closest point on the AABB to the chip center
-    const clampX = Math.max(x, Math.min(x + w, c.cx));
-    const clampY = Math.max(y, Math.min(y + h, c.cy));
-    const dx = c.cx - clampX;
-    const dy = c.cy - clampY;
-    const dist2 = dx * dx + dy * dy;
-    if (dist2 >= c.r * c.r || dist2 < 1e-6) return;
+    // AABB vs AABB overlap
+    const penL = c.cx + hw - x;
+    const penR = x + w - (c.cx - hw);
+    const penT = c.cy + hh - y;
+    const penB = y + h - (c.cy - hh);
+    if (penL <= 0 || penR <= 0 || penT <= 0 || penB <= 0) return;
 
-    const dist = Math.sqrt(dist2);
-    const nx = dx / dist;
-    const ny = dy / dist;
-
-    // Push chip out of overlap
-    c.cx += nx * (c.r - dist);
-    c.cy += ny * (c.r - dist);
-
-    // Reflect velocity component into the surface
-    const dot = c.vx * nx + c.vy * ny;
-    if (dot < 0) {
-      c.vx -= (1 + RESTITUTION) * dot * nx;
-      c.vy -= (1 + RESTITUTION) * dot * ny;
-      c.rotV += ANG_KICK * (Math.random() * 2 - 1);
-    }
+    // Push out along the axis of least penetration
+    const min = Math.min(penL, penR, penT, penB);
+    if (min === penL) { c.cx -= penL; if (c.vx > 0) c.vx = -c.vx * RESTITUTION; }
+    else if (min === penR) { c.cx += penR; if (c.vx < 0) c.vx = -c.vx * RESTITUTION; }
+    else if (min === penT) { c.cy -= penT; if (c.vy > 0) c.vy = -c.vy * RESTITUTION; }
+    else { c.cy += penB; if (c.vy < 0) c.vy = -c.vy * RESTITUTION; }
+    c.rotV += ANG_KICK * (Math.random() * 2 - 1);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -297,7 +277,7 @@
     const dt = Math.min((now - lastTime) / 1000, MAX_DT);
     lastTime = now;
     const t = now / 1000;
-    const cw = containerEl ? containerEl.offsetWidth  : 0;
+    const cw = containerEl ? containerEl.offsetWidth : 0;
     const ch = containerEl ? containerEl.offsetHeight : 0;
 
     // Integrate forces
