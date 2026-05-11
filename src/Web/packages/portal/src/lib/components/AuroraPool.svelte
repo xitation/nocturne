@@ -233,7 +233,7 @@
             pointer  = { x: e.clientX - cr.left, y: e.clientY - cr.top };
         }
         // Pointer capture: element keeps receiving events even if pointer leaves it
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        containerEl?.setPointerCapture(e.pointerId);
     }
 
     function onPointerMove(e: PointerEvent) {
