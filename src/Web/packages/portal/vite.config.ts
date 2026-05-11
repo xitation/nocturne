@@ -5,18 +5,26 @@ import tailwindcss from '@tailwindcss/vite';
 import lingo from 'vite-plugin-lingo';
 import { blogManifest } from '@nocturne/cms/blog/vite-plugin';
 import { resolve } from 'node:path';
-import { cpSync } from 'node:fs';
+import { cpSync, rmSync, existsSync } from 'node:fs';
 import { defineConfig, type Plugin, type PluginOption } from 'vite';
 
 function sharedLogos(): Plugin {
   return {
     name: 'shared-logos',
     buildStart() {
-      cpSync(
-        resolve(__dirname, '../app/static/logos'),
-        resolve(__dirname, 'static/logos'),
-        { recursive: true }
-      );
+      // Runs once at dev-server startup and at the start of every build.
+      // Adding a logo to packages/app/static/logos during a running dev session
+      // requires a server restart to be reflected here.
+      const src = resolve(__dirname, '../app/static/logos');
+      if (!existsSync(src)) {
+        this.warn(`shared-logos: source not found at ${src}; skipping logo copy`);
+        return;
+      }
+      const dest = resolve(__dirname, 'static/logos');
+      if (existsSync(dest)) {
+        rmSync(dest, { recursive: true, force: true });
+      }
+      cpSync(src, dest, { recursive: true });
     }
   };
 }
