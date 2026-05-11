@@ -21,6 +21,14 @@ public interface IActiveProfileResolver
     Task<CircadianAdjustment?> GetCircadianAdjustmentAsync(long timeMills, CancellationToken ct = default);
 
     /// <summary>
+    /// Returns all profile spans that could be active during [fromMs, toMs] with metadata
+    /// pre-extracted, in chronological order. Used by batch resolvers to avoid per-timestamp
+    /// DB queries.
+    /// </summary>
+    Task<IReadOnlyList<ProfileSpan>> GetActiveProfileSpansForRangeAsync(
+        long fromMs, long toMs, CancellationToken ct = default);
+
+    /// <summary>
     /// Returns the insulin pharmacokinetic configuration from the profile switch active at the given time,
     /// or null if the active profile switch has no insulin metadata (e.g., non-AAPS source).
     /// </summary>
@@ -33,3 +41,12 @@ public interface IActiveProfileResolver
 /// <param name="Percentage">Basal rate percentage (100 = no change).</param>
 /// <param name="TimeshiftMs">Time shift in milliseconds applied to the schedule.</param>
 public record CircadianAdjustment(double Percentage, long TimeshiftMs);
+
+/// <summary>
+/// A profile span with metadata pre-extracted for use in batch resolution.
+/// </summary>
+public record ProfileSpan(
+    string ProfileName,
+    long StartMills,
+    long? EndMills,
+    CircadianAdjustment? Adjustment);

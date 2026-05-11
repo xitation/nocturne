@@ -49,6 +49,31 @@ internal sealed class ActiveProfileResolver : IActiveProfileResolver
         return ExtractCircadianAdjustment(span);
     }
 
+    public async Task<IReadOnlyList<ProfileSpan>> GetActiveProfileSpansForRangeAsync(
+        long fromMs, long toMs, CancellationToken ct = default)
+    {
+        var toDateTime = DateTimeOffset.FromUnixTimeMilliseconds(toMs).UtcDateTime;
+
+        // Fetch all profile spans that started at or before range end.
+        // Includes spans that started before [fromMs] but are still active during the range.
+        // No `from:` filter for this reason — same pattern as TherapyTimelineResolver.
+        var rawSpans = await _stateSpanService.GetStateSpansAsync(
+            category: StateSpanCategory.Profile,
+            to: toDateTime,
+            count: 1000,
+            cancellationToken: ct);
+
+        // Sort in-memory for reliable chronological order regardless of DB ordering.
+        return rawSpans
+            .Select(s => new ProfileSpan(
+                ProfileName: ExtractProfileName(s) ?? "Default",
+                StartMills: s.StartMills,
+                EndMills: s.EndMills,
+                Adjustment: ExtractCircadianAdjustment(s)))
+            .OrderBy(s => s.StartMills)
+            .ToList();
+    }
+
     public async Task<TreatmentInsulinContext?> GetActiveInsulinContextAsync(long timeMills, CancellationToken ct = default)
     {
         var span = await GetActiveProfileSpanAsync(timeMills, ct);
