@@ -4,7 +4,10 @@
     import { DEMO_ENABLED } from "$lib/config";
     import AuroraCanvas from "$lib/components/AuroraCanvas.svelte";
     import AuroraPool from "$lib/components/AuroraPool.svelte";
+    import FeaturePillars from "$lib/components/features/FeaturePillars.svelte";
     import { getCommunityData } from "$lib/data/portal.remote";
+
+    let textBlockEl: HTMLElement | null = $state(null);
 
     let communityData = $state<Awaited<ReturnType<typeof getCommunityData>> | null>(null);
     getCommunityData({})
@@ -68,7 +71,7 @@
 
     <AuroraCanvas height={920} />
     <div class="grain-bg absolute inset-0 pointer-events-none opacity-35 mix-blend-overlay" aria-hidden="true"></div>
-    <AuroraPool />
+    <AuroraPool textBlock={textBlockEl} />
     <div class="absolute bottom-0 inset-x-0 h-[280px] pointer-events-none bg-gradient-to-b from-transparent to-background" aria-hidden="true"></div>
 
     <div class="absolute inset-0 pt-16">
@@ -81,7 +84,10 @@
             <span>22 connectors</span>
         </div>
 
-        <div class="absolute bottom-[200px] left-1/2 -translate-x-1/2 w-[min(760px,90vw)] text-center flex flex-col items-center gap-5">
+        <div
+            bind:this={textBlockEl}
+            class="absolute bottom-[200px] left-1/2 -translate-x-1/2 w-[min(760px,90vw)] text-center flex flex-col items-center gap-5"
+        >
             <span class="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] uppercase text-[oklch(0.7_0.01_261)]">
                 <span class="eyebrow-dot size-1.5 rounded-full shrink-0 bg-glucose-in-range"></span>The new Nightscout API
             </span>
@@ -180,10 +186,13 @@
     </div>
 </section>
 
-<!-- 03 Install -->
+<!-- 03 Features -->
+<FeaturePillars demoHeight={400} />
+
+<!-- 04 Install -->
 <section class="max-w-[1200px] mx-auto px-6 py-20 border-t border-border">
     <div class="mb-[52px]">
-        <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-4">&#167; 03 &mdash; Run it tonight</div>
+        <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-4">&#167; 04 &mdash; Run it tonight</div>
         <h2 class="text-[clamp(1.6rem,3.5vw,2.5rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">Five minutes from <em class="text-glucose-in-range">git clone</em> to a dashboard.</h2>
     </div>
 
@@ -223,7 +232,7 @@ $ docker compose up -d
 {#if communityData}
     <section class="max-w-[1200px] mx-auto px-6 py-20 border-t border-border">
         <div class="mb-[52px]">
-            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-4">&#167; 04 &mdash; Community</div>
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-4">&#167; 05 &mdash; Community</div>
             <h2 class="text-[clamp(1.6rem,3.5vw,2.5rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">Built in the open. <em class="text-glucose-in-range">Maintained by volunteers.</em></h2>
         </div>
 
