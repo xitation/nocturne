@@ -85,7 +85,7 @@
   const LINEAR_DAMP = 0.03; // fraction of velocity lost per frame (not per second)
   const ANGULAR_DAMP = 0.07; // same for rotation
   const RESTITUTION = 0.2; // bounciness (0 = dead stop, 1 = perfectly elastic)
-  const SPRING_K = 600; // drag spring constant (px/s² per px of offset)
+  const SPRING_K = 120; // drag spring constant (px/s² per px of offset)
   const MAX_DT = 0.05; // seconds — cap to prevent tunnelling on hidden tabs
   const ANG_KICK = 2; // deg/s angular impulse added on collision
   const TEXT_PAD = 1; // px padding added around text block collision rect
@@ -130,7 +130,7 @@
   let pointer = { x: 0, y: 0 };
   let grabOffset = { x: 0, y: 0 }; // pointer-to-center offset at grab time
   let dragIdx = -1;
-  let textRect: { x: number; y: number; w: number; h: number } | null = null;
+  let textRects: { x: number; y: number; w: number; h: number }[] = [];
 
   // ── Svelte action: collect chip element refs without triggering reactivity ──
   function assignRef(el: HTMLElement, i: number) {
@@ -168,17 +168,95 @@
 
   function measureTextRect() {
     if (!containerEl || !textBlock) {
-      textRect = null;
+      textRects = [];
       return;
     }
     const cr = containerEl.getBoundingClientRect();
-    const tr = textBlock.getBoundingClientRect();
-    textRect = {
-      x: tr.left - cr.left - TEXT_PAD,
-      y: tr.top - cr.top - TEXT_PAD,
-      w: tr.width + TEXT_PAD * 2,
-      h: tr.height + TEXT_PAD * 2,
+    textRects = Array.from(textBlock.children).map((child) => {
+      const tr = child.getBoundingClientRect();
+      return {
+        x: tr.left - cr.left - TEXT_PAD,
+        y: tr.top - cr.top - TEXT_PAD,
+        w: tr.width + TEXT_PAD * 2,
+        h: tr.height + TEXT_PAD * 2,
+      };
+    });
+  }
+
+  // ── Collision functions ───────────────────────────────────────────────────
+  // ── Capsule helpers ────────────────────────────────────────────────────────
+  // Each pill is a capsule: a line segment with radius h/2.
+  // The segment runs from (-ext, 0) to (ext, 0) in local space, rotated by c.rot.
+  function capsuleEndpoints(c: CS): [number, number, number, number] {
+    const ext = Math.max((c.w - c.h) / 2, 0);
+    const rad = (c.rot * Math.PI) / 180;
+    const cos = Math.cos(rad),
+      sin = Math.sin(rad);
+    return [
+      c.cx - cos * ext,
+      c.cy - sin * ext, // endpoint A
+      c.cx + cos * ext,
+      c.cy + sin * ext, // endpoint B
+    ];
+  }
+
+  function capsuleRadius(c: CS): number {
+    return c.h / 2;
+  }
+
+  // Closest point on segment (px,py)-(qx,qy) to point (x,y)
+  function closestOnSeg(
+    px: number,
+    py: number,
+    qx: number,
+    qy: number,
+    x: number,
+    y: number,
+  ): [number, number] {
+    const dx = qx - px,
+      dy = qy - py;
+    const len2 = dx * dx + dy * dy;
+    if (len2 < 1e-8) return [px, py];
+    const t = Math.max(0, Math.min(1, ((x - px) * dx + (y - py) * dy) / len2));
+    return [px + t * dx, py + t * dy];
+  }
+
+  // Closest distance between two segments, returns closest points + dist²
+  function segSegClosest(
+    a0x: number,
+    a0y: number,
+    a1x: number,
+    a1y: number,
+    b0x: number,
+    b0y: number,
+    b1x: number,
+    b1y: number,
+  ): { cx: number; cy: number; dx: number; dy: number; dist2: number } {
+    // Sample all four endpoint-to-segment projections and pick the closest pair
+    let bestD2 = Infinity,
+      bestCx = 0,
+      bestCy = 0,
+      bestDx = 0,
+      bestDy = 0;
+    const check = (cx: number, cy: number, dx: number, dy: number) => {
+      const d2 = (dx - cx) * (dx - cx) + (dy - cy) * (dy - cy);
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        bestCx = cx;
+        bestCy = cy;
+        bestDx = dx;
+        bestDy = dy;
+      }
     };
+    let [cx, cy] = closestOnSeg(b0x, b0y, b1x, b1y, a0x, a0y);
+    check(a0x, a0y, cx, cy);
+    [cx, cy] = closestOnSeg(b0x, b0y, b1x, b1y, a1x, a1y);
+    check(a1x, a1y, cx, cy);
+    [cx, cy] = closestOnSeg(a0x, a0y, a1x, a1y, b0x, b0y);
+    check(cx, cy, b0x, b0y);
+    [cx, cy] = closestOnSeg(a0x, a0y, a1x, a1y, b1x, b1y);
+    check(cx, cy, b1x, b1y);
+    return { cx: bestCx, cy: bestCy, dx: bestDx, dy: bestDy, dist2: bestD2 };
   }
 
   // ── Collision functions ───────────────────────────────────────────────────
@@ -186,79 +264,117 @@
     if (!containerEl) return;
     const cw = containerEl.offsetWidth;
     const ch = containerEl.offsetHeight;
-    const hw = c.w / 2, hh = c.h / 2;
-    if (c.cx - hw < 0) {
-      c.cx = hw;
+    const r = capsuleRadius(c);
+    const [ax, ay, bx, by] = capsuleEndpoints(c);
+
+    // Check each endpoint against walls
+    const minX = Math.min(ax, bx) - r;
+    const maxX = Math.max(ax, bx) + r;
+    const minY = Math.min(ay, by) - r;
+    const maxY = Math.max(ay, by) + r;
+
+    if (minX < 0) {
+      c.cx -= minX;
       c.vx = Math.abs(c.vx) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cx + hw > cw) {
-      c.cx = cw - hw;
+    if (maxX > cw) {
+      c.cx -= maxX - cw;
       c.vx = -Math.abs(c.vx) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cy - hh < TOP_GUARD) {
-      c.cy = TOP_GUARD + hh;
+    if (minY < TOP_GUARD) {
+      c.cy += TOP_GUARD - minY;
       c.vy = Math.abs(c.vy) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
-    if (c.cy + hh > ch) {
-      c.cy = ch - hh;
+    if (maxY > ch) {
+      c.cy -= maxY - ch;
       c.vy = -Math.abs(c.vy) * RESTITUTION;
       c.rotV += ANG_KICK * (Math.random() * 2 - 1);
     }
   }
 
   function chipCollide(a: CS, b: CS) {
-    const dx = b.cx - a.cx;
-    const dy = b.cy - a.cy;
-    const overlapX = (a.w + b.w) / 2 - Math.abs(dx);
-    const overlapY = (a.h + b.h) / 2 - Math.abs(dy);
-    if (overlapX <= 0 || overlapY <= 0) return;
+    const [a0x, a0y, a1x, a1y] = capsuleEndpoints(a);
+    const [b0x, b0y, b1x, b1y] = capsuleEndpoints(b);
+    const minD = capsuleRadius(a) + capsuleRadius(b);
 
-    // Resolve along the axis of least penetration
-    if (overlapX < overlapY) {
-      const nx = Math.sign(dx) || 1;
-      if (!a.isDragged) a.cx -= nx * overlapX * 0.5;
-      if (!b.isDragged) b.cx += nx * overlapX * 0.5;
-      const relV = (b.vx - a.vx) * nx;
-      if (relV < 0) {
-        const j = -(1 + RESTITUTION) * relV / 2;
-        if (!a.isDragged) { a.vx -= j * nx; a.rotV += ANG_KICK * Math.sign(a.vx || 1); }
-        if (!b.isDragged) { b.vx += j * nx; b.rotV += ANG_KICK * Math.sign(b.vx || 1); }
-      }
-    } else {
-      const ny = Math.sign(dy) || 1;
-      if (!a.isDragged) a.cy -= ny * overlapY * 0.5;
-      if (!b.isDragged) b.cy += ny * overlapY * 0.5;
-      const relV = (b.vy - a.vy) * ny;
-      if (relV < 0) {
-        const j = -(1 + RESTITUTION) * relV / 2;
-        if (!a.isDragged) { a.vy -= j * ny; a.rotV += ANG_KICK * Math.sign(a.vy || 1); }
-        if (!b.isDragged) { b.vy += j * ny; b.rotV += ANG_KICK * Math.sign(b.vy || 1); }
-      }
+    const {
+      cx: pax,
+      cy: pay,
+      dx: pbx,
+      dy: pby,
+      dist2,
+    } = segSegClosest(a0x, a0y, a1x, a1y, b0x, b0y, b1x, b1y);
+    if (dist2 >= minD * minD || dist2 < 1e-6) return;
+
+    const dist = Math.sqrt(dist2);
+    const nx = (pbx - pax) / dist;
+    const ny = (pby - pay) / dist;
+    const overlap = minD - dist;
+
+    if (!a.isDragged) {
+      a.cx -= nx * overlap * 0.5;
+      a.cy -= ny * overlap * 0.5;
+    }
+    if (!b.isDragged) {
+      b.cx += nx * overlap * 0.5;
+      b.cy += ny * overlap * 0.5;
+    }
+
+    const relV = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+    if (relV > 0) return;
+
+    const j = (-(1 + RESTITUTION) * relV) / 2;
+    if (!a.isDragged) {
+      a.vx -= j * nx;
+      a.vy -= j * ny;
+      a.rotV += ANG_KICK * Math.sign(a.vx || 1);
+    }
+    if (!b.isDragged) {
+      b.vx += j * nx;
+      b.vy += j * ny;
+      b.rotV += ANG_KICK * Math.sign(b.vx || 1);
     }
   }
 
   function textCollide(c: CS) {
-    if (!textRect) return;
-    const { x, y, w, h } = textRect;
-    const hw = c.w / 2, hh = c.h / 2;
+    if (textRects.length === 0) return;
+    const r = capsuleRadius(c);
+    const [ax, ay, bx, by] = capsuleEndpoints(c);
+    const probes = [
+      [ax, ay],
+      [bx, by],
+      [c.cx, c.cy],
+    ] as const;
 
-    // AABB vs AABB overlap
-    const penL = c.cx + hw - x;
-    const penR = x + w - (c.cx - hw);
-    const penT = c.cy + hh - y;
-    const penB = y + h - (c.cy - hh);
-    if (penL <= 0 || penR <= 0 || penT <= 0 || penB <= 0) return;
+    for (const rect of textRects) {
+      for (const [ex, ey] of probes) {
+        const clampX = Math.max(rect.x, Math.min(rect.x + rect.w, ex));
+        const clampY = Math.max(rect.y, Math.min(rect.y + rect.h, ey));
+        const dx = ex - clampX;
+        const dy = ey - clampY;
+        const dist2 = dx * dx + dy * dy;
+        if (dist2 >= r * r || dist2 < 1e-6) continue;
 
-    // Push out along the axis of least penetration
-    const min = Math.min(penL, penR, penT, penB);
-    if (min === penL) { c.cx -= penL; if (c.vx > 0) c.vx = -c.vx * RESTITUTION; }
-    else if (min === penR) { c.cx += penR; if (c.vx < 0) c.vx = -c.vx * RESTITUTION; }
-    else if (min === penT) { c.cy -= penT; if (c.vy > 0) c.vy = -c.vy * RESTITUTION; }
-    else { c.cy += penB; if (c.vy < 0) c.vy = -c.vy * RESTITUTION; }
-    c.rotV += ANG_KICK * (Math.random() * 2 - 1);
+        const dist = Math.sqrt(dist2);
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const push = r - dist;
+
+        c.cx += nx * push;
+        c.cy += ny * push;
+
+        const dot = c.vx * nx + c.vy * ny;
+        if (dot < 0) {
+          c.vx -= (1 + RESTITUTION) * dot * nx;
+          c.vy -= (1 + RESTITUTION) * dot * ny;
+        }
+        c.rotV += ANG_KICK * (Math.random() * 2 - 1);
+        return; // resolve one contact per frame
+      }
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
