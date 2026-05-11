@@ -1,5 +1,6 @@
 <script lang="ts">
     import NextSteps from "$lib/components/docs/NextSteps.svelte";
+    import PasswordGenerator from "$lib/components/docs/PasswordGenerator.svelte";
     import { Info } from "@lucide/svelte";
 
     const templateUrl = "https://raw.githubusercontent.com/nightscout/nocturne/main/deploy/portainer/templates.json";
@@ -45,7 +46,10 @@
         <li>
             Fill in the configuration form. Set a strong password for each PostgreSQL role and a
             unique <code class="text-xs bg-muted/50 px-1.5 py-0.5 rounded">INSTANCE_KEY</code>
-            (minimum 12 characters).
+            (minimum 12 characters). Use the generator below for each secret field.
+        </li>
+        <li class="list-none -ml-5">
+            <PasswordGenerator label="password" />
         </li>
         <li>
             Click <strong class="text-foreground">Deploy the stack</strong>.

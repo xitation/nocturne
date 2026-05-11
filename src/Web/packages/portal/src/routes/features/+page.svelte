@@ -4,12 +4,8 @@
         ArrowRight,
         Check,
         Zap,
-        Shield,
-        Globe,
         Activity,
         Database,
-        Code,
-        Layers,
         BarChart3,
         Bell,
         Users,
@@ -18,25 +14,25 @@
     } from "@lucide/svelte";
 </script>
 
-<div class="page-wrap">
+<div class="max-w-[1200px] mx-auto px-6">
     <!-- Page heading -->
-    <div class="page-hero">
-        <div class="page-label">Features</div>
-        <h1>
+    <div class="pt-20 pb-[60px] border-b border-border">
+        <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-4">Features</div>
+        <h1 class="text-[clamp(2rem,4vw,3.2rem)] font-bold leading-[1.15] tracking-[-0.025em] text-foreground m-0 mb-4">
             Everything you need.<br />
-            <em>Nothing you don't.</em>
+            <em class="text-glucose-in-range">Nothing you don't.</em>
         </h1>
-        <p>
+        <p class="text-base leading-[1.65] text-muted-foreground max-w-[560px] m-0">
             Built on .NET 10 with full Nightscout API compatibility. Every
             feature serves a real-world diabetes management need.
         </p>
     </div>
 
     <!-- 01 Core Features -->
-    <section class="page-section">
-        <div class="page-section-head">
-            <div class="page-section-label">&#167; 01 &mdash; Core</div>
-            <h2>Platform <em>fundamentals.</em></h2>
+    <section class="py-20 border-t border-border">
+        <div class="mb-12">
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-3.5">&#167; 01 &mdash; Core</div>
+            <h2 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">Platform <em class="text-glucose-in-range">fundamentals.</em></h2>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -107,10 +103,10 @@
     </section>
 
     <!-- 02 Integrations -->
-    <section class="page-section">
-        <div class="page-section-head">
-            <div class="page-section-label">&#167; 02 &mdash; Integrations</div>
-            <h2>22 sources. <em>One API surface.</em></h2>
+    <section class="py-20 border-t border-border">
+        <div class="mb-12">
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-3.5">&#167; 02 &mdash; Integrations</div>
+            <h2 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">22 sources. <em class="text-glucose-in-range">One API surface.</em></h2>
         </div>
 
         <div class="grid md:grid-cols-3 gap-6">
@@ -160,10 +156,10 @@
     </section>
 
     <!-- 03 Security -->
-    <section class="page-section">
-        <div class="page-section-head">
-            <div class="page-section-label">&#167; 03 &mdash; Security</div>
-            <h2>Your data stays on <em>your server.</em></h2>
+    <section class="py-20 border-t border-border">
+        <div class="mb-12">
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-3.5">&#167; 03 &mdash; Security</div>
+            <h2 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">Your data stays on <em class="text-glucose-in-range">your server.</em></h2>
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -201,10 +197,10 @@
     </section>
 
     <!-- 04 Developer -->
-    <section class="page-section">
-        <div class="page-section-head">
-            <div class="page-section-label">&#167; 04 &mdash; Developer</div>
-            <h2>Open source. <em>Easy to extend.</em></h2>
+    <section class="py-20 border-t border-border">
+        <div class="mb-12">
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-3.5">&#167; 04 &mdash; Developer</div>
+            <h2 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold leading-[1.2] tracking-[-0.02em] text-foreground m-0">Open source. <em class="text-glucose-in-range">Easy to extend.</em></h2>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6">
@@ -240,11 +236,11 @@
     </section>
 
     <!-- CTA -->
-    <section class="page-cta">
-        <div class="page-cta-inner">
-            <div class="page-section-label">Get started</div>
-            <h2>Ready to take control?</h2>
-            <p>
+    <section class="border-t border-border py-20">
+        <div class="max-w-[560px]">
+            <div class="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground mb-3.5">Get started</div>
+            <h2 class="text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-[-0.02em] text-foreground m-0 mb-3">Ready to take control?</h2>
+            <p class="text-[0.9375rem] leading-[1.65] text-muted-foreground m-0 mb-7">
                 Set up your own Nocturne instance in minutes. Free, open source,
                 and always will be.
             </p>
@@ -259,104 +255,3 @@
         </div>
     </section>
 </div>
-
-<style>
-    .page-wrap {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 24px;
-    }
-
-    .page-hero {
-        padding: 80px 0 60px;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 0;
-    }
-
-    .page-label {
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
-        font-size: 11px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
-        margin-bottom: 16px;
-    }
-
-    .page-hero h1 {
-        font-size: clamp(2rem, 4vw, 3.2rem);
-        font-weight: 700;
-        line-height: 1.15;
-        letter-spacing: -0.025em;
-        color: var(--foreground);
-        margin: 0 0 16px;
-    }
-
-    .page-hero h1 em {
-        font-style: italic;
-        color: var(--glucose-in-range);
-    }
-
-    .page-hero p {
-        font-size: 1rem;
-        line-height: 1.65;
-        color: var(--muted-foreground);
-        max-width: 560px;
-        margin: 0;
-    }
-
-    .page-section {
-        padding: 80px 0;
-        border-top: 1px solid var(--border);
-    }
-
-    .page-section-head {
-        margin-bottom: 48px;
-    }
-
-    .page-section-label {
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
-        font-size: 11px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted-foreground);
-        margin-bottom: 14px;
-    }
-
-    .page-section-head h2 {
-        font-size: clamp(1.5rem, 3vw, 2.2rem);
-        font-weight: 700;
-        line-height: 1.2;
-        letter-spacing: -0.02em;
-        color: var(--foreground);
-        margin: 0;
-    }
-
-    .page-section-head h2 em {
-        font-style: italic;
-        color: var(--glucose-in-range);
-    }
-
-    .page-cta {
-        border-top: 1px solid var(--border);
-        padding: 80px 0;
-    }
-
-    .page-cta-inner {
-        max-width: 560px;
-    }
-
-    .page-cta-inner h2 {
-        font-size: clamp(1.5rem, 3vw, 2.2rem);
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: var(--foreground);
-        margin: 0 0 12px;
-    }
-
-    .page-cta-inner p {
-        font-size: 0.9375rem;
-        line-height: 1.65;
-        color: var(--muted-foreground);
-        margin: 0 0 28px;
-    }
-</style>

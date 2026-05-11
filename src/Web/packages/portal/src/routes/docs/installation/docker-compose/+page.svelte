@@ -2,6 +2,7 @@
     import SystemRequirements from "$lib/components/docs/SystemRequirements.svelte";
     import VerificationSteps from "$lib/components/docs/VerificationSteps.svelte";
     import NextSteps from "$lib/components/docs/NextSteps.svelte";
+    import PasswordGenerator from "$lib/components/docs/PasswordGenerator.svelte";
     import envExample from "$lib/release/.env.example?raw";
 </script>
 
@@ -36,7 +37,9 @@ cp .env.example .env</code></pre>
     <p class="text-muted-foreground mb-4">
         Edit <code class="text-xs bg-muted/50 px-1.5 py-0.5 rounded">.env</code> and fill in your
         values. Required fields are left blank; optional bot integrations are commented out.
+        Use the generator below for each password field and <code class="text-xs bg-muted/50 px-1.5 py-0.5 rounded">INSTANCE_KEY</code>.
     </p>
+    <PasswordGenerator label="password" />
     <pre class="p-4 rounded-lg bg-muted/50 border border-border/60 text-sm overflow-x-auto max-h-[400px] mb-8"><code>{envExample}</code></pre>
 
     <h2 class="text-2xl font-bold mt-8 mb-4">Step 3: Start the services</h2>
