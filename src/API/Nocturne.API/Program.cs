@@ -19,6 +19,7 @@ using Nocturne.API.Multitenancy;
 using OpenApi.Remote.Processors;
 using Nocturne.API.OpenApi;
 using Scalar.AspNetCore;
+using Nocturne.Aspire.Scalar;
 using Nocturne.Core.Constants;
 using Nocturne.Core.Models.Configuration;
 using Nocturne.Infrastructure.Cache.Extensions;
@@ -186,6 +187,7 @@ builder.Services.AddOpenApiDocument(config =>
     });
 
     config.OperationProcessors.Add(new RemoteFunctionOperationProcessor());
+    config.OperationProcessors.Add(new ConsumesContentTypeOperationProcessor());
     config.OperationProcessors.Add(new ControllerNameTagOperationProcessor());
     config.OperationProcessors.Add(new SummaryToDescriptionOperationProcessor());
 
@@ -209,11 +211,11 @@ builder.Services.AddOpenApi("nocturne", options =>
             || ns == "Nocturne.API.Controllers";
     };
     options.AddOperationTransformer<SummaryToDescriptionOperationTransformer>();
-    options.AddOperationTransformer<FolderBasedTagOperationTransformer>();
     options.AddOperationTransformer<SecurityRequirementOperationTransformer>();
     options.AddDocumentTransformer<TagDescriptionDocumentTransformer>();
     options.AddDocumentTransformer<SecuritySchemeDocumentTransformer>();
     options.AddDocumentTransformer<DiagramDescriptionDocumentTransformer>();
+    options.AddDocumentTransformer<ScalarExtensionsDocumentTransformer>();
 });
 
 builder.Services.AddOpenApi("nightscout", options =>
@@ -230,11 +232,11 @@ builder.Services.AddOpenApi("nightscout", options =>
             || ns.EndsWith(".Controllers.V3", StringComparison.Ordinal);
     };
     options.AddOperationTransformer<SummaryToDescriptionOperationTransformer>();
-    options.AddOperationTransformer<FolderBasedTagOperationTransformer>();
     options.AddOperationTransformer<SecurityRequirementOperationTransformer>();
     options.AddDocumentTransformer<TagDescriptionDocumentTransformer>();
     options.AddDocumentTransformer<SecuritySchemeDocumentTransformer>();
     options.AddDocumentTransformer<DiagramDescriptionDocumentTransformer>();
+    options.AddDocumentTransformer<ScalarExtensionsDocumentTransformer>();
 });
 
 // ── Service registration (grouped by concern) ──────────────────────────
@@ -304,7 +306,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
                              | ForwardedHeaders.XForwardedProto
                              | ForwardedHeaders.XForwardedHost;
     // Trust any proxy — the API is only reachable through the gateway.
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -327,6 +329,25 @@ app.UseMiddleware<JsonExtensionMiddleware>();
 // (e.g. [AllowDuringSetup]). Minimal hosting would insert this automatically
 // but we make it explicit for clarity.
 app.UseRouting();
+
+// Documentation paths (/scalar, /openapi) bypass the entire tenant/auth
+// middleware stack — they're tenantless and publicly accessible.
+app.Use(async (context, next) =>
+{
+    var path = context.Request.Path.Value ?? "";
+    if (path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase))
+    {
+        // Jump straight to the endpoint (MapOpenApi / MapScalarApiReference)
+        var endpoint = context.GetEndpoint();
+        if (endpoint != null)
+        {
+            await endpoint.RequestDelegate!(context);
+            return;
+        }
+    }
+    await next();
+});
 
 // Redirect OIDC callbacks from apex to the originating tenant subdomain
 app.UseMiddleware<OidcCallbackRedirectMiddleware>();
@@ -376,6 +397,23 @@ app.MapScalarApiReference(options =>
 {
     options.WithTheme(ScalarTheme.Mars);
     options.WithOpenApiRoutePattern("/openapi/{documentName}.json");
+    options.AddDocument("nocturne", "Nocturne API", isDefault: true);
+    options.AddDocument("nightscout", "Nightscout API");
+    options.AddHeadContent(MermaidLazyLoader.HeadContent);
+
+    // Pre-configure authentication so Scalar's "Authorize" UI works out of the box.
+    options
+        .AddPreferredSecuritySchemes("oauth2", "bearer", "apiSecret")
+        .AddAuthorizationCodeFlow("oauth2", flow =>
+        {
+            flow.ClientId = "scalar";
+            flow.Pkce = Pkce.Sha256;
+            flow.SelectedScopes = ["*"];
+        })
+        .AddApiKeyAuthentication("apiSecret", apiKey =>
+        {
+            apiKey.Value = string.Empty;
+        });
 });
 
 // Add root endpoint to serve a basic info page
@@ -571,6 +609,7 @@ internal class NSwagStartup
             });
 
             config.OperationProcessors.Add(new RemoteFunctionOperationProcessor());
+            config.OperationProcessors.Add(new ConsumesContentTypeOperationProcessor());
             config.OperationProcessors.Add(new ControllerNameTagOperationProcessor());
         });
     }

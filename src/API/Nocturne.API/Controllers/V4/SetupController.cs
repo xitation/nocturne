@@ -15,7 +15,7 @@ using Nocturne.API.Extensions;
 using Nocturne.API.Services.Auth;
 using Nocturne.Infrastructure.Data;
 using Nocturne.Infrastructure.Data.Entities;
-using Nocturne.API.Multitenancy;
+using Nocturne.API.Configuration;
 using SameSiteMode = Nocturne.Core.Models.Configuration.SameSiteMode;
 
 namespace Nocturne.API.Controllers.V4;
@@ -27,6 +27,7 @@ namespace Nocturne.API.Controllers.V4;
 /// Step 2: Create the owner account for that tenant (POST /api/v4/setup/owner/*).
 /// </summary>
 [ApiController]
+[Tags("Identity")]
 [Route("api/v4/setup")]
 [Produces("application/json")]
 [AllowAnonymous]
@@ -41,7 +42,7 @@ public partial class SetupController : ControllerBase
     private readonly IDbContextFactory<NocturneDbContext> _dbFactory;
     private readonly OidcOptions _oidcOptions;
     private readonly IOidcAuthService _oidcAuthService;
-    private readonly MultitenancyConfiguration _multitenancyConfig;
+    private readonly OperatorConfiguration _operatorConfig;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<SetupController> _logger;
 
@@ -54,7 +55,7 @@ public partial class SetupController : ControllerBase
         IDbContextFactory<NocturneDbContext> dbFactory,
         IOptions<OidcOptions> oidcOptions,
         IOidcAuthService oidcAuthService,
-        IOptions<MultitenancyConfiguration> multitenancyConfig,
+        IOptions<OperatorConfiguration> operatorConfig,
         IHttpClientFactory httpClientFactory,
         ILogger<SetupController> logger)
     {
@@ -66,7 +67,7 @@ public partial class SetupController : ControllerBase
         _dbFactory = dbFactory;
         _oidcOptions = oidcOptions.Value;
         _oidcAuthService = oidcAuthService;
-        _multitenancyConfig = multitenancyConfig.Value;
+        _operatorConfig = operatorConfig.Value;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
@@ -88,9 +89,7 @@ public partial class SetupController : ControllerBase
     {
         await using var context = await _dbFactory.CreateDbContextAsync(ct);
 
-        // Check for tenants that have real members with credentials (passkey or OIDC).
-        // The multitenancy migration seeds a 'default' tenant for backfilling, which
-        // has no members and should not block fresh setup.
+        // Block if any tenant already has a member with credentials (passkey or OIDC).
         var hasConfiguredTenant = await context.TenantMembers
             .AnyAsync(m =>
                 context.PasskeyCredentials.Any(c => c.SubjectId == m.SubjectId) ||
@@ -148,13 +147,13 @@ public partial class SetupController : ControllerBase
         if (exists)
             return Ok(new SlugValidationResult(false, "This username is already taken"));
 
-        if (!string.IsNullOrEmpty(_multitenancyConfig.UsernameValidationWebhookUrl))
+        if (!string.IsNullOrEmpty(_operatorConfig.UsernameValidationWebhookUrl))
         {
             try
             {
                 var client = _httpClientFactory.CreateClient("username-validation");
                 var response = await client.PostAsJsonAsync(
-                    _multitenancyConfig.UsernameValidationWebhookUrl,
+                    _operatorConfig.UsernameValidationWebhookUrl,
                     new { username = normalized },
                     ct);
 

@@ -737,14 +737,13 @@ public class StatisticsService : IStatisticsService
     /// </summary>
     /// <param name="values">Collection of numeric values</param>
     /// <returns>Mean value rounded to one decimal place</returns>
-    public double CalculateMean(IEnumerable<double> values)
+    public double CalculateMean(IList<double> values)
     {
-        var valuesList = values.ToList();
-        if (!valuesList.Any())
+        if (values.Count == 0)
             return 0;
 
-        var sum = valuesList.Sum();
-        return Math.Round((sum / valuesList.Count) * 10) / 10;
+        var sum = values.Sum();
+        return Math.Round((sum / values.Count) * 10) / 10;
     }
 
     /// <summary>
@@ -753,23 +752,22 @@ public class StatisticsService : IStatisticsService
     /// <param name="sortedValues">Pre-sorted collection of values</param>
     /// <param name="percentile">Percentile to calculate (0-100)</param>
     /// <returns>Value at the specified percentile</returns>
-    public double CalculatePercentile(IEnumerable<double> sortedValues, double percentile)
+    public double CalculatePercentile(IList<double> sortedValues, double percentile)
     {
-        var sorted = sortedValues.ToList();
-        if (!sorted.Any())
+        if (sortedValues.Count == 0)
             return 0;
 
-        var index = (percentile / 100) * (sorted.Count - 1);
+        var index = (percentile / 100) * (sortedValues.Count - 1);
         var lower = (int)Math.Floor(index);
         var upper = (int)Math.Ceiling(index);
 
         if (lower == upper)
         {
-            return sorted[lower];
+            return sortedValues[lower];
         }
 
         var weight = index - lower;
-        return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+        return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
     }
 
     /// <summary>
@@ -1232,19 +1230,18 @@ public class StatisticsService : IStatisticsService
             };
         }
 
-        // Count readings in each range
-        var veryLowCount = glucoseValues.Count(v => v < thresholds.VeryLow);
-        var lowCount = glucoseValues.Count(v => v >= thresholds.VeryLow && v < thresholds.Low);
-        var targetCount = glucoseValues.Count(v =>
-            v >= thresholds.TargetBottom && v <= thresholds.TargetTop
-        );
-        var tightTargetCount = glucoseValues.Count(v =>
-            v >= thresholds.TightTargetBottom && v <= thresholds.TightTargetTop
-        );
-        var highCount = glucoseValues.Count(v =>
-            v > thresholds.TargetTop && v <= thresholds.VeryHigh
-        );
-        var veryHighCount = glucoseValues.Count(v => v > thresholds.VeryHigh);
+        // Single-pass counting across all ranges
+        int veryLowCount = 0, lowCount = 0, targetCount = 0, tightTargetCount = 0, highCount = 0, veryHighCount = 0;
+        foreach (var v in glucoseValues)
+        {
+            if (v < thresholds.VeryLow) veryLowCount++;
+            else if (v < thresholds.Low) lowCount++;
+            else if (v > thresholds.VeryHigh) veryHighCount++;
+            else if (v > thresholds.TargetTop) highCount++;
+            // Target and tight-target overlap, so count both independently
+            if (v >= thresholds.TargetBottom && v <= thresholds.TargetTop) targetCount++;
+            if (v >= thresholds.TightTargetBottom && v <= thresholds.TightTargetTop) tightTargetCount++;
+        }
 
         // Calculate percentages
         var percentages = new TimeInRangePercentages
@@ -1273,11 +1270,15 @@ public class StatisticsService : IStatisticsService
         var episodes = CalculateEpisodes(glucoseValues, thresholds);
 
         // Calculate per-range detailed statistics
-        var lowValues = glucoseValues.Where(v => v < thresholds.Low).ToList();
-        var targetValues = glucoseValues
-            .Where(v => v >= thresholds.TargetBottom && v <= thresholds.TargetTop)
-            .ToList();
-        var highValues = glucoseValues.Where(v => v > thresholds.TargetTop).ToList();
+        var lowValues = new List<double>(veryLowCount + lowCount);
+        var targetValues = new List<double>(targetCount);
+        var highValues = new List<double>(highCount + veryHighCount);
+        foreach (var v in glucoseValues)
+        {
+            if (v < thresholds.Low) lowValues.Add(v);
+            else if (v > thresholds.TargetTop) highValues.Add(v);
+            if (v >= thresholds.TargetBottom && v <= thresholds.TargetTop) targetValues.Add(v);
+        }
 
         var rangeStats = new TimeInRangeDetailedStats
         {
@@ -1450,7 +1451,8 @@ public class StatisticsService : IStatisticsService
     /// <returns>Estimated HbA1C as a formatted string</returns>
     public string CalculateEstimatedHbA1C(IEnumerable<double> values)
     {
-        var mean = CalculateMean(values);
+        var valuesList = values as IList<double> ?? values.ToList();
+        var mean = CalculateMean(valuesList);
         if (mean == 0)
             return "0.0";
         var a1c = (mean + 46.7) / 28.7;
@@ -1473,7 +1475,7 @@ public class StatisticsService : IStatisticsService
         // Initialize all 24 hours
         for (int hour = 0; hour < 24; hour++)
         {
-            hourlyGroups[hour] = new List<SensorGlucose>();
+            hourlyGroups[hour] = new List<SensorGlucose>(entriesList.Count / 24 + 1);
         }
 
         // Group entries by hour (only if we have entries)
@@ -2043,19 +2045,24 @@ public class StatisticsService : IStatisticsService
     }
 
     /// <summary>
-    /// Calculate comprehensive basal analysis statistics using TempBasals and algorithm boluses
+    /// Calculate comprehensive basal analysis statistics using TempBasals and algorithm boluses.
+    /// Hourly percentiles are computed by duration-weighted overlap of each TempBasal's interval
+    /// with each <paramref name="userTimeZone"/>-local hour-of-day bucket: a TempBasal that runs
+    /// 13:55–14:25 local contributes 5 minutes to bucket 13 and 25 minutes to bucket 14. When
+    /// <paramref name="userTimeZone"/> is null, buckets are UTC hour-of-day.
     /// </summary>
     public BasalAnalysisResponse CalculateBasalAnalysis(
         IEnumerable<TempBasal> tempBasals,
         IEnumerable<Bolus> algorithmBoluses,
         DateTime startDate,
-        DateTime endDate
+        DateTime endDate,
+        TimeZoneInfo? userTimeZone = null
     )
     {
+        var tz = userTimeZone ?? TimeZoneInfo.Utc;
         var tempBasalList = tempBasals.ToList();
         var dayCount = Math.Max(1, (int)Math.Ceiling((endDate - startDate).TotalDays));
 
-        // Track stats
         var allRates = new List<double>();
         double totalDelivered = 0;
         int tempBasalCount = 0;
@@ -2063,50 +2070,39 @@ public class StatisticsService : IStatisticsService
         int lowTempCount = 0;
         int zeroTempCount = 0;
 
-        // Hourly rate buckets
-        var hourlyRates = new Dictionary<int, List<double>>();
-        for (int h = 0; h < 24; h++)
-            hourlyRates[h] = new List<double>();
+        // Each bucket holds (rate, durationMs) pairs for weighted percentile calculation.
+        var hourlyRates = new List<(double Rate, long WeightMs)>[24];
+        for (int h = 0; h < 24; h++) hourlyRates[h] = new();
 
         foreach (var tb in tempBasalList)
         {
             var rate = tb.Rate;
-            var scheduledRate = tb.ScheduledRate;
-            var origin = tb.Origin;
-
-            var startTime = DateTimeOffset.FromUnixTimeMilliseconds(tb.StartMills).DateTime;
-
             allRates.Add(rate);
             totalDelivered += GetTempBasalInsulin(tb);
 
-            // Add to hourly buckets
-            var hour = startTime.Hour;
-            hourlyRates[hour].Add(rate);
+            // Effective interval: open-ended TempBasals fall back to a 5-min slice (matches
+            // GetTempBasalInsulin's convention), so the weight isn't zero.
+            var effectiveEndMills = tb.EndMills ?? tb.StartMills + 5 * 60_000L;
+            DistributeAcrossHourOfDay(tb.StartMills, effectiveEndMills, rate, tz, hourlyRates);
 
-            // Track temp basals (non-scheduled origins)
-            if (origin != TempBasalOrigin.Scheduled && origin != TempBasalOrigin.Inferred)
+            if (tb.Origin != TempBasalOrigin.Scheduled && tb.Origin != TempBasalOrigin.Inferred)
             {
                 tempBasalCount++;
 
-                if (rate == 0 || origin == TempBasalOrigin.Suspended)
+                if (rate == 0 || tb.Origin == TempBasalOrigin.Suspended)
                 {
                     zeroTempCount++;
                 }
-                else if (scheduledRate.HasValue)
+                else if (tb.ScheduledRate.HasValue)
                 {
-                    if (rate > scheduledRate.Value)
-                        highTempCount++;
-                    else if (rate < scheduledRate.Value)
-                        lowTempCount++;
+                    if (rate > tb.ScheduledRate.Value) highTempCount++;
+                    else if (rate < tb.ScheduledRate.Value) lowTempCount++;
                 }
             }
         }
 
-        // Add algorithm bolus insulin to total delivered
         foreach (var ab in algorithmBoluses)
-        {
             totalDelivered += ab.Insulin;
-        }
 
         var basalStats = new BasalStats
         {
@@ -2126,40 +2122,27 @@ public class StatisticsService : IStatisticsService
             ZeroTemps = zeroTempCount,
         };
 
-        var hourlyPercentiles = new List<HourlyBasalPercentileData>();
+        var hourlyPercentiles = new List<HourlyBasalPercentileData>(24);
         for (int hour = 0; hour < 24; hour++)
         {
-            var hourRates = hourlyRates[hour];
-            if (hourRates.Count > 0)
+            var samples = hourlyRates[hour];
+            if (samples.Count == 0)
             {
-                hourlyPercentiles.Add(
-                    new HourlyBasalPercentileData
-                    {
-                        Hour = hour,
-                        P10 = Math.Round(CalculatePercentile(hourRates, 10) * 100) / 100,
-                        P25 = Math.Round(CalculatePercentile(hourRates, 25) * 100) / 100,
-                        Median = Math.Round(CalculatePercentile(hourRates, 50) * 100) / 100,
-                        P75 = Math.Round(CalculatePercentile(hourRates, 75) * 100) / 100,
-                        P90 = Math.Round(CalculatePercentile(hourRates, 90) * 100) / 100,
-                        Count = hourRates.Count,
-                    }
-                );
+                hourlyPercentiles.Add(new HourlyBasalPercentileData { Hour = hour, Count = 0 });
+                continue;
             }
-            else
+
+            samples.Sort((a, b) => a.Rate.CompareTo(b.Rate));
+            hourlyPercentiles.Add(new HourlyBasalPercentileData
             {
-                hourlyPercentiles.Add(
-                    new HourlyBasalPercentileData
-                    {
-                        Hour = hour,
-                        P10 = 0,
-                        P25 = 0,
-                        Median = 0,
-                        P75 = 0,
-                        P90 = 0,
-                        Count = 0,
-                    }
-                );
-            }
+                Hour = hour,
+                P10 = Math.Round(WeightedPercentile(samples, 10) * 100) / 100,
+                P25 = Math.Round(WeightedPercentile(samples, 25) * 100) / 100,
+                Median = Math.Round(WeightedPercentile(samples, 50) * 100) / 100,
+                P75 = Math.Round(WeightedPercentile(samples, 75) * 100) / 100,
+                P90 = Math.Round(WeightedPercentile(samples, 90) * 100) / 100,
+                Count = samples.Count,
+            });
         }
 
         return new BasalAnalysisResponse
@@ -2171,6 +2154,64 @@ public class StatisticsService : IStatisticsService
             StartDate = startDate.ToString("yyyy-MM-dd"),
             EndDate = endDate.ToString("yyyy-MM-dd"),
         };
+    }
+
+    /// <summary>
+    /// Walks a [startMills, endMills) interval and adds (rate, overlapMs) entries to each
+    /// <paramref name="tz"/>-local hour-of-day bucket the interval crosses. A 30-minute interval
+    /// at local 13:55 contributes 5 min to bucket 13 and 25 min to bucket 14. Slices on UTC
+    /// hour boundaries; the local hour at the slice start determines the bucket. DST transitions
+    /// that occur on the UTC hour boundary correctly skip (spring-forward) or repeat (fall-back)
+    /// the affected local-hour bucket.
+    /// </summary>
+    private static void DistributeAcrossHourOfDay(
+        long startMills,
+        long endMills,
+        double rate,
+        TimeZoneInfo tz,
+        List<(double Rate, long WeightMs)>[] buckets)
+    {
+        if (endMills <= startMills) return;
+        const long HourMs = 3_600_000L;
+        long cursor = startMills;
+        while (cursor < endMills)
+        {
+            long nextHourBoundary = (cursor / HourMs + 1) * HourMs;
+            long sliceEnd = Math.Min(nextHourBoundary, endMills);
+            long weight = sliceEnd - cursor;
+            var utcDt = DateTimeOffset.FromUnixTimeMilliseconds(cursor).UtcDateTime;
+            var localDt = TimeZoneInfo.ConvertTimeFromUtc(utcDt, tz);
+            int hourOfDay = localDt.Hour;
+            buckets[hourOfDay].Add((rate, weight));
+            cursor = sliceEnd;
+        }
+    }
+
+    /// <summary>
+    /// Nearest-rank weighted percentile over duration-weighted samples — returns the rate of the
+    /// sample whose cumulative weight first reaches the target fraction of total weight. Suitable
+    /// for piecewise-constant rate timelines where interpolating between two distinct rates would
+    /// invent a value the user never actually delivered. Input must be pre-sorted by <c>Rate</c>
+    /// ascending. Returns 0 for empty input.
+    /// </summary>
+    private static double WeightedPercentile(
+        List<(double Rate, long WeightMs)> sortedByRate,
+        double percentile)
+    {
+        if (sortedByRate.Count == 0) return 0;
+
+        long totalWeight = 0;
+        for (int i = 0; i < sortedByRate.Count; i++) totalWeight += sortedByRate[i].WeightMs;
+        if (totalWeight == 0) return sortedByRate[0].Rate;
+
+        double target = percentile / 100.0 * totalWeight;
+        long cumulative = 0;
+        for (int i = 0; i < sortedByRate.Count; i++)
+        {
+            cumulative += sortedByRate[i].WeightMs;
+            if (cumulative >= target) return sortedByRate[i].Rate;
+        }
+        return sortedByRate[^1].Rate;
     }
 
     #endregion
@@ -2357,7 +2398,10 @@ public class StatisticsService : IStatisticsService
         IEnumerable<SensorGlucose> entries,
         IEnumerable<Bolus> boluses,
         IEnumerable<CarbIntake> carbIntakes,
-        ExtendedAnalysisConfig? config = null
+        ExtendedAnalysisConfig? config = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int updateIntervalMinutes = 5
     )
     {
         config ??= new ExtendedAnalysisConfig();
@@ -2388,7 +2432,7 @@ public class StatisticsService : IStatisticsService
         var basicStats = CalculateBasicStats(glucoseValues);
         var timeInRange = CalculateTimeInRange(sortedEntries, config.Thresholds);
         var glycemicVariability = CalculateGlycemicVariability(glucoseValues, sortedEntries);
-        var dataQuality = AssessDataQuality(sortedEntries);
+        var dataQuality = AssessDataQuality(sortedEntries, startDate, endDate, updateIntervalMinutes);
 
         var timeStart = sortedEntries.FirstOrDefault()?.Mills ?? 0;
         var timeEnd = sortedEntries.LastOrDefault()?.Mills ?? 0;
@@ -2416,7 +2460,11 @@ public class StatisticsService : IStatisticsService
         };
     }
 
-    private DataQuality AssessDataQuality(IList<SensorGlucose> entries)
+    private DataQuality AssessDataQuality(
+        IList<SensorGlucose> entries,
+        DateTime? reportStart = null,
+        DateTime? reportEnd = null,
+        int updateIntervalMinutes = 5)
     {
         var totalReadings = entries.Count;
         var gaps = new List<DataGap>();
@@ -2429,16 +2477,14 @@ public class StatisticsService : IStatisticsService
                 var currentTime = entries[i].Mills;
                 var gapMinutes = (currentTime - prevTime) / (1000.0 * 60);
 
-                if (gapMinutes > 15) // Gap larger than expected 5-10 minute interval
+                if (gapMinutes > 15)
                 {
-                    gaps.Add(
-                        new DataGap
-                        {
-                            Start = prevTime,
-                            End = currentTime,
-                            Duration = gapMinutes,
-                        }
-                    );
+                    gaps.Add(new DataGap
+                    {
+                        Start = prevTime,
+                        End = currentTime,
+                        Duration = gapMinutes,
+                    });
                 }
             }
         }
@@ -2446,22 +2492,39 @@ public class StatisticsService : IStatisticsService
         var longestGap = gaps.Any() ? gaps.Max(g => g.Duration) : 0;
         var averageGap = gaps.Any() ? gaps.Average(g => g.Duration) : 0;
 
+        // CgmActivePercent: actual readings vs expected readings over report period
+        var effectiveStart = reportStart ?? (entries.Count > 0 ? entries[0].Timestamp : DateTime.UtcNow);
+        var effectiveEnd = reportEnd ?? (entries.Count > 0 ? entries[^1].Timestamp : DateTime.UtcNow);
+        var reportSpanMinutes = (effectiveEnd - effectiveStart).TotalMinutes;
+        var expectedReadings = reportSpanMinutes / updateIntervalMinutes;
+        var cgmActivePercent = expectedReadings > 0
+            ? Math.Min(totalReadings / expectedReadings * 100.0, 100.0)
+            : 0;
+
+        // DataCompleteness: time coverage within the data range (first->last reading)
+        var dataSpanMinutes = entries.Count > 1
+            ? (entries[^1].Mills - entries[0].Mills) / (1000.0 * 60)
+            : 0;
+        var totalGapMinutes = gaps.Sum(g => g.Duration);
+        var dataCompleteness = dataSpanMinutes > 0
+            ? ((dataSpanMinutes - totalGapMinutes) / dataSpanMinutes) * 100.0
+            : 0;
+
         return new DataQuality
         {
             TotalReadings = totalReadings,
-            MissingReadings = gaps.Sum(g => (int)(g.Duration / 5)), // Assuming 5-minute intervals
-            DataCompleteness =
-                totalReadings > 0 ? (1.0 - (double)gaps.Count / totalReadings) * 100 : 0,
-            CgmActivePercent = 100, // Simplified - would need more sophisticated calculation
+            MissingReadings = gaps.Sum(g => (int)(g.Duration / updateIntervalMinutes)),
+            DataCompleteness = dataCompleteness,
+            CgmActivePercent = cgmActivePercent,
             GapAnalysis = new GapAnalysis
             {
                 Gaps = gaps,
                 LongestGap = longestGap,
                 AverageGap = averageGap,
             },
-            NoiseLevel = 0, // Would require noise analysis
-            CalibrationEvents = 0, // Would require analysis of cal entries
-            SensorWarmups = 0, // Would require analysis of sensor events
+            NoiseLevel = 0,
+            CalibrationEvents = 0,
+            SensorWarmups = 0,
         };
     }
 

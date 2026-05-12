@@ -55,29 +55,16 @@
   import { Badge } from "$lib/components/ui/badge";
   import { cn } from "$lib/utils";
   import {
-    TrendingUp,
-    BarChart3,
-    Clock,
-    Calendar,
-    CalendarDays,
-    FileText,
     Gauge,
     AlertTriangle,
-    Moon,
-    Utensils,
-    Dumbbell,
-    Footprints,
-    HeartPulse,
-    Heart,
-    Stethoscope,
     ArrowRight,
-    Layers,
-    PieChart,
+    BarChart3,
     Sparkles,
     Activity,
+    Calendar,
     ChevronRight,
-    Syringe,
   } from "lucide-svelte";
+  import { reportCategories } from "$lib/navigation/report-navigation";
   import TIRStackedChart from "$lib/components/reports/TIRStackedChart.svelte";
   import ReliabilityBadge from "$lib/components/reports/ReliabilityBadge.svelte";
   import { AmbulatoryGlucoseProfile } from "$lib/components/ambulatory-glucose-profile";
@@ -91,8 +78,7 @@
     getUnitLabel,
   } from "$lib/utils/formatting";
   import ReportsSkeleton from "$lib/components/reports/ReportsSkeleton.svelte";
-  import SiteChangeIcon from "$lib/components/icons/SiteChangeIcon.svelte";
-  import { resource } from "runed";
+  import { contextResource } from "$lib/hooks/resource-context.svelte";
   import { coachmark } from "@nocturne/coach";
   import { fly, fade, scale } from "svelte/transition";
   import { cubicOut, elasticOut } from "svelte/easing";
@@ -101,13 +87,9 @@
   // Default: 14 days is standard for reports overview
   const reportsParams = requireDateParamsContext(14);
 
-  // Use resource for controlled reactivity
-  const reportsResource = resource(
-    () => reportsParams.dateRangeInput,
-    async (dateRangeInput) => {
-      return await getReportsData(dateRangeInput);
-    },
-    { debounce: 100 }
+  const reportsResource = contextResource(
+    () => getReportsData(reportsParams.dateRangeInput),
+    { errorTitle: "Error Loading Reports" }
   );
 
   const isLoading = $derived(reportsResource.loading);
@@ -165,161 +147,6 @@
     return labels[status ?? "good"];
   }
 
-  // Report categories
-  const reportCategories = [
-    {
-      id: "overview",
-      title: "The Big Picture",
-      subtitle: "Your key metrics at a glance",
-      icon: Gauge,
-      reports: [
-        {
-          title: "Executive Summary",
-          description: "All your important numbers in one place",
-          href: "/reports/executive-summary",
-          icon: Gauge,
-          status: "available" as const,
-        },
-        {
-          title: "Glucose Profile (AGP)",
-          description: "Your typical day's glucose pattern",
-          href: "/reports/agp",
-          icon: BarChart3,
-          status: "available" as const,
-        },
-        {
-          title: "Glucose Distribution",
-          description: "Time spent in each glucose zone",
-          href: "/reports/glucose-distribution",
-          icon: PieChart,
-          status: "available" as const,
-        },
-      ],
-    },
-    {
-      id: "patterns",
-      title: "Patterns & Trends",
-      subtitle: "Discover what affects your glucose",
-      icon: TrendingUp,
-      reports: [
-        {
-          title: "Data Overview",
-          description: "Multi-year heatmap of all your data",
-          href: "/reports/year-overview",
-          icon: CalendarDays,
-          status: "available" as const,
-        },
-        {
-          title: "Day-by-Day View",
-          description: "Review each day individually",
-          href: "/reports/readings",
-          icon: Calendar,
-          status: "available" as const,
-        },
-        {
-          title: "Week to Week",
-          description: "Compare patterns across days",
-          href: "/reports/week-to-week",
-          icon: Layers,
-          status: "available" as const,
-        },
-        {
-          title: "Hourly Patterns",
-          description: "Find your best and worst hours",
-          href: "/reports/hourly-stats",
-          icon: Clock,
-          status: "coming-soon" as const,
-        },
-      ],
-    },
-    {
-      id: "lifestyle",
-      title: "Lifestyle Impact",
-      subtitle: "How food, exercise & sleep affect you",
-      icon: Heart,
-      reports: [
-        {
-          title: "Step Count",
-          description: "Daily step patterns and activity levels",
-          href: "/reports/steps",
-          icon: Footprints,
-          status: "available" as const,
-        },
-        {
-          title: "Heart Rate",
-          description: "Heart rate patterns and resting estimates",
-          href: "/reports/heart-rate",
-          icon: HeartPulse,
-          status: "available" as const,
-        },
-        {
-          title: "Sleep & Overnight",
-          description: "Understand your overnight patterns",
-          href: "/reports/sleep",
-          icon: Moon,
-          status: "available" as const,
-        },
-        {
-          title: "Meal Analysis",
-          description: "See how different meals affect you",
-          href: "/reports/meals",
-          icon: Utensils,
-          status: "coming-soon" as const,
-        },
-        {
-          title: "Exercise Impact",
-          description: "Track activity's effect on glucose",
-          href: "/reports/exercise",
-          icon: Dumbbell,
-          status: "coming-soon" as const,
-        },
-      ],
-    },
-    {
-      id: "treatment",
-      title: "Treatment Insights",
-      subtitle: "Is your treatment working?",
-      icon: Stethoscope,
-      reports: [
-        {
-          title: "Treatment Log",
-          description: "Your insulin and carb history",
-          href: "/reports/treatments",
-          icon: FileText,
-          status: "available" as const,
-        },
-        {
-          title: "Basal Rate Analysis",
-          description: "How your basal rates vary",
-          href: "/reports/basal-analysis",
-          icon: Layers,
-          status: "available" as const,
-        },
-        {
-          title: "Insulin Delivery",
-          description: "Basal vs bolus breakdown",
-          href: "/reports/insulin-delivery",
-          icon: PieChart,
-          status: "available" as const,
-        },
-        {
-          title: "Site Change Impact",
-          description: "How site changes affect control",
-          href: "/reports/site-change-impact",
-          icon: SiteChangeIcon,
-          status: "available" as const,
-        },
-        {
-          title: "Insulin Dosing Profile",
-          description: "Standardised insulin and glucose summary",
-          href: "/reports/idp",
-          icon: Syringe,
-          status: "available" as const,
-        },
-      ],
-    },
-  ];
-
   // Animation delay helper
   function staggerDelay(index: number): number {
     return 80 + index * 60;
@@ -350,7 +177,7 @@
           ? reportsResource.error.message
           : "Something went wrong"}
       </p>
-      <Button variant="outline" onclick={() => reportsResource.refetch()}>
+      <Button variant="outline" onclick={() => reportsResource.refresh()}>
         Try again
       </Button>
     </div>

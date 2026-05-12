@@ -179,7 +179,7 @@
       params.set("returnUrl", returnUrl);
     }
 
-    window.location.href = `/api/v4/oidc/login?${params.toString()}`;
+    window.location.href = `/api/auth/oidc/login?${params.toString()}`;
   }
 
   function getButtonStyle(buttonColor?: string): string {
@@ -192,6 +192,18 @@
     errorMessage = null;
   }
 </script>
+
+{#snippet providerIcon(name: string | undefined)}
+  {#if name && name.toLowerCase().includes("google")}
+    <img src="/logos/google.webp" alt="" class="mr-2 h-4 w-4 shrink-0 object-contain" aria-hidden="true" />
+  {:else if name && name.toLowerCase().includes("apple")}
+    <img src="/logos/apple.svg" alt="" class="mr-2 h-4 w-4 shrink-0 object-contain" aria-hidden="true" />
+  {:else if name && name.toLowerCase().includes("github")}
+    <img src="/logos/github.png" alt="" class="mr-2 h-4 w-4 shrink-0 object-contain" aria-hidden="true" />
+  {:else}
+    <ExternalLink class="mr-2 h-4 w-4" />
+  {/if}
+{/snippet}
 
 {#if oidcQuery.loading}
   <div class="flex items-center justify-center p-8">
@@ -271,7 +283,7 @@
                 <Loader2 class="mr-2 h-4 w-4 animate-spin" />
                 Redirecting...
               {:else}
-                <ExternalLink class="mr-2 h-4 w-4" />
+                {@render providerIcon(provider.name)}
                 Sign in with {provider.name}
               {/if}
             </Button>

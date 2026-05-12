@@ -18,6 +18,46 @@ export class MetadataClient {
     }
 
     /**
+     * Get the alert condition tree shape. Exists solely so NSwag generates TypeScript
+    interfaces for ConditionNode and every condition payload record
+    — they're stored as opaque JSON on the rule entity and not otherwise reachable
+    through a controller signature.
+     */
+    getAlertConditionTypes(signal?: AbortSignal): Promise<AlertConditionTypesMetadata> {
+        let url_ = this.baseUrl + "/api/Metadata/alert-condition-types";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetAlertConditionTypes(_response);
+        });
+    }
+
+    protected processGetAlertConditionTypes(response: Response): Promise<AlertConditionTypesMetadata> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AlertConditionTypesMetadata;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AlertConditionTypesMetadata>(null as any);
+    }
+
+    /**
      * Get authentication error codes metadata
     This endpoint ensures NSwag generates TypeScript types for AuthErrorCode
      * @return Auth error codes metadata
@@ -227,6 +267,48 @@ export class CoachMarkClient {
             });
         }
         return Promise.resolve<CoachMarkState[]>(null as any);
+    }
+
+    /**
+     * Delete all coach mark states for the current user, resetting all tutorials.
+     */
+    deleteAll(signal?: AbortSignal): Promise<FileResponse> {
+        let url_ = this.baseUrl + "/api/v4/coach-marks";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+                "Accept": "application/octet-stream"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeleteAll(_response);
+        });
+    }
+
+    protected processDeleteAll(response: Response): Promise<FileResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return response.blob().then(blob => { return { fileName: fileName, data: blob, status: status, headers: _headers }; });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<FileResponse>(null as any);
     }
 
     /**
@@ -555,7 +637,7 @@ export class PlatformClient {
 
     /**
      * Creates a new tenant with the authenticated subject as owner.
-    Requires MultitenancyConfiguration.AllowSelfServiceCreation to be enabled.
+    Requires OperatorConfiguration.AllowSelfServiceCreation to be enabled.
      */
     createTenant(request: CreatePlatformTenantRequest, signal?: AbortSignal): Promise<TenantCreatedDto> {
         let url_ = this.baseUrl + "/api/v4/platform/tenants";
@@ -1352,62 +1434,6 @@ export class BolusClient {
     }
 
     /**
-     * Delete a bolus by its external sync identifier (dataSource + syncIdentifier pair).
-     * @param dataSource (optional) 
-     * @param syncIdentifier (optional) 
-     */
-    deleteBySyncIdentifier(dataSource?: string | undefined, syncIdentifier?: string | undefined, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/insulin/boluses/by-sync-id?";
-        if (dataSource === null)
-            throw new globalThis.Error("The parameter 'dataSource' cannot be null.");
-        else if (dataSource !== undefined)
-            url_ += "dataSource=" + encodeURIComponent("" + dataSource) + "&";
-        if (syncIdentifier === null)
-            throw new globalThis.Error("The parameter 'syncIdentifier' cannot be null.");
-        else if (syncIdentifier !== undefined)
-            url_ += "syncIdentifier=" + encodeURIComponent("" + syncIdentifier) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processDeleteBySyncIdentifier(_response);
-        });
-    }
-
-    protected processDeleteBySyncIdentifier(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    /**
      * Updates an existing record by ID and returns the updated record.
      * @param id The unique identifier of the record to update.
      * @param request The data to apply to the existing record.
@@ -1554,6 +1580,62 @@ export class BolusClient {
             });
         }
         return Promise.resolve<Bolus>(null as any);
+    }
+
+    /**
+     * Delete a bolus by its external sync identifier (dataSource + syncIdentifier pair).
+     * @param dataSource (optional) 
+     * @param syncIdentifier (optional) 
+     */
+    deleteBySyncIdentifier(dataSource?: string | undefined, syncIdentifier?: string | undefined, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/insulin/boluses/by-sync-id?";
+        if (dataSource === null)
+            throw new globalThis.Error("The parameter 'dataSource' cannot be null.");
+        else if (dataSource !== undefined)
+            url_ += "dataSource=" + encodeURIComponent("" + dataSource) + "&";
+        if (syncIdentifier === null)
+            throw new globalThis.Error("The parameter 'syncIdentifier' cannot be null.");
+        else if (syncIdentifier !== undefined)
+            url_ += "syncIdentifier=" + encodeURIComponent("" + syncIdentifier) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeleteBySyncIdentifier(_response);
+        });
+    }
+
+    protected processDeleteBySyncIdentifier(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
     }
 }
 
@@ -8864,6 +8946,44 @@ export class SupportClient {
         }
         return Promise.resolve<FallbackUrlResponse>(null as any);
     }
+
+    /**
+     * Returns operator support configuration for the frontend.
+    When no operator is configured, accountBilling is null and the default GitHub flow applies.
+     */
+    getSupportConfig(signal?: AbortSignal): Promise<SupportConfigResponse> {
+        let url_ = this.baseUrl + "/api/v4/support/config";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetSupportConfig(_response);
+        });
+    }
+
+    protected processGetSupportConfig(response: Response): Promise<SupportConfigResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SupportConfigResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<SupportConfigResponse>(null as any);
+    }
 }
 
 export class SystemClient {
@@ -9755,6 +9875,203 @@ export class TenantClient {
         }
         return Promise.resolve<ProvisionResult>(null as any);
     }
+
+    /**
+     * Lists passkey credentials and OIDC identities for a member subject.
+     */
+    getMemberCredentials(id: string, subjectId: string, signal?: AbortSignal): Promise<SubjectCredentialsDto> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetMemberCredentials(_response);
+        });
+    }
+
+    protected processGetMemberCredentials(response: Response): Promise<SubjectCredentialsDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SubjectCredentialsDto;
+            return result200;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<SubjectCredentialsDto>(null as any);
+    }
+
+    /**
+     * Attaches an OIDC identity to a member subject.
+     */
+    attachOidcIdentity(id: string, subjectId: string, request: AdminAttachOidcRequest, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAttachOidcIdentity(_response);
+        });
+    }
+
+    protected processAttachOidcIdentity(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Removes a passkey credential from a member subject.
+     */
+    removePasskeyCredential(id: string, subjectId: string, credentialId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/passkey/{credentialId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        if (credentialId === undefined || credentialId === null)
+            throw new globalThis.Error("The parameter 'credentialId' must be defined.");
+        url_ = url_.replace("{credentialId}", encodeURIComponent("" + credentialId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRemovePasskeyCredential(_response);
+        });
+    }
+
+    protected processRemovePasskeyCredential(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Removes an OIDC identity from a member subject.
+     */
+    removeOidcIdentity(id: string, subjectId: string, identityId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc/{identityId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        if (identityId === undefined || identityId === null)
+            throw new globalThis.Error("The parameter 'identityId' must be defined.");
+        url_ = url_.replace("{identityId}", encodeURIComponent("" + identityId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRemoveOidcIdentity(_response);
+        });
+    }
+
+    protected processRemoveOidcIdentity(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
 }
 
 export class AlertCustomSoundsClient {
@@ -9968,7 +10285,7 @@ export class AlertInvitesClient {
     }
 
     /**
-     * Generate an invite link for a follower to join an escalation step.
+     * Generate an invite link for a follower to attach to a rule channel.
      */
     createInvite(request: CreateAlertInviteRequest, signal?: AbortSignal): Promise<AlertInviteResponse> {
         let url_ = this.baseUrl + "/api/v4/alert-invites";
@@ -10165,6 +10482,102 @@ export class AlertInvitesClient {
     }
 }
 
+export class AlertReplayClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Replay enabled rules over a window. date=null replays the rolling last 24 hours;
+    otherwise replays that calendar day in timezone (UTC if omitted).
+     */
+    replay(request: AlertReplayRequest, signal?: AbortSignal): Promise<AlertReplayResult> {
+        let url_ = this.baseUrl + "/api/v4/alerts/replay";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processReplay(_response);
+        });
+    }
+
+    protected processReplay(response: Response): Promise<AlertReplayResult> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AlertReplayResult;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AlertReplayResult>(null as any);
+    }
+
+    /**
+     * Dry-run replay variant for the rule editor. Layers a user-provided rule definition
+    onto the saved rule set for one call (never persisted), so authors can answer
+    "would my new/edited rule have woken me last night?" before saving.
+     */
+    replayDryRun(request: AlertReplayDryRunRequest, signal?: AbortSignal): Promise<AlertReplayResult> {
+        let url_ = this.baseUrl + "/api/v4/alerts/replay/dry-run";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processReplayDryRun(_response);
+        });
+    }
+
+    protected processReplayDryRun(response: Response): Promise<AlertReplayResult> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AlertReplayResult;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AlertReplayResult>(null as any);
+    }
+}
+
 export class AlertRulesClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -10176,7 +10589,7 @@ export class AlertRulesClient {
     }
 
     /**
-     * List all alert rules for the current tenant with schedules and escalation steps.
+     * List all alert rules for the current tenant with their flat channel list.
      */
     getRules(signal?: AbortSignal): Promise<AlertRuleResponse[]> {
         let url_ = this.baseUrl + "/api/v4/alert-rules";
@@ -10213,7 +10626,7 @@ export class AlertRulesClient {
     }
 
     /**
-     * Create an alert rule with nested schedules, escalation steps, and channels.
+     * Create an alert rule with a flat channel list.
      */
     createRule(request: CreateAlertRuleRequest, signal?: AbortSignal): Promise<AlertRuleResponse> {
         let url_ = this.baseUrl + "/api/v4/alert-rules";
@@ -10260,7 +10673,7 @@ export class AlertRulesClient {
     }
 
     /**
-     * Get a single alert rule with full schedule/escalation tree.
+     * Get a single alert rule with its flat channel list.
      */
     getRule(id: string, signal?: AbortSignal): Promise<AlertRuleResponse> {
         let url_ = this.baseUrl + "/api/v4/alert-rules/{id}";
@@ -10362,7 +10775,7 @@ export class AlertRulesClient {
     }
 
     /**
-     * Delete an alert rule (cascades to schedules, steps, channels).
+     * Delete an alert rule (cascades to its channels).
      */
     deleteRule(id: string, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v4/alert-rules/{id}";
@@ -10395,6 +10808,12 @@ export class AlertRulesClient {
             let result404: any = null;
             result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
             return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status === 409) {
+            return response.text().then((_responseText) => {
+            let result409: any = null;
+            result409 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ReferencingRulesResponse;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result409);
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
@@ -10449,6 +10868,90 @@ export class AlertRulesClient {
         }
         return Promise.resolve<AlertRuleResponse>(null as any);
     }
+
+    /**
+     * Fire a saved rule through its real channel list as a test. Writes a
+    is_test=true instance + delivery rows so the user can verify their channels
+    without polluting the active-alerts surface.
+     */
+    testFire(id: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/alert-rules/{id}/test-fire";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processTestFire(_response);
+        });
+    }
+
+    protected processTestFire(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 202) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Test-fire variant for the editor on an unsaved rule. Same provider chain, no
+    rule lookup — channels and metadata come straight from the request body.
+     */
+    testFireDryRun(request: TestFireDryRunRequest, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/alert-rules/test-fire-dry-run";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processTestFireDryRun(_response);
+        });
+    }
+
+    protected processTestFireDryRun(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 202) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
 }
 
 export class AlertsClient {
@@ -10499,11 +11002,14 @@ export class AlertsClient {
     }
 
     /**
-     * Get paginated history of resolved excursions.
+     * Get paginated history of resolved excursions. Test fires are excluded
+    by default; pass includeTest = true to include them.
      * @param page (optional) 
      * @param pageSize (optional) 
+     * @param alertRuleId (optional) 
+     * @param includeTest (optional) 
      */
-    getAlertHistory(page?: number | undefined, pageSize?: number | undefined, signal?: AbortSignal): Promise<AlertHistoryResponse> {
+    getAlertHistory(page?: number | undefined, pageSize?: number | undefined, alertRuleId?: string | null | undefined, includeTest?: boolean | undefined, signal?: AbortSignal): Promise<AlertHistoryResponse> {
         let url_ = this.baseUrl + "/api/v4/alerts/history?";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
@@ -10513,6 +11019,12 @@ export class AlertsClient {
             throw new globalThis.Error("The parameter 'pageSize' cannot be null.");
         else if (pageSize !== undefined)
             url_ += "pageSize=" + encodeURIComponent("" + pageSize) + "&";
+        if (alertRuleId !== undefined && alertRuleId !== null)
+            url_ += "alertRuleId=" + encodeURIComponent("" + alertRuleId) + "&";
+        if (includeTest === null)
+            throw new globalThis.Error("The parameter 'includeTest' cannot be null.");
+        else if (includeTest !== undefined)
+            url_ += "includeTest=" + encodeURIComponent("" + includeTest) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -10961,6 +11473,101 @@ export class NotificationsClient {
             });
         }
         return Promise.resolve<void>(null as any);
+    }
+}
+
+export class TenantAlertSettingsClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get the current tenant's alert settings, creating a default row if one does not exist.
+     */
+    get(signal?: AbortSignal): Promise<TenantAlertSettingsResponse> {
+        let url_ = this.baseUrl + "/api/v4/tenant-alert-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGet(_response);
+        });
+    }
+
+    protected processGet(response: Response): Promise<TenantAlertSettingsResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantAlertSettingsResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantAlertSettingsResponse>(null as any);
+    }
+
+    /**
+     * Replace the current tenant's alert settings. Upserts on first call.
+     */
+    update(request: UpdateTenantAlertSettingsRequest, signal?: AbortSignal): Promise<TenantAlertSettingsResponse> {
+        let url_ = this.baseUrl + "/api/v4/tenant-alert-settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdate(_response);
+        });
+    }
+
+    protected processUpdate(response: Response): Promise<TenantAlertSettingsResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantAlertSettingsResponse;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantAlertSettingsResponse>(null as any);
     }
 }
 
@@ -12298,9 +12905,14 @@ export class GuestLinkClient {
 
     /**
      * List guest links for the current user's effective subject.
+     * @param includeDismissed (optional) 
      */
-    getGuestLinks(signal?: AbortSignal): Promise<GuestLinkInfo[]> {
-        let url_ = this.baseUrl + "/api/v4/guest-links";
+    getGuestLinks(includeDismissed?: boolean | undefined, signal?: AbortSignal): Promise<GuestLinkInfo[]> {
+        let url_ = this.baseUrl + "/api/v4/guest-links?";
+        if (includeDismissed === null)
+            throw new globalThis.Error("The parameter 'includeDismissed' cannot be null.");
+        else if (includeDismissed !== undefined)
+            url_ += "includeDismissed=" + encodeURIComponent("" + includeDismissed) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -12356,6 +12968,49 @@ export class GuestLinkClient {
     }
 
     protected processRevokeGuestLink(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Dismiss a terminal (revoked or expired) guest link from the UI.
+     */
+    dismissGuestLink(grantId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/guest-links/{grantId}/dismiss";
+        if (grantId === undefined || grantId === null)
+            throw new globalThis.Error("The parameter 'grantId' must be defined.");
+        url_ = url_.replace("{grantId}", encodeURIComponent("" + grantId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "PATCH",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDismissGuestLink(_response);
+        });
+    }
+
+    protected processDismissGuestLink(response: Response): Promise<void> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 204) {
@@ -16177,6 +16832,48 @@ export class DevAdminClient {
         }
         return Promise.resolve<FileResponse>(null as any);
     }
+
+    /**
+     * Create a tenant, owner subject, owner membership, and a session in one call.
+    Used exclusively by the E2E test suite to bypass passkey/OIDC ceremonies.
+     */
+    seedTenant(request: DevSeedTenantRequest, signal?: AbortSignal): Promise<DevSeedTenantResponse> {
+        let url_ = this.baseUrl + "/api/v4/dev-only/admin/seed-tenant";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSeedTenant(_response);
+        });
+    }
+
+    protected processSeedTenant(response: Response): Promise<DevSeedTenantResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as DevSeedTenantResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<DevSeedTenantResponse>(null as any);
+    }
 }
 
 export class ApsSnapshotClient {
@@ -17791,70 +18488,6 @@ export class ConfigurationClient {
     }
 }
 
-export class HomeAssistantWebhookClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
-
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl ?? "";
-    }
-
-    /**
-     * Receives a webhook from Home Assistant with entity state updates and creates
-    corresponding glucose entries.
-     * @param secret Shared webhook secret used to authenticate the request.
-     * @param payload Home Assistant state response containing entity data.
-     * @return No content on success; 401 if the secret is invalid; 404 if not configured.
-     */
-    receiveWebhook(secret: string, payload: HomeAssistantStateResponse, signal?: AbortSignal): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/v4/connectors/home-assistant/webhook/{secret}";
-        if (secret === undefined || secret === null)
-            throw new globalThis.Error("The parameter 'secret' must be defined.");
-        url_ = url_.replace("{secret}", encodeURIComponent("" + secret));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(payload);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/octet-stream"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processReceiveWebhook(_response);
-        });
-    }
-
-    protected processReceiveWebhook(response: Response): Promise<FileResponse> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return response.blob().then(blob => { return { fileName: fileName, data: blob, status: status, headers: _headers }; });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<FileResponse>(null as any);
-    }
-}
-
 export class WebhookSettingsClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -18267,6 +18900,75 @@ export class AuditClient {
             });
         }
         return Promise.resolve<AuditConfigDto>(null as any);
+    }
+}
+
+export class ActogramClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get actogram report data for a time window.
+     * @param startTime (optional) Start of the window as Unix milliseconds (inclusive).
+     * @param endTime (optional) End of the window as Unix milliseconds (exclusive).
+                Must be greater than startTime.
+     */
+    getActogram(startTime?: number | undefined, endTime?: number | undefined, signal?: AbortSignal): Promise<ActogramReportData> {
+        let url_ = this.baseUrl + "/api/v4/Actogram?";
+        if (startTime === null)
+            throw new globalThis.Error("The parameter 'startTime' cannot be null.");
+        else if (startTime !== undefined)
+            url_ += "startTime=" + encodeURIComponent("" + startTime) + "&";
+        if (endTime === null)
+            throw new globalThis.Error("The parameter 'endTime' cannot be null.");
+        else if (endTime !== undefined)
+            url_ += "endTime=" + encodeURIComponent("" + endTime) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetActogram(_response);
+        });
+    }
+
+    protected processGetActogram(response: Response): Promise<ActogramReportData> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ActogramReportData;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<ActogramReportData>(null as any);
     }
 }
 
@@ -18755,6 +19457,54 @@ export class CorrelationClient {
             });
         }
         return Promise.resolve<void>(null as any);
+    }
+}
+
+export class CurrentTherapyStateClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Get the current pump mode and sensitivity adjustment for the active tenant.
+     */
+    getCurrentTherapyState(signal?: AbortSignal): Promise<CurrentTherapyStateResponse> {
+        let url_ = this.baseUrl + "/api/v4/current-therapy-state";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetCurrentTherapyState(_response);
+        });
+    }
+
+    protected processGetCurrentTherapyState(response: Response): Promise<CurrentTherapyStateResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as CurrentTherapyStateResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<CurrentTherapyStateResponse>(null as any);
     }
 }
 
@@ -21142,6 +21892,57 @@ export class StatisticsClient {
     }
 
     /**
+     * Pre-aggregated month-by-day statistics for the calendar punch-card view. Fetches glucose,
+    boluses, carb intakes, and daily basal totals in a single batch, then computes per-day TIR
+    and treatment summaries inline (no per-day round-trips). Replaces a frontend orchestrator
+    that was issuing ~62 sequential HTTP calls per 31-day month.
+     * @param startDate (optional) Inclusive start of the date range.
+     * @param endDate (optional) Inclusive end of the date range.
+     * @return PunchCardResponse with months, days, and global maxes for chart scaling.
+     */
+    getPunchCardData(startDate?: Date | undefined, endDate?: Date | undefined, signal?: AbortSignal): Promise<PunchCardResponse> {
+        let url_ = this.baseUrl + "/api/v4/Statistics/punch-card?";
+        if (startDate === null)
+            throw new globalThis.Error("The parameter 'startDate' cannot be null.");
+        else if (startDate !== undefined)
+            url_ += "startDate=" + encodeURIComponent(startDate ? "" + startDate.toISOString() : "") + "&";
+        if (endDate === null)
+            throw new globalThis.Error("The parameter 'endDate' cannot be null.");
+        else if (endDate !== undefined)
+            url_ += "endDate=" + encodeURIComponent(endDate ? "" + endDate.toISOString() : "") + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetPunchCardData(_response);
+        });
+    }
+
+    protected processGetPunchCardData(response: Response): Promise<PunchCardResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PunchCardResponse;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PunchCardResponse>(null as any);
+    }
+
+    /**
      * Calculate comprehensive insulin delivery statistics for a date range
      * @param startDate (optional) Start date of the analysis period
      * @param endDate (optional) End date of the analysis period
@@ -21817,45 +22618,23 @@ export class OAuthClient {
     /**
      * Token endpoint. Handles authorization code exchange, refresh token rotation,
     and device code polling.
-     * @param grant_type (optional) 
-     * @param code (optional) 
-     * @param redirect_uri (optional) 
-     * @param client_id (optional) 
-     * @param code_verifier (optional) 
-     * @param refresh_token (optional) 
-     * @param device_code (optional) 
-     * @param scope (optional) 
+     * @param body (optional) 
      * @return An OAuthTokenResponse on success, or an OAuthError on failure.
      */
-    token(grant_type?: string | undefined, code?: string | null | undefined, redirect_uri?: string | null | undefined, client_id?: string | null | undefined, code_verifier?: string | null | undefined, refresh_token?: string | null | undefined, device_code?: string | null | undefined, scope?: string | null | undefined, signal?: AbortSignal): Promise<OAuthTokenResponse> {
+    token(body?: Body | undefined, signal?: AbortSignal): Promise<OAuthTokenResponse> {
         let url_ = this.baseUrl + "/api/oauth/token";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = new FormData();
-        if (grant_type === null || grant_type === undefined)
-            throw new globalThis.Error("The parameter 'grant_type' cannot be null.");
-        else
-            content_.append("grant_type", grant_type.toString());
-        if (code !== null && code !== undefined)
-            content_.append("code", code.toString());
-        if (redirect_uri !== null && redirect_uri !== undefined)
-            content_.append("redirect_uri", redirect_uri.toString());
-        if (client_id !== null && client_id !== undefined)
-            content_.append("client_id", client_id.toString());
-        if (code_verifier !== null && code_verifier !== undefined)
-            content_.append("code_verifier", code_verifier.toString());
-        if (refresh_token !== null && refresh_token !== undefined)
-            content_.append("refresh_token", refresh_token.toString());
-        if (device_code !== null && device_code !== undefined)
-            content_.append("device_code", device_code.toString());
-        if (scope !== null && scope !== undefined)
-            content_.append("scope", scope.toString());
+        const content_ = Object.keys(body as any).map((key) => {
+            return encodeURIComponent(key) + '=' + encodeURIComponent((body as any)[key]);
+        }).join('&')
 
         let options_: RequestInit = {
             body: content_,
             method: "POST",
             signal,
             headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json"
             }
         };
@@ -21891,25 +22670,23 @@ export class OAuthClient {
     /**
      * Device Authorization endpoint (RFC 8628).
     Used by headless clients (CLI tools, scripts, IoT devices, pump rigs).
-     * @param client_id (optional) 
-     * @param scope (optional) 
+     * @param body (optional) 
      * @return An OAuthDeviceAuthorizationResponse containing the device code, user code, and polling interval.
      */
-    deviceAuthorization(client_id?: string | null | undefined, scope?: string | null | undefined, signal?: AbortSignal): Promise<OAuthDeviceAuthorizationResponse> {
+    deviceAuthorization(body?: Body2 | undefined, signal?: AbortSignal): Promise<OAuthDeviceAuthorizationResponse> {
         let url_ = this.baseUrl + "/api/oauth/device";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = new FormData();
-        if (client_id !== null && client_id !== undefined)
-            content_.append("client_id", client_id.toString());
-        if (scope !== null && scope !== undefined)
-            content_.append("scope", scope.toString());
+        const content_ = Object.keys(body as any).map((key) => {
+            return encodeURIComponent(key) + '=' + encodeURIComponent((body as any)[key]);
+        }).join('&')
 
         let options_: RequestInit = {
             body: content_,
             method: "POST",
             signal,
             headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json"
             }
         };
@@ -21994,27 +22771,23 @@ export class OAuthClient {
     /**
      * Approve or deny a device authorization request.
     Called by the device approval page.
-     * @param user_code (optional) 
-     * @param approved (optional) 
+     * @param body (optional) 
      * @return 200 OK with approved: true/false, or 400 if the code is invalid or already processed.
      */
-    deviceApprove(user_code?: string | null | undefined, approved?: boolean | undefined, signal?: AbortSignal): Promise<void> {
+    deviceApprove(body?: Body3 | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/oauth/device-approve";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = new FormData();
-        if (user_code !== null && user_code !== undefined)
-            content_.append("user_code", user_code.toString());
-        if (approved === null || approved === undefined)
-            throw new globalThis.Error("The parameter 'approved' cannot be null.");
-        else
-            content_.append("approved", approved.toString());
+        const content_ = Object.keys(body as any).map((key) => {
+            return encodeURIComponent(key) + '=' + encodeURIComponent((body as any)[key]);
+        }).join('&')
 
         let options_: RequestInit = {
             body: content_,
             method: "POST",
             signal,
             headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
             }
         };
 
@@ -22047,24 +22820,22 @@ export class OAuthClient {
     /**
      * Token revocation endpoint (RFC 7009). Per the specification, always returns 200 OK
     regardless of whether the token was found or already revoked.
-     * @param token (optional) 
-     * @param token_type_hint (optional) 
+     * @param body (optional) 
      */
-    revoke(token?: string | null | undefined, token_type_hint?: string | null | undefined, signal?: AbortSignal): Promise<void> {
+    revoke(body?: Body4 | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/oauth/revoke";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = new FormData();
-        if (token !== null && token !== undefined)
-            content_.append("token", token.toString());
-        if (token_type_hint !== null && token_type_hint !== undefined)
-            content_.append("token_type_hint", token_type_hint.toString());
+        const content_ = Object.keys(body as any).map((key) => {
+            return encodeURIComponent(key) + '=' + encodeURIComponent((body as any)[key]);
+        }).join('&')
 
         let options_: RequestInit = {
             body: content_,
             method: "POST",
             signal,
             headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
             }
         };
 
@@ -22271,25 +23042,23 @@ export class OAuthClient {
      * Token introspection endpoint (RFC 7662).
     Returns metadata about a token including its active status, scopes, and subject.
     Per RFC 7662, always returns 200 OK; invalid tokens get active=false.
-     * @param token (optional) 
-     * @param token_type_hint (optional) 
+     * @param body (optional) 
      * @return A TokenIntrospectionResponse with active=false for invalid, expired, or revoked tokens.
      */
-    introspect(token?: string | null | undefined, token_type_hint?: string | null | undefined, signal?: AbortSignal): Promise<TokenIntrospectionResponse> {
+    introspect(body?: Body5 | undefined, signal?: AbortSignal): Promise<TokenIntrospectionResponse> {
         let url_ = this.baseUrl + "/api/oauth/introspect";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = new FormData();
-        if (token !== null && token !== undefined)
-            content_.append("token", token.toString());
-        if (token_type_hint !== null && token_type_hint !== undefined)
-            content_.append("token_type_hint", token_type_hint.toString());
+        const content_ = Object.keys(body as any).map((key) => {
+            return encodeURIComponent(key) + '=' + encodeURIComponent((body as any)[key]);
+        }).join('&')
 
         let options_: RequestInit = {
             body: content_,
             method: "POST",
             signal,
             headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
                 "Accept": "application/json"
             }
         };
@@ -22384,7 +23153,7 @@ export class OidcClient {
      * @return List of enabled OIDC providers.
      */
     getProviders(signal?: AbortSignal): Promise<OidcProviderInfo[]> {
-        let url_ = this.baseUrl + "/api/v4/oidc/providers";
+        let url_ = this.baseUrl + "/api/auth/oidc/providers";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -22424,7 +23193,7 @@ export class OidcClient {
      * @param returnUrl (optional) URL to return to after login
      */
     login(provider?: string | null | undefined, returnUrl?: string | null | undefined, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/oidc/login?";
+        let url_ = this.baseUrl + "/api/auth/oidc/login?";
         if (provider !== undefined && provider !== null)
             url_ += "provider=" + encodeURIComponent("" + provider) + "&";
         if (returnUrl !== undefined && returnUrl !== null)
@@ -22473,7 +23242,7 @@ export class OidcClient {
      * @param error_description (optional) Error description from provider.
      */
     callback(code?: string | null | undefined, state?: string | null | undefined, error?: string | null | undefined, error_description?: string | null | undefined, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/oidc/callback?";
+        let url_ = this.baseUrl + "/api/auth/oidc/callback?";
         if (code !== undefined && code !== null)
             url_ += "code=" + encodeURIComponent("" + code) + "&";
         if (state !== undefined && state !== null)
@@ -22525,7 +23294,7 @@ export class OidcClient {
      * @param returnUrl (optional) 
      */
     link(provider?: string | undefined, returnUrl?: string | null | undefined, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/oidc/link?";
+        let url_ = this.baseUrl + "/api/auth/oidc/link?";
         if (provider === null)
             throw new globalThis.Error("The parameter 'provider' cannot be null.");
         else if (provider !== undefined)
@@ -22583,7 +23352,7 @@ export class OidcClient {
      * @param error_description (optional) 
      */
     linkCallback(code?: string | null | undefined, state?: string | null | undefined, error?: string | null | undefined, error_description?: string | null | undefined, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/oidc/link/callback?";
+        let url_ = this.baseUrl + "/api/auth/oidc/link/callback?";
         if (code !== undefined && code !== null)
             url_ += "code=" + encodeURIComponent("" + code) + "&";
         if (state !== undefined && state !== null)
@@ -22631,7 +23400,7 @@ export class OidcClient {
      * List OIDC identities linked to the currently-authenticated subject.
      */
     getLinkedIdentities(signal?: AbortSignal): Promise<LinkedOidcIdentitiesResponse> {
-        let url_ = this.baseUrl + "/api/v4/oidc/link/identities";
+        let url_ = this.baseUrl + "/api/auth/oidc/link/identities";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -22677,7 +23446,7 @@ export class OidcClient {
      * @return Identity unlinked successfully.
      */
     unlinkIdentity(identityId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/oidc/link/identities/{identityId}";
+        let url_ = this.baseUrl + "/api/auth/oidc/link/identities/{identityId}";
         if (identityId === undefined || identityId === null)
             throw new globalThis.Error("The parameter 'identityId' must be defined.");
         url_ = url_.replace("{identityId}", encodeURIComponent("" + identityId));
@@ -22734,7 +23503,7 @@ export class OidcClient {
      * @return Tokens refreshed successfully.
      */
     refresh(signal?: AbortSignal): Promise<OidcTokenResponse> {
-        let url_ = this.baseUrl + "/api/v4/oidc/refresh";
+        let url_ = this.baseUrl + "/api/auth/oidc/refresh";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -22779,7 +23548,7 @@ export class OidcClient {
      * @return Logout successful.
      */
     logout(providerId?: string | null | undefined, signal?: AbortSignal): Promise<LogoutResponse> {
-        let url_ = this.baseUrl + "/api/v4/oidc/logout?";
+        let url_ = this.baseUrl + "/api/auth/oidc/logout?";
         if (providerId !== undefined && providerId !== null)
             url_ += "providerId=" + encodeURIComponent("" + providerId) + "&";
         url_ = url_.replace(/[?&]$/, "");
@@ -22819,7 +23588,7 @@ export class OidcClient {
      * @return User information retrieved.
      */
     getUserInfo(signal?: AbortSignal): Promise<OidcUserInfo> {
-        let url_ = this.baseUrl + "/api/v4/oidc/userinfo";
+        let url_ = this.baseUrl + "/api/auth/oidc/userinfo";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -22863,7 +23632,7 @@ export class OidcClient {
      * @return Session information (always returns 200).
      */
     getSession(signal?: AbortSignal): Promise<SessionInfo> {
-        let url_ = this.baseUrl + "/api/v4/oidc/session";
+        let url_ = this.baseUrl + "/api/auth/oidc/session";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -23405,6 +24174,40 @@ export class PasskeyClient {
             });
         }
         return Promise.resolve<AuthStatusResponse>(null as any);
+    }
+
+    /**
+     * Mark the current tenant's onboarding as complete.
+     */
+    completeOnboarding(signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/auth/passkey/onboarding/complete";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processCompleteOnboarding(_response);
+        });
+    }
+
+    protected processCompleteOnboarding(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
     }
 
     /**
@@ -23997,6 +24800,264 @@ export class TotpClient {
     }
 }
 
+/** Forces NSwag to emit TypeScript interfaces for ConditionNode and every condition payload record — they're stored as opaque JSON on the rule entity and otherwise never appear in a controller signature. */
+export interface AlertConditionTypesMetadata {
+    /** A sample ConditionNode; pulls every sub-record into the OpenAPI schema. */
+    sample?: ConditionNode | undefined;
+    /** All TempBasalMetric values. */
+    tempBasalMetrics?: TempBasalMetric[];
+    description?: string;
+}
+
+export interface ConditionNode {
+    type?: string;
+    threshold?: ThresholdCondition | undefined;
+    rate_of_change?: RateOfChangeCondition | undefined;
+    signal_loss?: SignalLossCondition | undefined;
+    composite?: CompositeCondition | undefined;
+    not?: NotCondition | undefined;
+    sustained?: SustainedCondition | undefined;
+    staleness?: StalenessCondition | undefined;
+    predicted?: PredictedCondition | undefined;
+    trend?: TrendCondition | undefined;
+    time_of_day?: TimeOfDayCondition | undefined;
+    iob?: IobCondition | undefined;
+    cob?: CobCondition | undefined;
+    reservoir?: ReservoirCondition | undefined;
+    site_age?: SiteAgeCondition | undefined;
+    sensor_age?: SensorAgeCondition | undefined;
+    alert_state?: AlertStateCondition | undefined;
+    loop_stale?: LoopStaleCondition | undefined;
+    loop_enaction_stale?: LoopEnactionStaleCondition | undefined;
+    pump_suspended?: PumpSuspendedCondition | undefined;
+    pump_battery?: PumpBatteryCondition | undefined;
+    temp_basal?: TempBasalCondition | undefined;
+    uploader_battery?: UploaderBatteryCondition | undefined;
+    override_active?: OverrideActiveCondition | undefined;
+    sensitivity_ratio?: SensitivityRatioCondition | undefined;
+    do_not_disturb?: DoNotDisturbCondition | undefined;
+    glucose_bucket?: GlucoseBucketCondition | undefined;
+    time_since_last_carb?: TimeSinceLastCarbCondition | undefined;
+    time_since_last_bolus?: TimeSinceLastBolusCondition | undefined;
+    day_of_week?: DayOfWeekCondition | undefined;
+    pump_state?: PumpStateCondition | undefined;
+    state_span_active?: StateSpanActiveCondition | undefined;
+}
+
+export interface ThresholdCondition {
+    direction?: string;
+    value?: number;
+}
+
+export interface RateOfChangeCondition {
+    direction?: string;
+    rate?: number;
+}
+
+export interface SignalLossCondition {
+    timeout_minutes?: number;
+}
+
+export interface CompositeCondition {
+    operator?: string;
+    conditions?: ConditionNode[];
+}
+
+export interface NotCondition {
+    child?: ConditionNode;
+}
+
+export interface SustainedCondition {
+    minutes?: number;
+    child?: ConditionNode;
+}
+
+export interface StalenessCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface PredictedCondition {
+    operator?: string;
+    value?: number;
+    within_minutes?: number;
+}
+
+export interface TrendCondition {
+    bucket?: string;
+}
+
+export interface TimeOfDayCondition {
+    from?: string;
+    to?: string;
+    timezone?: string | undefined;
+}
+
+export interface IobCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface CobCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface ReservoirCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface SiteAgeCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface SensorAgeCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface AlertStateCondition {
+    alert_id?: string;
+    state?: string;
+    for_minutes?: number | undefined;
+}
+
+export interface LoopStaleCondition {
+    operator?: string;
+    minutes?: number;
+}
+
+export interface LoopEnactionStaleCondition {
+    operator?: string;
+    minutes?: number;
+}
+
+export interface PumpSuspendedCondition {
+    is_active?: boolean;
+    for_minutes?: number | undefined;
+}
+
+export interface PumpBatteryCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface TempBasalCondition {
+    metric?: TempBasalMetric;
+    operator?: string;
+    value?: number;
+}
+
+export enum TempBasalMetric {
+    Rate = "rate",
+    PercentOfScheduled = "percent_of_scheduled",
+}
+
+export interface UploaderBatteryCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface OverrideActiveCondition {
+    is_active?: boolean;
+    for_minutes?: number | undefined;
+}
+
+export interface SensitivityRatioCondition {
+    operator?: string;
+    value?: number;
+}
+
+export interface DoNotDisturbCondition {
+    is_active?: boolean;
+    for_minutes?: number | undefined;
+}
+
+export interface GlucoseBucketCondition {
+    buckets?: GlucoseBucket[];
+}
+
+export enum GlucoseBucket {
+    VeryLow = "very_low",
+    Low = "low",
+    TightRange = "tight_range",
+    InRange = "in_range",
+    High = "high",
+    VeryHigh = "very_high",
+}
+
+export interface TimeSinceLastCarbCondition {
+    operator?: AlertComparisonOperator;
+    minutes?: number;
+}
+
+export enum AlertComparisonOperator {
+    Gt = ">",
+    Gte = ">=",
+    Lt = "<",
+    Lte = "<=",
+    Eq = "==",
+}
+
+export interface TimeSinceLastBolusCondition {
+    operator?: AlertComparisonOperator;
+    minutes?: number;
+}
+
+export interface DayOfWeekCondition {
+    days?: DayOfWeek[];
+}
+
+export enum DayOfWeek {
+    Sunday = 0,
+    Monday = 1,
+    Tuesday = 2,
+    Wednesday = 3,
+    Thursday = 4,
+    Friday = 5,
+    Saturday = 6,
+}
+
+export interface PumpStateCondition {
+    mode?: PumpModeState;
+    is_active?: boolean;
+    for_minutes?: number | undefined;
+}
+
+export enum PumpModeState {
+    Automatic = "Automatic",
+    Limited = "Limited",
+    Manual = "Manual",
+    Boost = "Boost",
+    EaseOff = "EaseOff",
+    Sleep = "Sleep",
+    Exercise = "Exercise",
+    Suspended = "Suspended",
+    Off = "Off",
+}
+
+export interface StateSpanActiveCondition {
+    category?: StateSpanCategory;
+    state?: string | undefined;
+    is_active?: boolean;
+    for_minutes?: number | undefined;
+}
+
+export enum StateSpanCategory {
+    PumpMode = "PumpMode",
+    PumpConnectivity = "PumpConnectivity",
+    Override = "Override",
+    Profile = "Profile",
+    Sleep = "Sleep",
+    Exercise = "Exercise",
+    Illness = "Illness",
+    Travel = "Travel",
+    DataExclusion = "DataExclusion",
+    TemporaryTarget = "TemporaryTarget",
+}
+
 /** Metadata about authentication error codes for NSwag generation */
 export interface AuthErrorCodesMetadata {
     /** Array of all available authentication error codes */
@@ -24077,16 +25138,16 @@ export interface OAuthAuthorizationServerMetadata {
 }
 
 export enum OAuthScope {
-    EntriesRead = "entries.read",
-    EntriesReadWrite = "entries.readwrite",
+    GlucoseRead = "glucose.read",
+    GlucoseReadWrite = "glucose.readwrite",
     TreatmentsRead = "treatments.read",
     TreatmentsReadWrite = "treatments.readwrite",
-    DeviceStatusRead = "devicestatus.read",
-    DeviceStatusReadWrite = "devicestatus.readwrite",
-    ProfileRead = "profile.read",
-    ProfileReadWrite = "profile.readwrite",
-    NotificationsRead = "notifications.read",
-    NotificationsReadWrite = "notifications.readwrite",
+    DevicesRead = "devices.read",
+    DevicesReadWrite = "devices.readwrite",
+    TherapyRead = "therapy.read",
+    TherapyReadWrite = "therapy.readwrite",
+    AlertsRead = "alerts.read",
+    AlertsReadWrite = "alerts.readwrite",
     ReportsRead = "reports.read",
     IdentityRead = "identity.read",
     SharingReadWrite = "sharing.readwrite",
@@ -24094,6 +25155,7 @@ export enum OAuthScope {
     HeartRateReadWrite = "heartrate.readwrite",
     StepCountRead = "stepcount.read",
     StepCountReadWrite = "stepcount.readwrite",
+    StatisticsRead = "statistics.read",
     HealthRead = "health.read",
     HealthReadWrite = "health.readwrite",
     FullAccess = "*",
@@ -24140,6 +25202,12 @@ export interface ConnectorStatusDto {
     lastSuccessfulSync?: Date | undefined;
     /** When the last error occurred */
     lastErrorAt?: Date | undefined;
+    /** Whether the connector is enabled in configuration. */
+    isEnabled?: boolean;
+    /** Whether a configuration exists in the database. */
+    hasDatabaseConfig?: boolean;
+    /** Whether the connector has secrets configured. */
+    hasSecrets?: boolean;
     /** Breakdown of total items processed by data type
 Keys are data type names (e.g., "Glucose", "Treatments", "Food") */
     totalItemsBreakdown?: { [key: string]: number; } | undefined;
@@ -24388,8 +25456,10 @@ export interface Bolus {
     duration?: number | undefined;
     syncIdentifier?: string | undefined;
     insulinType?: string | undefined;
+    insulinContext?: TreatmentInsulinContext | undefined;
     unabsorbed?: number | undefined;
     deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     pumpRecordId?: string | undefined;
     bolusCalculationId?: string | undefined;
     apsSnapshotId?: string | undefined;
@@ -24405,6 +25475,15 @@ export enum BolusType {
 export enum BolusKind {
     Manual = "Manual",
     Algorithm = "Algorithm",
+}
+
+export interface TreatmentInsulinContext {
+    patientInsulinId?: string;
+    insulinName?: string;
+    dia?: number;
+    peak?: number;
+    curve?: string;
+    concentration?: number;
 }
 
 /** Request body for creating a new insulin bolus record via the V4 API. */
@@ -24437,6 +25516,10 @@ export interface CreateBolusRequest {
     syncIdentifier?: string | undefined;
     /** Type or brand of insulin used (e.g. "Humalog", "NovoRapid"). */
     insulinType?: string | undefined;
+    /** Optional reference to a PatientInsulin. When provided, the server
+resolves it to a TreatmentInsulinContext snapshot and overwrites
+InsulinType with the insulin's name. */
+    patientInsulinId?: string | undefined;
     /** Insulin on board (unabsorbed) at the time of the bolus, in units. */
     unabsorbed?: number | undefined;
     /** Links this bolus to the bolus calculation that recommended it. */
@@ -24473,6 +25556,10 @@ export interface UpdateBolusRequest {
     syncIdentifier?: string | undefined;
     /** Type or brand of insulin used (e.g. "Humalog", "NovoRapid"). */
     insulinType?: string | undefined;
+    /** Optional reference to a PatientInsulin. When provided, the server
+resolves it to a TreatmentInsulinContext snapshot and overwrites
+InsulinType with the insulin's name. */
+    patientInsulinId?: string | undefined;
     /** Insulin on board (unabsorbed) at the time of the bolus, in units. */
     unabsorbed?: number | undefined;
     /** Links this bolus to the bolus calculation that recommended it. */
@@ -25002,15 +26089,6 @@ export enum CalculationType2 {
     Automatic = "Automatic",
 }
 
-export interface TreatmentInsulinContext {
-    patientInsulinId?: string;
-    insulinName?: string;
-    dia?: number;
-    peak?: number;
-    curve?: string;
-    concentration?: number;
-}
-
 export interface StateSpan {
     id?: string | undefined;
     category?: StateSpanCategory;
@@ -25027,19 +26105,6 @@ export interface StateSpan {
     supersededById?: string | undefined;
     canonicalId?: string | undefined;
     sources?: string[] | undefined;
-}
-
-export enum StateSpanCategory {
-    PumpMode = "PumpMode",
-    PumpConnectivity = "PumpConnectivity",
-    Override = "Override",
-    Profile = "Profile",
-    Sleep = "Sleep",
-    Exercise = "Exercise",
-    Illness = "Illness",
-    Travel = "Travel",
-    DataExclusion = "DataExclusion",
-    TemporaryTarget = "TemporaryTarget",
 }
 
 export interface AcceptSuggestionRequest {
@@ -25792,6 +26857,10 @@ export interface TargetRangeEntry {
     low?: number;
     high?: number;
     timeAsSeconds?: number | undefined;
+    veryLow?: number | undefined;
+    tightLow?: number | undefined;
+    tightHigh?: number | undefined;
+    veryHigh?: number | undefined;
 }
 
 export interface ScheduleChangeInfo {
@@ -25857,6 +26926,7 @@ export interface UISettingsConfiguration {
     services?: ServicesSettings;
     dataQuality?: DataQualitySettings;
     security?: SecuritySettings;
+    haloDial?: HaloDialConfig;
 }
 
 export interface DeviceSettings {
@@ -26205,6 +27275,68 @@ export interface SecuritySettings {
     hideGlucoseInFavicon?: boolean;
 }
 
+export interface HaloDialConfig {
+    schemaVersion?: number;
+    colorMode?: HaloDialColorMode;
+    historyMinutes?: number;
+    predictionMinutes?: number;
+    predictionCurve?: HaloDialPredictionCurve;
+    centerSub?: HaloDialCenterSubElement;
+    innerLeftArc?: HaloDialArcElement | undefined;
+    innerRightArc?: HaloDialArcElement | undefined;
+    iobMaxUnits?: number;
+    cobMaxGrams?: number;
+    corners?: HaloDialCorners;
+    elementConfig?: { [key: string]: any; };
+}
+
+export enum HaloDialColorMode {
+    Discrete = "Discrete",
+    Continuous = "Continuous",
+}
+
+export enum HaloDialPredictionCurve {
+    Main = "Main",
+    Iob = "Iob",
+    Uam = "Uam",
+    Cob = "Cob",
+    ZeroTemp = "ZeroTemp",
+}
+
+export enum HaloDialCenterSubElement {
+    MinutesAndDelta = "MinutesAndDelta",
+    MinutesOnly = "MinutesOnly",
+    DeltaOnly = "DeltaOnly",
+    Mmol = "Mmol",
+    None = "None",
+}
+
+export enum HaloDialArcElement {
+    Iob = "Iob",
+    Cob = "Cob",
+    BasalPercent = "BasalPercent",
+    Sensitivity = "Sensitivity",
+}
+
+export interface HaloDialCorners {
+    tl?: HaloDialCornerElement[];
+    tr?: HaloDialCornerElement[];
+    bl?: HaloDialCornerElement[];
+    br?: HaloDialCornerElement[];
+}
+
+export enum HaloDialCornerElement {
+    BasalRate = "BasalRate",
+    Reservoir = "Reservoir",
+    SensorAge = "SensorAge",
+    PumpSiteAge = "PumpSiteAge",
+    Battery = "Battery",
+    LoopLabel = "LoopLabel",
+    LoopDot = "LoopDot",
+    Direction = "Direction",
+    Eventual = "Eventual",
+}
+
 /** User preferences response */
 export interface UserPreferencesResponse {
     /** User's preferred language code (e.g., "en", "fr", "de") */
@@ -26352,6 +27484,8 @@ export interface DataSourceInfo {
     status?: string;
     minutesSinceLastData?: number | undefined;
     icon?: string;
+    connectorId?: string | undefined;
+    lastSuccessfulSync?: Date | undefined;
     isHealthy?: boolean;
 }
 
@@ -26460,8 +27594,10 @@ export interface SyncResult {
 export enum SyncDataType {
     Glucose = "Glucose",
     ManualBG = "ManualBG",
+    Calibrations = "Calibrations",
     Boluses = "Boluses",
     CarbIntake = "CarbIntake",
+    BGChecks = "BGChecks",
     BolusCalculations = "BolusCalculations",
     Notes = "Notes",
     DeviceEvents = "DeviceEvents",
@@ -26534,6 +27670,16 @@ export interface FallbackUrlResponse {
     url?: string;
 }
 
+export interface SupportConfigResponse {
+    accountBilling?: SupportChannelConfig | undefined;
+}
+
+export interface SupportChannelConfig {
+    mode?: string;
+    url?: string;
+    label?: string | undefined;
+}
+
 export interface HeartbeatRequest {
     platforms?: string[];
     service?: string;
@@ -26553,6 +27699,7 @@ export interface ChannelStatusEntry {
 
 export enum ChannelType {
     WebPush = "web_push",
+    InApp = "in_app",
     Webhook = "webhook",
     DiscordDm = "discord_dm",
     DiscordChannel = "discord_channel",
@@ -26751,6 +27898,30 @@ export interface ProvisionOidcIdentityData {
     subjectId?: string | undefined;
 }
 
+export interface SubjectCredentialsDto {
+    passkeys?: PasskeyCredentialDto[];
+    oidcIdentities?: OidcIdentityDto[];
+}
+
+export interface PasskeyCredentialDto {
+    id?: string;
+    displayName?: string | undefined;
+    createdAt?: Date;
+}
+
+export interface OidcIdentityDto {
+    id?: string;
+    provider?: string;
+    email?: string | undefined;
+}
+
+export interface AdminAttachOidcRequest {
+    providerId?: string;
+    oidcSubjectId?: string;
+    issuer?: string;
+    email?: string | undefined;
+}
+
 export interface AlertCustomSoundResponse {
     id?: string;
     name?: string;
@@ -26762,7 +27933,7 @@ export interface AlertCustomSoundResponse {
 export interface AlertInviteResponse {
     id?: string;
     token?: string;
-    escalationStepId?: string;
+    alertRuleChannelId?: string;
     permissionScope?: string;
     isUsed?: boolean;
     expiresAt?: Date;
@@ -26770,8 +27941,114 @@ export interface AlertInviteResponse {
 }
 
 export interface CreateAlertInviteRequest {
-    escalationStepId?: string;
+    alertRuleChannelId?: string;
     permissionScope?: string | undefined;
+}
+
+export interface AlertReplayResult {
+    windowStart?: Date;
+    windowEnd?: Date;
+    events?: AlertReplayEvent[];
+    leafTransitionsByRule?: { [key: string]: LeafTransitionLog[]; };
+    factTimelines?: { [key: string]: FactSnapshotPoint[]; };
+}
+
+export interface AlertReplayEvent {
+    at?: Date;
+    ruleId?: string;
+    ruleName?: string;
+    severity?: AlertRuleSeverity;
+    kind?: AlertReplayEventKind;
+}
+
+export enum AlertRuleSeverity {
+    Critical = "critical",
+    Warning = "warning",
+    Info = "info",
+}
+
+export enum AlertReplayEventKind {
+    Fired = "fired",
+    AutoResolved = "auto_resolved",
+    SuppressedByDnd = "suppressed_by_dnd",
+}
+
+export interface LeafTransitionLog {
+    leafId?: number;
+    points?: LeafTransitionPoint[];
+}
+
+export interface LeafTransitionPoint {
+    atMs?: number;
+    value?: boolean;
+}
+
+export interface FactSnapshotPoint {
+    atMs?: number;
+    value?: number;
+}
+
+/** Request body for the alerts replay endpoint. From and To are absolute UTC instants and take precedence over Date + Timezone when set, allowing replay of an arbitrary window (not just a calendar day). */
+export interface AlertReplayRequest {
+    date?: Date | undefined;
+    timezone?: string | undefined;
+    from?: Date | undefined;
+    to?: Date | undefined;
+}
+
+/** Request body for the dry-run replay endpoint. Id is optional: when present and matching an existing rule it replaces it for the simulation; otherwise the rule is appended for the call. From/To behave the same as on AlertReplayRequest. */
+export interface AlertReplayDryRunRequest {
+    date?: Date | undefined;
+    timezone?: string | undefined;
+    rule?: ReplayRuleDefinition;
+    from?: Date | undefined;
+    to?: Date | undefined;
+}
+
+/** In-memory rule definition used by the dry-run endpoint. Mirrors the editor's pre-save shape — the controller doesn't deserialise the condition tree itself, just the ConditionParams JSON blob the rule body would have stored. */
+export interface ReplayRuleDefinition {
+    id?: string | undefined;
+    name?: string;
+    conditionType?: AlertConditionType;
+    conditionParams?: string;
+    severity?: AlertRuleSeverity;
+    allowThroughDnd?: boolean;
+    autoResolveEnabled?: boolean;
+    autoResolveParams?: string | undefined;
+}
+
+export enum AlertConditionType {
+    Threshold = "threshold",
+    RateOfChange = "rate_of_change",
+    SignalLoss = "signal_loss",
+    Composite = "composite",
+    Not = "not",
+    Sustained = "sustained",
+    Staleness = "staleness",
+    Predicted = "predicted",
+    Trend = "trend",
+    TimeOfDay = "time_of_day",
+    Iob = "iob",
+    Cob = "cob",
+    Reservoir = "reservoir",
+    SiteAge = "site_age",
+    SensorAge = "sensor_age",
+    AlertState = "alert_state",
+    LoopStale = "loop_stale",
+    LoopEnactionStale = "loop_enaction_stale",
+    PumpSuspended = "pump_suspended",
+    PumpBattery = "pump_battery",
+    TempBasal = "temp_basal",
+    UploaderBattery = "uploader_battery",
+    OverrideActive = "override_active",
+    SensitivityRatio = "sensitivity_ratio",
+    DoNotDisturb = "do_not_disturb",
+    GlucoseBucket = "glucose_bucket",
+    TimeSinceLastCarb = "time_since_last_carb",
+    TimeSinceLastBolus = "time_since_last_bolus",
+    DayOfWeek = "day_of_week",
+    PumpState = "pump_state",
+    StateSpanActive = "state_span_active",
 }
 
 export interface AlertRuleResponse {
@@ -26780,53 +28057,25 @@ export interface AlertRuleResponse {
     description?: string | undefined;
     conditionType?: AlertConditionType;
     conditionParams?: any;
-    hysteresisMinutes?: number;
-    confirmationReadings?: number;
     isEnabled?: boolean;
     sortOrder?: number;
     severity?: AlertRuleSeverity;
+    /** When true, this rule still fires while the tenant is in Do Not Disturb mode.
+            Critical rules implicitly bypass DND regardless of this flag. */
+    allowThroughDnd?: boolean;
+    autoResolveEnabled?: boolean;
+    autoResolveParams?: any | undefined;
     clientConfiguration?: any;
-    schedules?: AlertScheduleResponse[];
+    /** Flat list of delivery channels. Dispatched in parallel when the rule fires. */
+    channels?: AlertRuleChannelResponse[];
 }
 
-export enum AlertConditionType {
-    Threshold = "threshold",
-    RateOfChange = "rate_of_change",
-    SignalLoss = "signal_loss",
-    Composite = "composite",
-}
-
-export enum AlertRuleSeverity {
-    Normal = "normal",
-    Critical = "critical",
-}
-
-export interface AlertScheduleResponse {
-    id?: string;
-    name?: string;
-    isDefault?: boolean;
-    daysOfWeek?: number[] | undefined;
-    startTime?: string | undefined;
-    endTime?: string | undefined;
-    timezone?: string;
-    quietHoursStart?: string | undefined;
-    quietHoursEnd?: string | undefined;
-    quietHoursOverrideCritical?: boolean;
-    escalationSteps?: AlertEscalationStepResponse[];
-}
-
-export interface AlertEscalationStepResponse {
-    id?: string;
-    stepOrder?: number;
-    delaySeconds?: number;
-    channels?: AlertStepChannelResponse[];
-}
-
-export interface AlertStepChannelResponse {
+export interface AlertRuleChannelResponse {
     id?: string;
     channelType?: ChannelType;
     destination?: string;
     destinationLabel?: string | undefined;
+    sortOrder?: number;
 }
 
 export interface CreateAlertRuleRequest {
@@ -26834,38 +28083,20 @@ export interface CreateAlertRuleRequest {
     description?: string | undefined;
     conditionType?: AlertConditionType;
     conditionParams?: any | undefined;
-    hysteresisMinutes?: number;
-    confirmationReadings?: number;
     isEnabled?: boolean;
     sortOrder?: number;
     severity?: AlertRuleSeverity | undefined;
+    allowThroughDnd?: boolean;
+    autoResolveEnabled?: boolean;
+    autoResolveParams?: any | undefined;
     clientConfiguration?: any | undefined;
-    schedules?: CreateAlertScheduleRequest[] | undefined;
+    channels?: CreateAlertRuleChannelRequest[] | undefined;
 }
 
-export interface CreateAlertScheduleRequest {
-    name?: string | undefined;
-    isDefault?: boolean;
-    daysOfWeek?: number[] | undefined;
-    startTime?: string | undefined;
-    endTime?: string | undefined;
-    timezone?: string | undefined;
-    quietHoursEnabled?: boolean;
-    quietHoursStart?: string | undefined;
-    quietHoursEnd?: string | undefined;
-    quietHoursOverrideCritical?: boolean;
-    escalationSteps?: CreateAlertEscalationStepRequest[] | undefined;
-}
-
-export interface CreateAlertEscalationStepRequest {
-    stepOrder?: number;
-    delaySeconds?: number;
-    channels?: CreateAlertStepChannelRequest[] | undefined;
-}
-
-export interface CreateAlertStepChannelRequest {
+export interface CreateAlertRuleChannelRequest {
     channelType?: ChannelType;
-    destination?: string;
+    /** Channel-specific address: webhook URL, chat handle, etc. Empty for in-app/web-push. */
+    destination?: string | undefined;
     destinationLabel?: string | undefined;
 }
 
@@ -26874,13 +28105,26 @@ export interface UpdateAlertRuleRequest {
     description?: string | undefined;
     conditionType?: AlertConditionType;
     conditionParams?: any | undefined;
-    hysteresisMinutes?: number;
-    confirmationReadings?: number;
     isEnabled?: boolean;
     sortOrder?: number;
     severity?: AlertRuleSeverity | undefined;
+    allowThroughDnd?: boolean;
+    autoResolveEnabled?: boolean;
+    autoResolveParams?: any | undefined;
     clientConfiguration?: any | undefined;
-    schedules?: CreateAlertScheduleRequest[] | undefined;
+    channels?: CreateAlertRuleChannelRequest[] | undefined;
+}
+
+/** 409 response body returned by DELETE /api/v4/alert-rules/{id} when other rules reference the target via alert_state. The FE uses this to either link to those rules or offer a cascade-delete confirmation. */
+export interface ReferencingRulesResponse {
+    referencingRuleIds?: string[];
+}
+
+/** Request body for the dry-run test fire endpoint. Mirrors the editor's in-memory rule shape — only the fields needed to render a notification. */
+export interface TestFireDryRunRequest {
+    name?: string;
+    severity?: AlertRuleSeverity;
+    channels?: CreateAlertRuleChannelRequest[];
 }
 
 export interface ActiveExcursionResponse {
@@ -26897,11 +28141,10 @@ export interface ActiveExcursionResponse {
 
 export interface ActiveInstanceResponse {
     id?: string;
-    scheduleId?: string;
     status?: string;
-    currentStepOrder?: number;
     triggeredAt?: Date;
-    nextEscalationAt?: Date | undefined;
+    /** One of "dnd" when delivery was suppressed at fire time, otherwise null. */
+    suppressionReason?: string | undefined;
 }
 
 export interface AlertHistoryResponse {
@@ -26921,6 +28164,8 @@ export interface HistoryExcursionResponse {
     endedAt?: Date;
     acknowledgedAt?: Date | undefined;
     acknowledgedBy?: string | undefined;
+    /** True when every instance of this excursion was a test fire. */
+    isTest?: boolean;
 }
 
 export interface AcknowledgeRequest {
@@ -27010,6 +28255,33 @@ export interface GlucoseCondition {
     aboveMgDl?: number | undefined;
     belowMgDl?: number | undefined;
     sustainedMinutes?: number | undefined;
+}
+
+export interface TenantAlertSettingsResponse {
+    /** True when the user has manually toggled DND on. */
+    dndManualActive?: boolean;
+    /** UTC instant at which a manually-activated DND auto-expires. Null = indefinite. */
+    dndManualUntil?: Date | undefined;
+    /** UTC instant at which DND was most recently activated. Anchors sustained
+            do_not_disturb conditions. */
+    dndManualStartedAt?: Date | undefined;
+    /** True when a recurring scheduled DND window is configured. */
+    dndScheduleEnabled?: boolean;
+    /** Local-time start of the scheduled DND window (in Timezone). */
+    dndScheduleStart?: string | undefined;
+    /** Local-time end of the scheduled DND window. Cross-midnight windows allowed. */
+    dndScheduleEnd?: string | undefined;
+    /** IANA timezone (e.g. Europe/London) for the scheduled window. */
+    timezone?: string;
+}
+
+export interface UpdateTenantAlertSettingsRequest {
+    dndManualActive?: boolean;
+    dndManualUntil?: Date | undefined;
+    dndScheduleEnabled?: boolean;
+    dndScheduleStart?: string | undefined;
+    dndScheduleEnd?: string | undefined;
+    timezone?: string;
 }
 
 /** DTO for tracker alerts returned to the frontend */
@@ -27327,6 +28599,7 @@ export interface GuestLinkInfo {
     activatedAt?: Date | undefined;
     activatedIp?: string | undefined;
     revokedAt?: Date | undefined;
+    dismissedAt?: Date | undefined;
     status?: GuestLinkStatus;
 }
 
@@ -27784,6 +29057,7 @@ export interface SensorGlucose {
     app?: string | undefined;
     dataSource?: string | undefined;
     correlationId?: string | undefined;
+    patientDeviceId?: string | undefined;
     legacyId?: string | undefined;
     createdAt?: Date;
     modifiedAt?: Date;
@@ -28044,6 +29318,20 @@ export interface DevCreateTenantRequest {
     displayName?: string;
 }
 
+export interface DevSeedTenantResponse {
+    tenantId?: string;
+    subjectId?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresInSeconds?: number;
+}
+
+export interface DevSeedTenantRequest {
+    slug?: string;
+    displayName?: string;
+    ownerUsername?: string;
+}
+
 export interface PaginatedResponseOfApsSnapshot {
     data?: ApsSnapshot[];
     pagination?: PaginationInfo;
@@ -28055,6 +29343,8 @@ export interface ApsSnapshot {
     mills?: number;
     utcOffset?: number | undefined;
     device?: string | undefined;
+    deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     app?: string | undefined;
     dataSource?: string | undefined;
     correlationId?: string | undefined;
@@ -28196,6 +29486,8 @@ export interface DeviceEvent {
     mills?: number;
     utcOffset?: number | undefined;
     device?: string | undefined;
+    deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     app?: string | undefined;
     dataSource?: string | undefined;
     correlationId?: string | undefined;
@@ -28287,6 +29579,7 @@ export interface PumpSnapshot {
     pumpStatus?: string | undefined;
     clock?: string | undefined;
     deviceId?: string | undefined;
+    patientDeviceId?: string | undefined;
     iob?: number | undefined;
     bolusIob?: number | undefined;
     additionalProperties?: { [key: string]: any; } | undefined;
@@ -28348,14 +29641,6 @@ export interface ConnectorStatusInfo {
 
 export interface SetActiveRequest {
     isActive?: boolean;
-}
-
-export interface HomeAssistantStateResponse {
-    entity_id?: string;
-    state?: string;
-    attributes?: { [key: string]: any; };
-    last_changed?: Date;
-    last_updated?: Date;
 }
 
 export interface WebhookNotificationSettings {
@@ -28420,6 +29705,45 @@ export interface AuditConfigDto {
     readAuditEnabled?: boolean;
     readAuditRetentionDays?: number | undefined;
     mutationAuditRetentionDays?: number | undefined;
+}
+
+export interface ActogramReportData {
+    glucose?: GlucosePointDto[];
+    thresholds?: ChartThresholdsDto;
+    heartRates?: HeartRatePointDto[];
+    stepCounts?: StepBubbleDto[];
+    sleepSpans?: ActogramSleepSpan[];
+}
+
+export interface GlucosePointDto {
+    time?: number;
+    sgv?: number;
+    direction?: string | undefined;
+    dataSource?: string | undefined;
+}
+
+export interface ChartThresholdsDto {
+    low?: number;
+    high?: number;
+    veryLow?: number;
+    veryHigh?: number;
+    glucoseYMax?: number;
+}
+
+export interface HeartRatePointDto {
+    time?: number;
+    bpm?: number;
+}
+
+export interface StepBubbleDto {
+    time?: number;
+    steps?: number;
+}
+
+export interface ActogramSleepSpan {
+    startMills?: number;
+    endMills?: number;
+    state?: string;
 }
 
 export interface PerformanceMetrics {
@@ -28501,6 +29825,8 @@ export interface DashboardChartData {
     basalDeliverySpans?: BasalDeliverySpanDto[];
     systemEventMarkers?: SystemEventMarkerDto[];
     trackerMarkers?: TrackerMarkerDto[];
+    heartRateSeries?: HeartRatePointDto[];
+    stepSeries?: StepBubbleDto[];
 }
 
 export interface TimeSeriesPoint {
@@ -28560,25 +29886,12 @@ export enum ChartColor {
     TrackerAppointment = "tracker-appointment",
     TrackerReminder = "tracker-reminder",
     TrackerCustom = "tracker-custom",
+    HeartRate = "heart-rate",
+    Steps = "steps",
     Profile = "chart-1",
     Override = "chart-2",
     MutedForeground = "muted-foreground",
     Primary = "primary",
-}
-
-export interface GlucosePointDto {
-    time?: number;
-    sgv?: number;
-    direction?: string | undefined;
-    dataSource?: string | undefined;
-}
-
-export interface ChartThresholdsDto {
-    low?: number;
-    high?: number;
-    veryLow?: number;
-    veryHigh?: number;
-    glucoseYMax?: number;
 }
 
 export interface BolusMarkerDto {
@@ -28664,6 +29977,18 @@ export interface TrackerMarkerDto {
     time?: number;
     icon?: string | undefined;
     color?: ChartColor;
+}
+
+/** Snapshot of "right now" therapy state for the Halo Dial. */
+export interface CurrentTherapyStateResponse {
+    /** The active pump operational mode, derived from the most recently started
+open-ended PumpMode span. Null when no
+pump-mode span is currently open. */
+    currentPumpMode?: PumpModeState | undefined;
+    /** Current effective ISF as a percentage of the schedule baseline.
+100 = at baseline. Below 100 = active CCP makes the pump more aggressive.
+Null when no CircadianPercentageProfile adjustment is active. */
+    sensitivityPercent?: number | undefined;
 }
 
 export interface DataOverviewYearsResponse {
@@ -29317,16 +30642,6 @@ export interface DayOfWeekAnalysis {
     patternDescription?: string;
 }
 
-export enum DayOfWeek {
-    Sunday = 0,
-    Monday = 1,
-    Tuesday = 2,
-    Wednesday = 3,
-    Thursday = 4,
-    Friday = 5,
-    Saturday = 6,
-}
-
 export interface DayMetrics extends PeriodMetrics {
     dayOfWeek?: DayOfWeek;
 }
@@ -29570,6 +30885,64 @@ export interface DailyBasalBolusRatioData {
     bolusPercent?: number;
 }
 
+export interface PunchCardResponse {
+    months?: PunchCardMonth[];
+    dateRange?: PunchCardDateRange;
+    globalMaxCarbs?: number;
+    globalMaxInsulin?: number;
+    globalMaxCarbInsulinDiff?: number;
+}
+
+export interface PunchCardMonth {
+    year?: number;
+    month?: number;
+    monthName?: string;
+    days?: PunchCardDay[];
+    maxCarbs?: number;
+    maxInsulin?: number;
+    maxCarbInsulinDiff?: number;
+    totalReadings?: number;
+    summary?: PunchCardMonthSummary | undefined;
+}
+
+export interface PunchCardDay {
+    date?: string;
+    timestamp?: number;
+    totalReadings?: number;
+    inRangeCount?: number;
+    lowCount?: number;
+    highCount?: number;
+    inRangePercent?: number;
+    lowPercent?: number;
+    highPercent?: number;
+    averageGlucose?: number;
+    totalCarbs?: number;
+    totalInsulin?: number;
+    totalBolus?: number;
+    totalBasal?: number;
+    carbToInsulinRatio?: number;
+    entries?: PunchCardEntry[];
+}
+
+export interface PunchCardEntry {
+    mills?: number;
+    mgdl?: number;
+}
+
+export interface PunchCardMonthSummary {
+    dayCount?: number;
+    totalReadings?: number;
+    inRangePercent?: number;
+    lowPercent?: number;
+    highPercent?: number;
+    avgGlucose?: number;
+}
+
+export interface PunchCardDateRange {
+    from?: string;
+    to?: string;
+}
+
 export interface BasalAnalysisResponse {
     stats?: BasalStats;
     tempBasalInfo?: TempBasalInfo;
@@ -29606,7 +30979,8 @@ export interface HourlyBasalPercentileData {
 }
 
 export interface AidSystemMetrics {
-    cgmUsePercent?: number | undefined;
+    cgmDeviceNames?: string | undefined;
+    pumpDeviceNames?: string | undefined;
     pumpUsePercent?: number | undefined;
     aidActivePercent?: number | undefined;
     cgmActivePercent?: number | undefined;
@@ -30037,12 +31411,12 @@ export interface RecoveryVerifyRequest {
 
 /** Response containing the list of passkey credentials */
 export interface PasskeyCredentialListResponse {
-    credentials?: PasskeyCredentialDto[];
+    credentials?: PasskeyCredentialDto2[];
     primaryAuthFactorCount?: number;
 }
 
 /** A passkey credential summary (never includes the public key) */
-export interface PasskeyCredentialDto {
+export interface PasskeyCredentialDto2 {
     id?: string;
     label?: string | undefined;
     createdAt?: Date;
@@ -30066,6 +31440,7 @@ export interface AuthStatusResponse {
     setupRequired?: boolean;
     recoveryMode?: boolean;
     allowAccessRequests?: boolean;
+    onboardingCompleted?: boolean;
 }
 
 /** Request for initial setup registration options (first user creation) */
@@ -30150,6 +31525,47 @@ export interface TotpLoginResponse {
 export interface TotpLoginRequest {
     username: string;
     code: string;
+}
+
+export interface Body {
+    grant_type?: string;
+    code?: string | undefined;
+    redirect_uri?: string | undefined;
+    client_id?: string | undefined;
+    code_verifier?: string | undefined;
+    refresh_token?: string | undefined;
+    device_code?: string | undefined;
+    scope?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface Body2 {
+    client_id?: string | undefined;
+    scope?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface Body3 {
+    user_code?: string | undefined;
+    approved?: boolean;
+
+    [key: string]: any;
+}
+
+export interface Body4 {
+    token?: string | undefined;
+    token_type_hint?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface Body5 {
+    token?: string | undefined;
+    token_type_hint?: string | undefined;
+
+    [key: string]: any;
 }
 
 export interface FileParameter {

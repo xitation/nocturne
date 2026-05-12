@@ -116,6 +116,12 @@ public class TempBasalEntity : ITenantScoped, IAuditable
     public Guid? DeviceId { get; set; }
 
     /// <summary>
+    /// Foreign key to the PatientDevice table.
+    /// </summary>
+    [Column("patient_device_id")]
+    public Guid? PatientDeviceId { get; set; }
+
+    /// <summary>
     /// Pump-specific record identifier for deduplication
     /// </summary>
     [Column("pump_record_id")]
@@ -127,6 +133,12 @@ public class TempBasalEntity : ITenantScoped, IAuditable
     /// </summary>
     [Column("aps_snapshot_id")]
     public Guid? ApsSnapshotId { get; set; }
+
+    /// <summary>
+    /// Snapshot of insulin pharmacokinetic settings at the time this temp basal was set (JSONB).
+    /// </summary>
+    [Column("insulin_context", TypeName = "jsonb")]
+    public string? InsulinContextJson { get; set; }
 
     /// <summary>
     /// Catch-all JSONB column for fields not mapped to dedicated columns

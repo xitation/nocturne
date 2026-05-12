@@ -21,6 +21,7 @@ namespace Nocturne.API.Controllers.V4.Analytics;
 /// <seealso cref="GlucosePredictionResponse"/>
 /// <seealso cref="PredictionStatusResponse"/>
 [ApiController]
+[Tags("Analytics")]
 [Route("api/v4/predictions")]
 [Produces("application/json")]
 [ClientPropertyName("predictions")]
@@ -67,7 +68,7 @@ public class PredictionController : ControllerBase
 
         try
         {
-            var result = await _predictionService.GetPredictionsAsync(profileId, cancellationToken);
+            var result = await _predictionService.GetPredictionsAsync(profileId, asOf: null, cancellationToken);
             return Ok(result);
         }
         catch (InvalidOperationException ex)

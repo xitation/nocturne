@@ -15,15 +15,15 @@
   import { requireDateParamsContext } from "$lib/hooks/date-params.svelte";
   import { contextResource } from "$lib/hooks/resource-context.svelte";
 
+  const VISIBLE_DAYS = 14;
+  const PADDING_DAYS = 14;
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
   const reportsParams = requireDateParamsContext(14);
 
   const dateRangeMillis = $derived({
-    from: new Date(
-      reportsParams.dateRangeInput.from ?? new Date().toISOString()
-    ).getTime(),
-    to: new Date(
-      reportsParams.dateRangeInput.to ?? new Date().toISOString()
-    ).getTime(),
+    from: reportsParams.dateRangeMillis.from - PADDING_DAYS * MS_PER_DAY,
+    to: reportsParams.dateRangeMillis.to + PADDING_DAYS * MS_PER_DAY,
   });
 
   const actogramResource = contextResource(
@@ -34,10 +34,6 @@
       }),
     { errorTitle: "Error Loading Heart Rate Report" }
   );
-
-  const heartRates = $derived(actogramResource.current?.heartRates ?? []);
-  const glucoseData = $derived(actogramResource.current?.glucoseData ?? []);
-  const thresholds = $derived(actogramResource.current?.thresholds);
 
   // Build day array from date range
   const days = $derived.by(() => {
@@ -67,33 +63,35 @@
 
   // HR data as ActogramPoints
   const hrPoints = $derived(
-    heartRates.map((h) => ({ mills: h.mills, bpm: h.bpm }))
+    (actogramResource.current?.heartRates ?? []).map((h) => ({ mills: h.mills, bpm: h.bpm }))
   );
 
   // BG data as GlucosePoints
   const bgPoints = $derived(
-    glucoseData.map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
+    (actogramResource.current?.glucoseData ?? []).map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
   );
 
   // Summary statistics
-  const avgBpm = $derived(
-    heartRates.length > 0
-      ? Math.round(
-          heartRates.reduce((sum, h) => sum + h.bpm, 0) / heartRates.length
-        )
-      : 0
-  );
-  const minBpm = $derived(
-    heartRates.length > 0 ? Math.min(...heartRates.map((h) => h.bpm)) : 0
-  );
-  const maxBpm = $derived(
-    heartRates.length > 0 ? Math.max(...heartRates.map((h) => h.bpm)) : 0
-  );
+  const avgBpm = $derived.by(() => {
+    const rates = actogramResource.current?.heartRates ?? [];
+    return rates.length > 0
+      ? Math.round(rates.reduce((sum, h) => sum + h.bpm, 0) / rates.length)
+      : 0;
+  });
+  const minBpm = $derived.by(() => {
+    const rates = actogramResource.current?.heartRates ?? [];
+    return rates.length > 0 ? Math.min(...rates.map((h) => h.bpm)) : 0;
+  });
+  const maxBpm = $derived.by(() => {
+    const rates = actogramResource.current?.heartRates ?? [];
+    return rates.length > 0 ? Math.max(...rates.map((h) => h.bpm)) : 0;
+  });
 
   // Resting HR estimate: 10th percentile of all readings
   const restingBpm = $derived.by(() => {
-    if (heartRates.length === 0) return 0;
-    const sorted = [...heartRates].sort((a, b) => a.bpm - b.bpm);
+    const rates = actogramResource.current?.heartRates ?? [];
+    if (rates.length === 0) return 0;
+    const sorted = [...rates].sort((a, b) => a.bpm - b.bpm);
     const idx = Math.floor(sorted.length * 0.1);
     return sorted[idx]?.bpm ?? 0;
   });
@@ -111,7 +109,8 @@
   />
 </svelte:head>
 
-{#if actogramResource.current}
+{#await actogramResource then actogramData}
+  {#if actogramData}
   <div class="container mx-auto space-y-6 px-4 py-6 max-w-7xl">
     <!-- Header -->
     <div>
@@ -180,7 +179,7 @@
           <div class="flex items-center gap-2">
             <Calendar class="h-5 w-5 text-muted-foreground" />
             <span class="text-2xl font-bold tabular-nums">
-              {heartRates.length.toLocaleString()}
+              {(actogramResource.current?.heartRates ?? []).length.toLocaleString()}
             </span>
           </div>
         </CardContent>
@@ -200,9 +199,16 @@
           data={hrPoints}
           bgData={bgPoints}
           {days}
-          {thresholds}
+          thresholds={actogramResource.current?.thresholds}
           rowHeight={48}
+          visibleCount={VISIBLE_DAYS}
+          initialOffset={PADDING_DAYS}
         >
+          {#snippet tooltipValue({ point })}
+            {@const bpm = (point as { mills: number; bpm: number }).bpm ?? 0}
+            <span class="text-muted-foreground">Heart Rate</span>
+            <span class="ml-auto font-mono font-medium tabular-nums">{bpm} bpm</span>
+          {/snippet}
           {#snippet row(ctx: ActogramRowContext)}
             {#each ctx.data as { point, hoursFromStart, isExtended }}
               {@const bpm = (point as { mills: number; bpm: number }).bpm ?? 0}
@@ -222,4 +228,5 @@
       </CardContent>
     </Card>
   </div>
-{/if}
+  {/if}
+{/await}

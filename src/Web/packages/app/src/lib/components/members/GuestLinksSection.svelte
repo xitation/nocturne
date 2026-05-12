@@ -12,11 +12,13 @@
     X,
     Loader2,
     Link,
+    EyeOff,
   } from "lucide-svelte";
   import {
     getGuestLinks,
     createGuestLink,
     revokeGuestLink,
+    dismissGuestLink,
   } from "$api/generated/guestLinks.generated.remote";
   import {
     type GuestLinkInfo,
@@ -31,11 +33,15 @@
     hasStar || effectivePermissions.includes("sharing.guest"),
   );
 
-  // Query
-  const guestLinksQuery = $derived(canCreateGuestLinks ? getGuestLinks() : null);
-  const guestLinks = $derived(guestLinksQuery?.current ?? []);
-
   // UI state
+  let showDismissed = $state(false);
+  let dismissingId = $state<string | null>(null);
+
+  // Query
+  const guestLinksQuery = $derived(canCreateGuestLinks ? getGuestLinks({ includeDismissed: true }) : null);
+  const allLinks = $derived(guestLinksQuery?.current ?? []);
+  const guestLinks = $derived(showDismissed ? allLinks : allLinks.filter(l => !l.dismissedAt));
+  const dismissedCount = $derived(allLinks.filter(l => l.dismissedAt).length);
   let showCreateForm = $state(false);
   let label = $state("");
   let isCreating = $state(false);
@@ -98,6 +104,30 @@
     });
   }
 
+  function formatRelativeExpiry(date: Date | undefined | null): string {
+    if (!date) return "";
+    const d = date instanceof Date ? date : new Date(date);
+    const now = Date.now();
+    const diffMs = d.getTime() - now;
+    const absDiffMs = Math.abs(diffMs);
+
+    const minutes = Math.round(absDiffMs / 60_000);
+    const hours = Math.round(absDiffMs / 3_600_000);
+    const days = Math.round(absDiffMs / 86_400_000);
+
+    let relative: string;
+    if (minutes < 1) relative = "less than a minute";
+    else if (minutes < 60) relative = `${minutes} minute${minutes !== 1 ? "s" : ""}`;
+    else if (hours < 48) relative = `${hours} hour${hours !== 1 ? "s" : ""}`;
+    else relative = `${days} day${days !== 1 ? "s" : ""}`;
+
+    return diffMs > 0 ? `Expires in ${relative}` : `Expired ${relative} ago`;
+  }
+
+  function isTerminal(link: GuestLinkInfo): boolean {
+    return link.status === GuestLinkStatus.Revoked || link.status === GuestLinkStatus.Expired;
+  }
+
   function canRevoke(link: GuestLinkInfo): boolean {
     return (
       link.status === GuestLinkStatus.Pending ||
@@ -113,9 +143,22 @@
       const result = await createGuestLink({ label: label.trim() });
       createdCode = result.code ?? null;
       createdUrl = result.fullUrl ?? null;
-      if (createdUrl && !createdUrl.startsWith("http")) {
-        createdUrl = `${window.location.origin}${createdUrl}`;
+      if (createdUrl) {
+        // The backend may report http behind a reverse proxy; use the browser's origin
+        try {
+          const backendUrl = new URL(createdUrl);
+          const originUrl = new URL(window.location.origin);
+          backendUrl.protocol = originUrl.protocol;
+          backendUrl.host = originUrl.host;
+          createdUrl = backendUrl.toString();
+        } catch {
+          // Fallback: treat as relative path
+          if (!createdUrl.startsWith("http")) {
+            createdUrl = `${window.location.origin}${createdUrl}`;
+          }
+        }
       }
+      await guestLinksQuery?.refresh();
     } catch {
       createError = "Failed to create guest link. Please try again.";
     } finally {
@@ -131,6 +174,17 @@
     } else {
       copiedUrl = true;
       setTimeout(() => (copiedUrl = false), 2000);
+    }
+  }
+
+  async function handleDismiss(id: string) {
+    dismissingId = id;
+    try {
+      await dismissGuestLink(id);
+    } catch {
+      // Silently fail — the list will refresh
+    } finally {
+      dismissingId = null;
     }
   }
 
@@ -316,7 +370,7 @@
     {/if}
 
     <!-- Guest Links List -->
-    {#if guestLinks.length === 0 && !showCreateForm}
+    {#if allLinks.length === 0 && !showCreateForm}
       <Card.Root>
         <Card.Content
           class="flex flex-col items-center justify-center py-12 text-center"
@@ -331,11 +385,11 @@
           </p>
         </Card.Content>
       </Card.Root>
-    {:else if guestLinks.length > 0}
+    {:else if allLinks.length > 0}
       <div class="space-y-2">
         {#each guestLinks as link (link.id)}
           <Card.Root>
-            <Card.Content class="flex items-center gap-4 py-3">
+            <Card.Content class="flex items-center gap-4 py-3{link.dismissedAt ? ' opacity-50' : ''}">
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <span class="font-medium text-sm truncate">
@@ -349,9 +403,9 @@
                   class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1"
                 >
                   <span>Created {formatDate(link.createdAt)}</span>
-                  <span>Expires {formatDate(link.expiresAt)}</span>
-                  {#if link.status === GuestLinkStatus.Active && link.activatedIp}
-                    <span>Activated from {maskIp(link.activatedIp)}</span>
+                  <span>{formatRelativeExpiry(link.expiresAt)}</span>
+                  {#if (link.status === GuestLinkStatus.Active || link.status === GuestLinkStatus.Revoked) && link.activatedAt}
+                    <span>Accessed {formatDate(link.activatedAt)}{link.activatedIp ? ` from ${maskIp(link.activatedIp)}` : ""}</span>
                   {/if}
                 </div>
               </div>
@@ -370,11 +424,35 @@
                   {/if}
                   Revoke
                 </Button>
+              {:else if isTerminal(link) && !link.dismissedAt}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="text-muted-foreground hover:text-foreground shrink-0"
+                  disabled={dismissingId === link.id}
+                  onclick={() => handleDismiss(link.id!)}
+                >
+                  {#if dismissingId === link.id}
+                    <Loader2 class="mr-1 h-3.5 w-3.5 animate-spin" />
+                  {:else}
+                    <EyeOff class="mr-1 h-3.5 w-3.5" />
+                  {/if}
+                  Dismiss
+                </Button>
               {/if}
             </Card.Content>
           </Card.Root>
         {/each}
       </div>
+      {#if dismissedCount > 0}
+        <button
+          type="button"
+          class="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          onclick={() => (showDismissed = !showDismissed)}
+        >
+          {showDismissed ? 'Hide' : 'Show'} {dismissedCount} dismissed
+        </button>
+      {/if}
     {/if}
   </div>
 {/if}

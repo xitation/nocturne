@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import { getAllConnectorStatus } from "$api/generated/configurations.generated.remote";
+  import { getStatus as getConnectorStatuses } from "$api/generated/connectorStatus.generated.remote";
   import {
     getServicesOverview,
     getConnectorCapabilities,
@@ -9,7 +8,7 @@
     ServicesOverview,
     UploaderApp,
     DataSourceInfo,
-    ConnectorStatusInfo,
+    ConnectorStatusDto,
     SyncRequest,
     AvailableConnector,
     ConnectorCapabilities,
@@ -61,9 +60,26 @@
   import { coachmark } from "@nocturne/coach";
   import { getRealtimeStore } from "$lib/stores/realtime-store.svelte";
 
-  let servicesOverview = $state<ServicesOverview | null>(null);
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
+  // Queries — fire on the server during SSR; results land in cache for hydration.
+  const servicesOverviewQuery = getServicesOverview();
+  const connectorStatusesQuery = getConnectorStatuses();
+
+  const servicesOverview = $derived<ServicesOverview | null>(
+    servicesOverviewQuery.current ?? null,
+  );
+  const connectorStatuses = $derived<ConnectorStatusDto[]>(
+    connectorStatusesQuery.current ?? [],
+  );
+  const isLoading = $derived(
+    servicesOverviewQuery.current === undefined,
+  );
+  const isLoadingConnectorStatuses = $derived(
+    connectorStatusesQuery.current === undefined,
+  );
+
+  const error = $derived<string | null>(
+    !isLoading && !servicesOverview ? "Failed to load services" : null,
+  );
   let selectedUploader = $state<UploaderApp | null>(null);
   let showSetupDialog = $state(false);
   let copiedField = $state<string | null>(null);
@@ -81,8 +97,6 @@
   let manualSyncResult = $state<BatchSyncResult | null>(null);
 
   // Connector heartbeat metrics state
-  let connectorStatuses = $state<ConnectorStatusInfo[]>([]);
-  let isLoadingConnectorStatuses = $state(false);
   let selectedConnector = $state<ConnectorStatusWithDescription | null>(null);
   let selectedConnectorCapabilities = $state<ConnectorCapabilities | null>(null);
   let connectorCapabilitiesById = $state<Record<string, ConnectorCapabilities | null>>({});
@@ -92,6 +106,10 @@
   // Realtime sync progress from WebSocket
   const realtimeStore = getRealtimeStore();
   let syncProgressByConnector = $derived(realtimeStore.syncProgressByConnector);
+  let activeSyncProgress = $derived.by(() => {
+    const entries = Object.values(syncProgressByConnector);
+    return entries.find((p) => p.phase === "Syncing") ?? entries.at(-1) ?? null;
+  });
 
   $effect(() => {
     const progress = syncProgressByConnector;
@@ -99,51 +117,42 @@
       (p) => p.phase === "Completed" || p.phase === "Failed"
     );
     if (hasCompleted) {
-      loadConnectorStatuses();
+      connectorStatusesQuery.refresh();
     }
   });
+
+  // Fan-out load of capability descriptors once the services overview is in.
+  $effect(() => {
+    const overview = servicesOverviewQuery.current;
+    if (!overview?.availableConnectors) {
+      connectorCapabilitiesById = {};
+      return;
+    }
+    loadConnectorCapabilitiesMap(overview.availableConnectors);
+  });
+
+  // API token create dialog (triggered from uploader setup)
+  let apiTokenCreateOpen = $state(false);
+  let apiTokenPrefillLabel = $state("");
+  let apiTokenPrefillScopes = $state<string[]>([]);
 
   // Deduplication state
   let showDeduplicationDialog = $state(false);
   let isDeduplicating = $state(false);
 
-  onMount(async () => {
-    await Promise.all([loadServices(), loadConnectorStatuses()]);
-  });
-
-  onDestroy(() => {});
-
   async function refreshAll() {
-    await Promise.all([loadServices(), loadConnectorStatuses()]);
+    await Promise.all([
+      servicesOverviewQuery.refresh(),
+      connectorStatusesQuery.refresh(),
+    ]);
   }
 
   async function loadServices() {
-    isLoading = true;
-    error = null;
-    try {
-      servicesOverview = await getServicesOverview();
-      if (servicesOverview?.availableConnectors) {
-        await loadConnectorCapabilitiesMap(servicesOverview.availableConnectors);
-      } else {
-        connectorCapabilitiesById = {};
-      }
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to load services";
-    } finally {
-      isLoading = false;
-    }
+    await servicesOverviewQuery.refresh();
   }
 
   async function loadConnectorStatuses() {
-    isLoadingConnectorStatuses = true;
-    try {
-      connectorStatuses = await getAllConnectorStatus();
-    } catch (e) {
-      console.error("Failed to load connector statuses", e);
-      connectorStatuses = [];
-    } finally {
-      isLoadingConnectorStatuses = false;
-    }
+    await connectorStatusesQuery.refresh();
   }
 
   async function loadConnectorCapabilitiesFor(connectorId?: string) {
@@ -221,7 +230,7 @@
       const apiClient = getApiClient();
 
       for (const connector of connectorsToSync) {
-        const connectorId = connector.connectorName;
+        const connectorId = connector.id;
         if (!connectorId) continue;
 
         const start = performance.now();
@@ -370,12 +379,17 @@
 
 <div class="container mx-auto max-w-4xl p-6 space-y-6">
   <!-- Header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">Connectors & Connected Apps</h1>
-      <p class="text-muted-foreground">
-        Manage data sources, set up new connections, and control app access
-      </p>
+  <div class="flex items-start justify-between">
+    <div class="flex items-center gap-3">
+      <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+        <Wifi class="h-6 w-6 text-primary" />
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Connectors & Connected Apps</h1>
+        <p class="text-muted-foreground">
+          Manage data sources, set up new connections, and control app access
+        </p>
+      </div>
     </div>
     <Button variant="outline" size="sm" onclick={refreshAll} class="gap-2">
       <RefreshCw
@@ -537,6 +551,9 @@
           <Button
             variant="outline"
             onclick={() => {
+              apiTokenPrefillLabel = "";
+              apiTokenPrefillScopes = ["health.readwrite"];
+              apiTokenCreateOpen = true;
               document.getElementById("api-tokens-section")?.scrollIntoView({ behavior: "smooth" });
             }}
           >
@@ -628,13 +645,25 @@
 
     <!-- API Tokens Section -->
     <div id="api-tokens-section">
-      <ApiTokens />
+      <ApiTokens
+        bind:createOpen={apiTokenCreateOpen}
+        prefillLabel={apiTokenPrefillLabel}
+        prefillScopes={apiTokenPrefillScopes}
+      />
     </div>
   {/if}
 </div>
 
 <!-- Setup Instructions Dialog -->
-<UploaderSetupDialog bind:open={showSetupDialog} {selectedUploader} />
+<UploaderSetupDialog
+  bind:open={showSetupDialog}
+  {selectedUploader}
+  onRequestApiKey={(label, scopes) => {
+    apiTokenPrefillLabel = label;
+    apiTokenPrefillScopes = scopes;
+    apiTokenCreateOpen = true;
+  }}
+/>
 
 <!-- Demo Data Management Dialog -->
 <DemoDataSection bind:open={showDemoDataDialog} onDeleteComplete={loadServices} />
@@ -646,7 +675,7 @@
   onDeleteComplete={loadServices}
 />
 
-<ManualSyncDialog bind:open={showManualSyncDialog} {isManualSyncing} {manualSyncResult} />
+<ManualSyncDialog bind:open={showManualSyncDialog} {isManualSyncing} {manualSyncResult} syncProgress={isManualSyncing ? activeSyncProgress : null} />
 
 <!-- Connector Details Dialog -->
 <ConnectorDetailsDialog bind:open={showConnectorDialog} {selectedConnector} {selectedConnectorCapabilities} onSyncComplete={loadConnectorStatuses} />

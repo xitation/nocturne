@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import * as Card from "$lib/components/ui/card";
   import * as Tabs from "$lib/components/ui/tabs";
-  import * as Table from "$lib/components/ui/table";
   import { Switch } from "$lib/components/ui/switch";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
@@ -11,12 +10,9 @@
   import {
     ScrollText,
     Settings2,
-    ChevronLeft,
-    ChevronRight,
-    ChevronDown,
-    ChevronUp,
     Loader2,
     Info,
+    X,
   } from "lucide-svelte";
   import {
     getMutationAuditLog,
@@ -24,6 +20,8 @@
     getAuditConfig,
     updateAuditConfig,
   } from "$lib/api/generated/audits.generated.remote";
+  import AuditMutationsTable from "$lib/components/audit/AuditMutationsTable.svelte";
+  import AuditReadsTable from "$lib/components/audit/AuditReadsTable.svelte";
 
   // Permissions
   const effectivePermissions: string[] = $derived(
@@ -35,7 +33,7 @@
   );
 
   // --- Config ---
-  const configQuery = $derived(getAuditConfig());
+  const configQuery = getAuditConfig();
   const config = $derived(configQuery.current);
 
   let readAuditEnabled = $state(false);
@@ -85,113 +83,78 @@
   // --- Tab state ---
   let activeTab = $state("mutations");
 
-  // --- Mutation log ---
-  let mFrom = $state(
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  );
-  let mTo = $state(new Date().toISOString().split("T")[0]);
-  let mEntityType = $state("");
-  let mAction = $state("");
-  let mPageSize = $state(25);
-  let mOffset = $state(0);
-  let expandedMutation = $state<string | null>(null);
+  // --- Mutation log server-side filters ---
+  const defaultFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const defaultTo = new Date().toISOString().split("T")[0];
+
+  let mFrom = $state(defaultFrom);
+  let mTo = $state(defaultTo);
+  let mGlobalFilter = $state("");
 
   const mutationsQuery = $derived(
     getMutationAuditLog({
       from: new Date(mFrom),
       to: new Date(mTo + "T23:59:59"),
-      limit: mPageSize,
-      offset: mOffset,
+      limit: 500,
+      offset: 0,
       sort: "created_at_desc",
-      entityType: mEntityType || undefined,
-      action: mAction || undefined,
     }),
   );
   const mutationsResult = $derived(mutationsQuery.current);
   const mutations = $derived((mutationsResult as any)?.data ?? []);
-  const mutationsPagination = $derived((mutationsResult as any)?.pagination);
-  const mutationsTotal = $derived(mutationsPagination?.total ?? 0);
-  const mutationsPage = $derived(Math.floor(mOffset / mPageSize) + 1);
-  const mutationsTotalPages = $derived(
-    Math.max(1, Math.ceil(mutationsTotal / mPageSize)),
-  );
+  const mutationsTotal = $derived((mutationsResult as any)?.pagination?.total ?? 0);
 
-  // --- Read access log ---
-  let rFrom = $state(
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  );
-  let rTo = $state(new Date().toISOString().split("T")[0]);
-  let rEntityType = $state("");
-  let rEndpoint = $state("");
-  let rPageSize = $state(25);
-  let rOffset = $state(0);
-  let expandedRead = $state<string | null>(null);
+  // --- Read access log server-side filters ---
+  let rFrom = $state(defaultFrom);
+  let rTo = $state(defaultTo);
+  let rGlobalFilter = $state("");
 
   const readsQuery = $derived(
     getReadAccessAuditLog({
       from: new Date(rFrom),
       to: new Date(rTo + "T23:59:59"),
-      limit: rPageSize,
-      offset: rOffset,
+      limit: 500,
+      offset: 0,
       sort: "created_at_desc",
-      entityType: rEntityType || undefined,
-      endpoint: rEndpoint || undefined,
     }),
   );
   const readsResult = $derived(readsQuery.current);
   const reads = $derived((readsResult as any)?.data ?? []);
-  const readsPagination = $derived((readsResult as any)?.pagination);
-  const readsTotal = $derived(readsPagination?.total ?? 0);
-  const readsPage = $derived(Math.floor(rOffset / rPageSize) + 1);
-  const readsTotalPages = $derived(
-    Math.max(1, Math.ceil(readsTotal / rPageSize)),
+  const readsTotal = $derived((readsResult as any)?.pagination?.total ?? 0);
+
+  // --- Filter state helpers ---
+  const mHasDateFilter = $derived(
+    mFrom !== defaultFrom || mTo !== defaultTo
   );
 
-  // --- Helpers ---
-  function formatTime(date: string | Date) {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(new Date(date));
+  const rHasDateFilter = $derived(
+    rFrom !== defaultFrom || rTo !== defaultTo
+  );
+
+  function resetMutationDateFilter() {
+    mFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    mTo = new Date().toISOString().split("T")[0];
   }
 
-  function truncateId(id: string) {
-    return id?.substring(0, 8) + "\u2026";
-  }
-
-  function actionVariant(
-    action: string,
-  ): "default" | "secondary" | "destructive" | "outline" {
-    switch (action) {
-      case "delete":
-        return "destructive";
-      case "create":
-        return "default";
-      default:
-        return "secondary";
-    }
-  }
-
-  function parseJson(json: string | null | undefined): Record<string, any> | null {
-    if (!json) return null;
-    try {
-      return JSON.parse(json);
-    } catch {
-      return null;
-    }
+  function resetReadDateFilter() {
+    rFrom = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    rTo = new Date().toISOString().split("T")[0];
   }
 </script>
 
-<div class="space-y-6">
+<svelte:head>
+  <title>Audit Log - Settings - Nocturne</title>
+</svelte:head>
+
+<div class="container mx-auto max-w-4xl p-6 space-y-6">
   <div class="flex items-center gap-3">
-    <ScrollText class="h-6 w-6 text-muted-foreground" />
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+      <ScrollText class="h-6 w-6 text-primary" />
+    </div>
     <div>
-      <h2 class="text-2xl font-bold tracking-tight">Audit Log</h2>
-      <p class="text-sm text-muted-foreground">
-        View data changes and access history for compliance.
+      <h1 class="text-2xl font-bold tracking-tight">Audit Log</h1>
+      <p class="text-muted-foreground">
+        View data changes and access history for compliance
       </p>
     </div>
   </div>
@@ -250,187 +213,73 @@
   <!-- Tabbed Log Viewer -->
   <Tabs.Root bind:value={activeTab} class="space-y-4">
     <Tabs.List class="grid w-full grid-cols-2">
-      <Tabs.Trigger value="mutations">Data Changes</Tabs.Trigger>
-      <Tabs.Trigger value="reads">Data Access</Tabs.Trigger>
+      <Tabs.Trigger value="mutations">
+        Data Changes
+        {#if mutationsTotal > 0}
+          <Badge variant="secondary" class="ml-2">{mutationsTotal}</Badge>
+        {/if}
+      </Tabs.Trigger>
+      <Tabs.Trigger value="reads">
+        Data Access
+        {#if readsTotal > 0}
+          <Badge variant="secondary" class="ml-2">{readsTotal}</Badge>
+        {/if}
+      </Tabs.Trigger>
     </Tabs.List>
 
     <!-- === Mutation Audit Log Tab === -->
     <Tabs.Content value="mutations" class="space-y-4">
-      <!-- Filters -->
-      <div class="flex flex-wrap items-end gap-3">
-        <div class="space-y-1">
-          <Label for="m-from">From</Label>
-          <Input id="m-from" type="date" bind:value={mFrom} onchange={() => (mOffset = 0)} />
-        </div>
-        <div class="space-y-1">
-          <Label for="m-to">To</Label>
-          <Input id="m-to" type="date" bind:value={mTo} onchange={() => (mOffset = 0)} />
-        </div>
-        <div class="space-y-1">
-          <Label for="m-entity">Entity Type</Label>
-          <Input
-            id="m-entity"
-            placeholder="e.g. SensorGlucose"
-            bind:value={mEntityType}
-            onchange={() => (mOffset = 0)}
-          />
-        </div>
-        <div class="space-y-1">
-          <Label for="m-action">Action</Label>
-          <select
-            id="m-action"
-            class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-            bind:value={mAction}
-            onchange={() => (mOffset = 0)}
-          >
-            <option value="">All</option>
-            <option value="create">Create</option>
-            <option value="update">Update</option>
-            <option value="delete">Delete</option>
-            <option value="restore">Restore</option>
-          </select>
-        </div>
-      </div>
+      <!-- Date Range Filter Card -->
+      <Card.Root>
+        <Card.Content class="p-4">
+          <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div class="flex flex-1 flex-col gap-4 md:flex-row md:items-end">
+              <div class="space-y-1">
+                <Label for="m-from">From</Label>
+                <Input id="m-from" type="date" bind:value={mFrom} />
+              </div>
+              <div class="space-y-1">
+                <Label for="m-to">To</Label>
+                <Input id="m-to" type="date" bind:value={mTo} />
+              </div>
+            </div>
 
-      <!-- Table -->
-      <div class="rounded-md border">
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head class="w-8"></Table.Head>
-              <Table.Head>Time</Table.Head>
-              <Table.Head>Subject</Table.Head>
-              <Table.Head>Action</Table.Head>
-              <Table.Head>Entity Type</Table.Head>
-              <Table.Head>Entity ID</Table.Head>
-              <Table.Head>Endpoint</Table.Head>
-              <Table.Head>IP Address</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {#each mutations as entry (entry.id)}
-              <Table.Row
-                class="cursor-pointer"
-                onclick={() =>
-                  (expandedMutation =
-                    expandedMutation === entry.id ? null : entry.id)}
-              >
-                <Table.Cell>
-                  {#if expandedMutation === entry.id}
-                    <ChevronUp class="h-4 w-4 text-muted-foreground" />
-                  {:else}
-                    <ChevronDown class="h-4 w-4 text-muted-foreground" />
-                  {/if}
-                </Table.Cell>
-                <Table.Cell class="whitespace-nowrap text-sm">
-                  {formatTime(entry.createdAt)}
-                </Table.Cell>
-                <Table.Cell>
-                  {entry.subjectName ?? truncateId(entry.subjectId ?? "system")}
-                </Table.Cell>
-                <Table.Cell>
-                  <Badge variant={actionVariant(entry.action)}>
-                    {entry.action}
-                  </Badge>
-                </Table.Cell>
-                <Table.Cell>{entry.entityType}</Table.Cell>
-                <Table.Cell class="font-mono text-xs">
-                  {truncateId(entry.entityId)}
-                </Table.Cell>
-                <Table.Cell class="text-xs text-muted-foreground">
-                  {entry.endpoint ?? ""}
-                </Table.Cell>
-                <Table.Cell class="text-xs text-muted-foreground">
-                  {entry.ipAddress ?? ""}
-                </Table.Cell>
-              </Table.Row>
-              {#if expandedMutation === entry.id}
-                <Table.Row>
-                  <Table.Cell colspan={8}>
-                    <div class="bg-muted/50 p-4 text-sm space-y-2 rounded">
-                      {#if entry.reason}
-                        <div>
-                          <span class="font-medium">Reason:</span>
-                          {entry.reason}
-                        </div>
-                      {/if}
-                      {#if entry.authType}
-                        <div>
-                          <span class="font-medium">Auth:</span>
-                          {entry.authType}
-                        </div>
-                      {/if}
-                      {#if parseJson(entry.changes)}
-                        {@const changes = parseJson(entry.changes)}
-                        <div class="font-medium">Changes:</div>
-                        <div class="grid gap-1 pl-2">
-                          {#each Object.entries(changes ?? {}) as [field, diff]}
-                            <div class="font-mono text-xs">
-                              <span class="font-semibold">{field}:</span>
-                              {#if typeof diff === "object" && diff !== null && "old" in diff}
-                                <span class="text-red-600 dark:text-red-400 line-through">{JSON.stringify(diff.old)}</span>
-                                {" "}
-                                <span class="text-green-600 dark:text-green-400">{JSON.stringify(diff.new)}</span>
-                              {:else}
-                                {JSON.stringify(diff)}
-                              {/if}
-                            </div>
-                          {/each}
-                        </div>
-                      {:else if entry.changes}
-                        <pre class="text-xs overflow-auto">{entry.changes}</pre>
-                      {/if}
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
+            <div class="flex items-center gap-2">
+              {#if mHasDateFilter}
+                <Button variant="ghost" size="sm" onclick={resetMutationDateFilter}>
+                  <X class="mr-1 h-4 w-4" />
+                  Reset dates
+                </Button>
               {/if}
-            {:else}
-              <Table.Row>
-                <Table.Cell colspan={8} class="text-center text-muted-foreground py-8">
-                  No mutation audit records found for the selected period.
-                </Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-      </div>
+            </div>
+          </div>
 
-      <!-- Pagination -->
-      <div class="flex items-center justify-between">
-        <p class="text-sm text-muted-foreground">
-          {mutationsTotal} total records
-        </p>
-        <div class="flex items-center gap-2">
-          <select
-            class="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
-            bind:value={mPageSize}
-            onchange={() => (mOffset = 0)}
-          >
-            <option value={25}>25 / page</option>
-            <option value={50}>50 / page</option>
-            <option value={100}>100 / page</option>
-          </select>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={mOffset === 0}
-            onclick={() => (mOffset = Math.max(0, mOffset - mPageSize))}
-          >
-            <ChevronLeft class="h-4 w-4" />
-          </Button>
-          <span class="text-sm">
-            Page {mutationsPage} of {mutationsTotalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled={mOffset + mPageSize >= mutationsTotal}
-            onclick={() => (mOffset = mOffset + mPageSize)}
-          >
-            <ChevronRight class="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+          {#if mHasDateFilter}
+            <div class="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t text-sm">
+              <span class="text-muted-foreground">Date range:</span>
+              <Badge variant="outline" class="gap-1">
+                {mFrom} to {mTo}
+                <button
+                  onclick={resetMutationDateFilter}
+                  class="ml-1 hover:text-foreground"
+                >
+                  <X class="h-3 w-3" />
+                </button>
+              </Badge>
+            </div>
+          {/if}
+        </Card.Content>
+      </Card.Root>
+
+      <!-- Mutations Smart Table -->
+      <Card.Root>
+        <Card.Content class="p-0">
+          <AuditMutationsTable
+            rows={mutations}
+            bind:globalFilter={mGlobalFilter}
+          />
+        </Card.Content>
+      </Card.Root>
     </Tabs.Content>
 
     <!-- === Read Access Log Tab === -->
@@ -459,171 +308,57 @@
           </Card.Content>
         </Card.Root>
       {:else}
-        <!-- Filters -->
-        <div class="flex flex-wrap items-end gap-3">
-          <div class="space-y-1">
-            <Label for="r-from">From</Label>
-            <Input id="r-from" type="date" bind:value={rFrom} onchange={() => (rOffset = 0)} />
-          </div>
-          <div class="space-y-1">
-            <Label for="r-to">To</Label>
-            <Input id="r-to" type="date" bind:value={rTo} onchange={() => (rOffset = 0)} />
-          </div>
-          <div class="space-y-1">
-            <Label for="r-entity">Entity Type</Label>
-            <Input
-              id="r-entity"
-              placeholder="e.g. SensorGlucose"
-              bind:value={rEntityType}
-              onchange={() => (rOffset = 0)}
-            />
-          </div>
-          <div class="space-y-1">
-            <Label for="r-endpoint">Endpoint</Label>
-            <Input
-              id="r-endpoint"
-              placeholder="e.g. /api/v4/sensor-glucoses"
-              bind:value={rEndpoint}
-              onchange={() => (rOffset = 0)}
-            />
-          </div>
-        </div>
+        <!-- Date Range Filter Card -->
+        <Card.Root>
+          <Card.Content class="p-4">
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div class="flex flex-1 flex-col gap-4 md:flex-row md:items-end">
+                <div class="space-y-1">
+                  <Label for="r-from">From</Label>
+                  <Input id="r-from" type="date" bind:value={rFrom} />
+                </div>
+                <div class="space-y-1">
+                  <Label for="r-to">To</Label>
+                  <Input id="r-to" type="date" bind:value={rTo} />
+                </div>
+              </div>
 
-        <!-- Table -->
-        <div class="rounded-md border">
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head class="w-8"></Table.Head>
-                <Table.Head>Time</Table.Head>
-                <Table.Head>Subject</Table.Head>
-                <Table.Head>Endpoint</Table.Head>
-                <Table.Head>Entity Type</Table.Head>
-                <Table.Head>Records</Table.Head>
-                <Table.Head>Status</Table.Head>
-                <Table.Head>IP Address</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each reads as entry (entry.id)}
-                <Table.Row
-                  class="cursor-pointer"
-                  onclick={() =>
-                    (expandedRead =
-                      expandedRead === entry.id ? null : entry.id)}
-                >
-                  <Table.Cell>
-                    {#if expandedRead === entry.id}
-                      <ChevronUp class="h-4 w-4 text-muted-foreground" />
-                    {:else}
-                      <ChevronDown class="h-4 w-4 text-muted-foreground" />
-                    {/if}
-                  </Table.Cell>
-                  <Table.Cell class="whitespace-nowrap text-sm">
-                    {formatTime(entry.createdAt)}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {entry.subjectName ?? entry.apiSecretHashPrefix ?? "anonymous"}
-                  </Table.Cell>
-                  <Table.Cell class="text-xs font-mono">
-                    {entry.endpoint}
-                  </Table.Cell>
-                  <Table.Cell>{entry.entityType ?? ""}</Table.Cell>
-                  <Table.Cell>{entry.recordCount ?? ""}</Table.Cell>
-                  <Table.Cell>
-                    <Badge
-                      variant={entry.statusCode >= 200 && entry.statusCode < 300
-                        ? "default"
-                        : entry.statusCode === 404
-                          ? "secondary"
-                          : "destructive"}
-                    >
-                      {entry.statusCode}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell class="text-xs text-muted-foreground">
-                    {entry.ipAddress ?? ""}
-                  </Table.Cell>
-                </Table.Row>
-                {#if expandedRead === entry.id}
-                  <Table.Row>
-                    <Table.Cell colspan={8}>
-                      <div class="bg-muted/50 p-4 text-sm space-y-2 rounded">
-                        {#if entry.authType}
-                          <div>
-                            <span class="font-medium">Auth:</span>
-                            {entry.authType}
-                          </div>
-                        {/if}
-                        {#if entry.apiSecretHashPrefix}
-                          <div>
-                            <span class="font-medium">API Secret:</span>
-                            {entry.apiSecretHashPrefix}...
-                          </div>
-                        {/if}
-                        {#if parseJson(entry.queryParameters)}
-                          {@const params = parseJson(entry.queryParameters)}
-                          <div class="font-medium">Query Parameters:</div>
-                          <div class="grid gap-1 pl-2">
-                            {#each Object.entries(params ?? {}) as [key, value]}
-                              <div class="font-mono text-xs">
-                                <span class="font-semibold">{key}:</span>
-                                {value}
-                              </div>
-                            {/each}
-                          </div>
-                        {/if}
-                      </div>
-                    </Table.Cell>
-                  </Table.Row>
+              <div class="flex items-center gap-2">
+                {#if rHasDateFilter}
+                  <Button variant="ghost" size="sm" onclick={resetReadDateFilter}>
+                    <X class="mr-1 h-4 w-4" />
+                    Reset dates
+                  </Button>
                 {/if}
-              {:else}
-                <Table.Row>
-                  <Table.Cell colspan={8} class="text-center text-muted-foreground py-8">
-                    No read access records found for the selected period.
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        </div>
+              </div>
+            </div>
 
-        <!-- Pagination -->
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">
-            {readsTotal} total records
-          </p>
-          <div class="flex items-center gap-2">
-            <select
-              class="flex h-9 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
-              bind:value={rPageSize}
-              onchange={() => (rOffset = 0)}
-            >
-              <option value={25}>25 / page</option>
-              <option value={50}>50 / page</option>
-              <option value={100}>100 / page</option>
-            </select>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={rOffset === 0}
-              onclick={() => (rOffset = Math.max(0, rOffset - rPageSize))}
-            >
-              <ChevronLeft class="h-4 w-4" />
-            </Button>
-            <span class="text-sm">
-              Page {readsPage} of {readsTotalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={rOffset + rPageSize >= readsTotal}
-              onclick={() => (rOffset = rOffset + rPageSize)}
-            >
-              <ChevronRight class="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+            {#if rHasDateFilter}
+              <div class="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t text-sm">
+                <span class="text-muted-foreground">Date range:</span>
+                <Badge variant="outline" class="gap-1">
+                  {rFrom} to {rTo}
+                  <button
+                    onclick={resetReadDateFilter}
+                    class="ml-1 hover:text-foreground"
+                  >
+                    <X class="h-3 w-3" />
+                  </button>
+                </Badge>
+              </div>
+            {/if}
+          </Card.Content>
+        </Card.Root>
+
+        <!-- Reads Smart Table -->
+        <Card.Root>
+          <Card.Content class="p-0">
+            <AuditReadsTable
+              rows={reads}
+              bind:globalFilter={rGlobalFilter}
+            />
+          </Card.Content>
+        </Card.Root>
       {/if}
     </Tabs.Content>
   </Tabs.Root>

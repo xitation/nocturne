@@ -10,20 +10,20 @@
     Actogram,
     type ActogramRowContext,
   } from "$lib/components/actogram";
-  import { MS_PER_HOUR } from "$lib/components/actogram/actogram";
+  import { MS_PER_HOUR, HOURS_PER_ROW } from "$lib/components/actogram/actogram";
   import { getActogramData } from "$api/actogram.remote";
   import { requireDateParamsContext } from "$lib/hooks/date-params.svelte";
   import { contextResource } from "$lib/hooks/resource-context.svelte";
 
+  const VISIBLE_DAYS = 14;
+  const PADDING_DAYS = 14;
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
   const reportsParams = requireDateParamsContext(14);
 
   const dateRangeMillis = $derived({
-    from: new Date(
-      reportsParams.dateRangeInput.from ?? new Date().toISOString()
-    ).getTime(),
-    to: new Date(
-      reportsParams.dateRangeInput.to ?? new Date().toISOString()
-    ).getTime(),
+    from: reportsParams.dateRangeMillis.from - PADDING_DAYS * MS_PER_DAY,
+    to: reportsParams.dateRangeMillis.to + PADDING_DAYS * MS_PER_DAY,
   });
 
   const actogramResource = contextResource(
@@ -34,10 +34,6 @@
       }),
     { errorTitle: "Error Loading Sleep Report" }
   );
-
-  const sleepSpans = $derived(actogramResource.current?.sleepSpans ?? []);
-  const glucoseData = $derived(actogramResource.current?.glucoseData ?? []);
-  const thresholds = $derived(actogramResource.current?.thresholds);
 
   // Build day array from date range
   const days = $derived.by(() => {
@@ -68,7 +64,7 @@
   // Convert sleep spans into ActogramPoints (use midpoint of each span)
   // Each point carries startMills and endMills for rectangle rendering
   const sleepPoints = $derived(
-    sleepSpans.map((s) => ({
+    (actogramResource.current?.sleepSpans ?? []).map((s) => ({
       mills: s.startMills,
       startMills: s.startMills,
       endMills: s.endMills,
@@ -78,19 +74,19 @@
 
   // BG data as GlucosePoints
   const bgPoints = $derived(
-    glucoseData.map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
+    (actogramResource.current?.glucoseData ?? []).map((g) => ({ mills: g.mills, sgv: g.sgv, color: g.color }))
   );
 
   // Summary statistics
   const totalSleepMs = $derived(
-    sleepSpans.reduce((sum, s) => sum + (s.endMills - s.startMills), 0)
+    (actogramResource.current?.sleepSpans ?? []).reduce((sum, s) => sum + (s.endMills - s.startMills), 0)
   );
   const avgSleepHours = $derived(
     days.length > 0
       ? totalSleepMs / days.length / (1000 * 60 * 60)
       : 0
   );
-  const totalNights = $derived(sleepSpans.length);
+  const totalNights = $derived((actogramResource.current?.sleepSpans ?? []).length);
 
   function formatHoursMinutes(hours: number): string {
     const h = Math.floor(hours);
@@ -108,8 +104,6 @@
     return "var(--chart-1)";
   }
 
-  // HOURS_PER_ROW is 48 for the double-plot
-  const HOURS_PER_ROW = 48;
 </script>
 
 <svelte:head>
@@ -120,7 +114,8 @@
   />
 </svelte:head>
 
-{#if actogramResource.current}
+{#await actogramResource then actogramData}
+  {#if actogramData}
   <div class="container mx-auto space-y-6 px-4 py-6 max-w-7xl">
     <!-- Header -->
     <div>
@@ -193,9 +188,17 @@
           data={sleepPoints}
           bgData={bgPoints}
           {days}
-          {thresholds}
+          thresholds={actogramResource.current?.thresholds}
           rowHeight={48}
+          visibleCount={VISIBLE_DAYS}
+          initialOffset={PADDING_DAYS}
         >
+          {#snippet tooltipValue({ point })}
+            {@const span = point as { mills: number; state: string }}
+            <div class="size-2 rounded-full" style:background={getSleepColor(span.state)}></div>
+            <span class="text-muted-foreground">Sleep</span>
+            <span class="ml-auto font-mono font-medium tabular-nums capitalize">{span.state.toLowerCase()}</span>
+          {/snippet}
           {#snippet row(ctx: ActogramRowContext)}
             {#each ctx.data as { point, hoursFromStart, isExtended }}
               {@const span = point as { mills: number; startMills: number; endMills: number; state: string }}
@@ -220,4 +223,5 @@
       </CardContent>
     </Card>
   </div>
-{/if}
+  {/if}
+{/await}

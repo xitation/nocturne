@@ -12,9 +12,9 @@
   import { Switch } from "$lib/components/ui/switch";
   import { Label } from "$lib/components/ui/label";
   import { Textarea } from "$lib/components/ui/textarea";
+  import GithubIcon from "$lib/components/icons/GithubIcon.svelte";
   import {
     HeartHandshake,
-    Github,
     MessageCircle,
     FileText,
     Bug,
@@ -30,10 +30,14 @@
     Lightbulb,
     Database,
     CreditCard,
+    GraduationCap,
   } from "lucide-svelte";
-  import { getServicesOverview } from "$api";
-  import type { ServicesOverview } from "$api";
+  import { getServicesOverview } from "$api/generated/services.generated.remote";
+  import { getStatus } from "$api/generated/status.generated.remote";
+  import { getSupportConfig } from "$lib/api/support.remote";
   import IssueCreatorDialog from "$lib/components/support/IssueCreatorDialog.svelte";
+  import { getCoachMarkContext } from "@nocturne/coach";
+  import { toast } from "svelte-sonner";
 
   let includeDeviceInfo = $state(true);
   let includeRecentLogs = $state(true);
@@ -44,23 +48,32 @@
   let dialogOpen = $state(false);
   let selectedTemplate = $state("bug");
 
-  let apiBaseUrl = $state<string | null>(null);
+  const servicesOverviewQuery = getServicesOverview();
+  const supportConfigQuery = getSupportConfig();
+  const statusQuery = getStatus();
 
-  const servicesOverviewQuery = $derived(getServicesOverview());
+  let useOperatorSupport = $state(false);
 
-  const services = $derived(servicesOverviewQuery.current as ServicesOverview | undefined);
+  const coachCtx = getCoachMarkContext();
+  let resettingTutorials = $state(false);
 
-  $effect(() => {
-    if (services?.apiEndpoint) {
-      apiBaseUrl = services.apiEndpoint.baseUrl || null;
+  async function resetTutorials() {
+    resettingTutorials = true;
+    try {
+      await coachCtx.resetAll();
+      toast.success("Tutorials reset — they'll appear as you navigate the app");
+    } catch {
+      toast.error("Failed to reset tutorials");
+    } finally {
+      resettingTutorials = false;
     }
-  });
+  }
 
   const communityLinks = $derived([
     {
       name: "GitHub Repository",
       description: "Source code, issues, and feature requests",
-      icon: Github,
+      icon: GithubIcon,
       href: "https://github.com/nightscout/nocturne",
       badge: "Open Source",
     },
@@ -151,8 +164,9 @@
     return JSON.stringify(report, null, 2);
   }
 
-  function handleSupportAction(template: string) {
+  function handleSupportAction(template: string, accountBillingMode?: string | null) {
     selectedTemplate = template;
+    useOperatorSupport = template === "account" && accountBillingMode === "api";
     dialogOpen = true;
   }
 </script>
@@ -163,11 +177,16 @@
 
 <div class="container mx-auto max-w-4xl p-6 space-y-6">
   <!-- Header -->
-  <div>
-    <h1 class="text-2xl font-bold tracking-tight">Support & Community</h1>
-    <p class="text-muted-foreground">
-      Get help, connect with the community, and share feedback
-    </p>
+  <div class="flex items-center gap-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+      <HeartHandshake class="h-6 w-6 text-primary" />
+    </div>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Support & Community</h1>
+      <p class="text-muted-foreground">
+        Get help, connect with the community, and share feedback
+      </p>
+    </div>
   </div>
 
   <!-- Community Links -->
@@ -222,22 +241,43 @@
     </CardHeader>
     <CardContent class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        {#each supportOptions as option}
-          <button
-            class="flex flex-col items-center text-center p-4 rounded-lg border hover:border-primary/50 hover:bg-accent/50 transition-colors"
-            onclick={() => handleSupportAction(option.template)}
-          >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3"
-            >
-              <option.icon class="h-6 w-6 text-primary" />
-            </div>
-            <span class="font-medium">{option.name}</span>
-            <p class="text-sm text-muted-foreground mt-1">
-              {option.description}
-            </p>
-          </button>
-        {/each}
+        {#await supportConfigQuery then supportConfig}
+          {#each supportOptions as option}
+            {#if option.template === "account" && supportConfig?.accountBilling?.mode === "redirect"}
+              <a
+                href={supportConfig.accountBilling.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex flex-col items-center text-center p-4 rounded-lg border hover:border-primary/50 hover:bg-accent/50 transition-colors"
+              >
+                <div
+                  class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3"
+                >
+                  <ExternalLink class="h-6 w-6 text-primary" />
+                </div>
+                <span class="font-medium">{supportConfig.accountBilling.label ?? option.name}</span>
+                <p class="text-sm text-muted-foreground mt-1">
+                  {option.description}
+                </p>
+              </a>
+            {:else}
+              <button
+                class="flex flex-col items-center text-center p-4 rounded-lg border hover:border-primary/50 hover:bg-accent/50 transition-colors"
+                onclick={() => handleSupportAction(option.template, supportConfig?.accountBilling?.mode)}
+              >
+                <div
+                  class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3"
+                >
+                  <option.icon class="h-6 w-6 text-primary" />
+                </div>
+                <span class="font-medium">{option.name}</span>
+                <p class="text-sm text-muted-foreground mt-1">
+                  {option.description}
+                </p>
+              </button>
+            {/if}
+          {/each}
+        {/await}
       </div>
 
       <div class="flex justify-center pt-2">
@@ -252,6 +292,36 @@
             <ExternalLink class="h-3 w-3" />
           </Button>
         </a>
+      </div>
+    </CardContent>
+  </Card>
+
+  <!-- Tutorials -->
+  <Card>
+    <CardHeader>
+      <CardTitle class="flex items-center gap-2">
+        <GraduationCap class="h-5 w-5" />
+        Tutorials
+      </CardTitle>
+      <CardDescription>Guided walkthroughs to help you learn the app</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div class="flex items-center justify-between">
+        <div class="space-y-0.5">
+          <p class="text-sm font-medium">Show all tutorials again</p>
+          <p class="text-sm text-muted-foreground">
+            Reset all guided walkthroughs so they appear as you navigate
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          class="gap-2"
+          onclick={resetTutorials}
+          disabled={resettingTutorials}
+        >
+          <GraduationCap class="h-4 w-4" />
+          {resettingTutorials ? "Resetting..." : "Reset Tutorials"}
+        </Button>
       </div>
     </CardContent>
   </Card>
@@ -352,12 +422,22 @@
       <CardTitle>About Nocturne</CardTitle>
     </CardHeader>
     <CardContent class="space-y-4">
-      {#if apiBaseUrl}
-        <div class="flex items-center justify-between py-2 border-b">
-          <span class="text-muted-foreground">API Endpoint</span>
-          <span class="font-mono text-sm">{apiBaseUrl}</span>
-        </div>
-      {/if}
+      {#await servicesOverviewQuery then services}
+        {#if services?.apiEndpoint?.baseUrl}
+          <div class="flex items-center justify-between py-2 border-b">
+            <span class="text-muted-foreground">API Endpoint</span>
+            <span class="font-mono text-sm">{services.apiEndpoint.baseUrl}</span>
+          </div>
+        {/if}
+      {/await}
+      {#await statusQuery then status}
+        {#if status?.head && status.head !== "unknown"}
+          <div class="flex items-center justify-between py-2 border-b">
+            <span class="text-muted-foreground">Commit</span>
+            <span class="font-mono text-sm">{status.head.slice(0, 7)}</span>
+          </div>
+        {/if}
+      {/await}
       <div class="flex items-center justify-between py-2 border-b">
         <span class="text-muted-foreground">License</span>
         <span>AGPL-3.0</span>
@@ -387,7 +467,7 @@
           rel="noopener noreferrer"
         >
           <Button variant="ghost" size="sm" class="gap-2">
-            <Github class="h-4 w-4" />
+            <GithubIcon class="h-4 w-4" />
             Star on GitHub
           </Button>
         </a>
@@ -406,4 +486,4 @@
   </Card>
 </div>
 
-<IssueCreatorDialog bind:open={dialogOpen} template={selectedTemplate} />
+<IssueCreatorDialog bind:open={dialogOpen} template={selectedTemplate} {useOperatorSupport} />

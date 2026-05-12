@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 using YamlDotNet.Serialization;
@@ -18,6 +19,15 @@ public sealed class TagDescriptionDocumentTransformer : IOpenApiDocumentTransfor
     {
         _tagDiagrams = BuildTagDiagramMap(env);
     }
+
+    private static readonly Dictionary<string, string> DisplayNames = new()
+    {
+        ["PlatformAdmin"] = "Platform Admin",
+        ["TenantAdmin"] = "Tenant Admin",
+        ["V1"] = "Nightscout V1",
+        ["V2"] = "Nightscout V2",
+        ["V3"] = "Nightscout V3",
+    };
 
     private static readonly Dictionary<string, string> Descriptions = new()
     {
@@ -283,18 +293,28 @@ public sealed class TagDescriptionDocumentTransformer : IOpenApiDocumentTransfor
                     if (!string.IsNullOrWhiteSpace(diagram.Description))
                         sb.AppendLine($"_{diagram.Description}_");
                     sb.AppendLine();
-                    sb.AppendLine($"[![{diagram.Title}]({diagram.SvgPath})]({diagram.SvgPath})");
+                    sb.AppendLine("```mermaid");
+                    sb.AppendLine(diagram.MermaidSource);
+                    sb.AppendLine("```");
                     sb.AppendLine();
                 }
 
                 description = sb.ToString().TrimEnd();
             }
 
-            tags.Add(new OpenApiTag
+            var tagObj = new OpenApiTag
             {
                 Name = tagName,
                 Description = description,
-            });
+            };
+
+            if (DisplayNames.TryGetValue(tagName, out var displayName))
+            {
+                tagObj.Extensions ??= new Dictionary<string, IOpenApiExtension>();
+                tagObj.Extensions["x-displayName"] = new JsonNodeExtension(JsonValue.Create(displayName));
+            }
+
+            tags.Add(tagObj);
         }
 
         document.Tags = tags;
@@ -304,7 +324,8 @@ public sealed class TagDescriptionDocumentTransformer : IOpenApiDocumentTransfor
 
     private static Dictionary<string, List<DiagramRef>> BuildTagDiagramMap(IWebHostEnvironment env)
     {
-        var manifestPath = Path.Combine(env.ContentRootPath, "..", "..", "..", "docs", "diagrams", "diagrams.yaml");
+        var diagramsDir = MermaidSourceLoader.ResolveDiagramsDir(env);
+        var manifestPath = Path.Combine(diagramsDir, "diagrams.yaml");
         var map = new Dictionary<string, List<DiagramRef>>(StringComparer.Ordinal);
 
         if (!File.Exists(manifestPath))
@@ -322,8 +343,10 @@ public sealed class TagDescriptionDocumentTransformer : IOpenApiDocumentTransfor
             if (diagram.Tags is not { Count: > 0 })
                 continue;
 
-            var svgName = Path.GetFileNameWithoutExtension(diagram.Source) + ".svg";
-            var diagramRef = new DiagramRef(diagram.Title, diagram.Description, $"/diagrams/{svgName}");
+            var mermaid = MermaidSourceLoader.TryRead(diagramsDir, diagram.Source);
+            if (mermaid is null) continue;
+
+            var diagramRef = new DiagramRef(diagram.Title, diagram.Description, mermaid);
 
             foreach (var tag in diagram.Tags)
             {
@@ -339,7 +362,7 @@ public sealed class TagDescriptionDocumentTransformer : IOpenApiDocumentTransfor
         return map;
     }
 
-    private sealed record DiagramRef(string Title, string? Description, string SvgPath);
+    private sealed record DiagramRef(string Title, string? Description, string MermaidSource);
 
     private sealed class DiagramManifest
     {

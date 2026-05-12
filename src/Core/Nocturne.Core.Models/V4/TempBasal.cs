@@ -113,6 +113,11 @@ public class TempBasal
     public Guid? DeviceId { get; set; }
 
     /// <summary>
+    /// Foreign key to the <see cref="PatientDevice"/> table.
+    /// </summary>
+    public Guid? PatientDeviceId { get; set; }
+
+    /// <summary>
     /// Pump-specific record identifier for deduplication.
     /// </summary>
     public string? PumpRecordId { get; set; }
@@ -121,6 +126,13 @@ public class TempBasal
     /// FK to the <see cref="ApsSnapshot"/> whose algorithm decision set this temp basal.
     /// </summary>
     public Guid? ApsSnapshotId { get; set; }
+
+    /// <summary>
+    /// Snapshot of the insulin pharmacokinetic settings active when this temp basal was set.
+    /// Used by the IOB calculator for per-insulin basal IOB decay curves.
+    /// When null, falls back to profile-level DIA.
+    /// </summary>
+    public TreatmentInsulinContext? InsulinContext { get; set; }
 
     /// <summary>
     /// Catch-all for fields not mapped to dedicated columns

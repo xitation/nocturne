@@ -30,6 +30,10 @@ public enum ConnectorPropertyKey
     SyncActivity,
     SyncFood,
 
+    // Status thresholds
+    ActiveThresholdMinutes,
+    StaleThresholdMinutes,
+
     // Common credentials
     Username,
     Password,
@@ -70,5 +74,8 @@ public enum ConnectorPropertyKey
     // Home Assistant-specific
     AccessToken,
     WebhookEnabled,
-    WebhookSecret
+    WebhookSecret,
+
+    // Eversense-specific
+    PatientUsername
 }

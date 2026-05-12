@@ -20,10 +20,12 @@ namespace Nocturne.API.Tests.Controllers.V4.Analytics;
 [Trait("Category", "Unit")]
 public class RetrospectiveControllerTests
 {
-    private readonly Mock<IIobService> _iobServiceMock = new();
-    private readonly Mock<ICobService> _cobServiceMock = new();
+    private readonly Mock<IIobCalculator> _iobCalculatorMock = new();
+    private readonly Mock<ICobCalculator> _cobCalculatorMock = new();
     private readonly Mock<IEntryService> _entryServiceMock = new();
-    private readonly Mock<ITreatmentService> _treatmentServiceMock = new();
+    private readonly Mock<IBolusRepository> _bolusRepoMock = new();
+    private readonly Mock<ICarbIntakeRepository> _carbIntakeRepoMock = new();
+    private readonly Mock<ITempBasalRepository> _tempBasalRepoMock = new();
     private readonly Mock<IBasalRateResolver> _basalRateResolverMock = new();
     private readonly Mock<ILogger<RetrospectiveController>> _loggerMock = new();
 
@@ -41,10 +43,12 @@ public class RetrospectiveControllerTests
     private RetrospectiveController CreateController()
     {
         var controller = new RetrospectiveController(
-            _iobServiceMock.Object,
-            _cobServiceMock.Object,
+            _iobCalculatorMock.Object,
+            _cobCalculatorMock.Object,
             _entryServiceMock.Object,
-            _treatmentServiceMock.Object,
+            _bolusRepoMock.Object,
+            _carbIntakeRepoMock.Object,
+            _tempBasalRepoMock.Object,
             CreateProjectionService(),
             _basalRateResolverMock.Object,
             _loggerMock.Object);
@@ -55,6 +59,100 @@ public class RetrospectiveControllerTests
         };
 
         return controller;
+    }
+
+    [Fact]
+    public async Task GetBasalTimeline_CallsBuildResolverOnceNotGetBasalRateAsync()
+    {
+        _basalRateResolverMock
+            .Setup(r => r.BuildResolverAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((long _) => 0.8);
+
+        _tempBasalRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<TempBasal>());
+
+        var controller = CreateController();
+
+        var result = await controller.GetBasalTimeline("2024-01-15");
+
+        result.Result.Should().BeOfType<OkObjectResult>();
+
+        _basalRateResolverMock.Verify(
+            r => r.BuildResolverAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _basalRateResolverMock.Verify(
+            r => r.GetBasalRateAsync(It.IsAny<long>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task GetRetrospectiveTimeline_CallsBuildResolverOnceNotGetBasalRateAsync()
+    {
+        _basalRateResolverMock
+            .Setup(r => r.BuildResolverAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((long _) => 0.8);
+
+        _iobCalculatorMock
+            .Setup(s => s.FromBoluses(It.IsAny<List<Bolus>>(), It.IsAny<long?>()))
+            .Returns(new IobResult());
+
+        _cobCalculatorMock
+            .Setup(s => s.FromCarbIntakes(
+                It.IsAny<List<CarbIntake>>(), It.IsAny<List<Bolus>>(),
+                It.IsAny<List<TempBasal>>(), It.IsAny<long?>()))
+            .Returns(new CobResult());
+
+        _entryServiceMock
+            .Setup(s => s.GetEntriesAsync(
+                It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Entry>());
+
+        _bolusRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<bool>(), It.IsAny<BolusKind?>(),
+                It.IsAny<DateTime?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Bolus>());
+
+        _tempBasalRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<TempBasal>());
+
+        _carbIntakeRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<DateTime?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<CarbIntake>());
+
+        var controller = CreateController();
+
+        var result = await controller.GetRetrospectiveTimeline("2024-01-15");
+
+        result.Result.Should().BeOfType<OkObjectResult>();
+
+        _basalRateResolverMock.Verify(
+            r => r.BuildResolverAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _basalRateResolverMock.Verify(
+            r => r.GetBasalRateAsync(It.IsAny<long>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -74,27 +172,46 @@ public class RetrospectiveControllerTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Entry>());
 
-        _treatmentServiceMock
-            .Setup(s => s.GetTreatmentsAsync(
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Treatment>());
+        _bolusRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<bool>(), It.IsAny<BolusKind?>(),
+                It.IsAny<DateTime?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Bolus>());
 
-        _iobServiceMock
+        _tempBasalRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<TempBasal>());
+
+        _carbIntakeRepoMock
+            .Setup(s => s.GetAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<DateTime?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<CarbIntake>());
+
+        _iobCalculatorMock
             .Setup(s => s.CalculateTotalAsync(
-                It.IsAny<List<Treatment>>(),
-                It.IsAny<long?>(),
-                It.IsAny<string?>(),
+                It.IsAny<List<Bolus>>(),
                 It.IsAny<List<TempBasal>?>(),
+                It.IsAny<long?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new IobResult());
 
-        _cobServiceMock
-            .Setup(s => s.CobTotalAsync(
-                It.IsAny<List<Treatment>>(),
+        _cobCalculatorMock
+            .Setup(s => s.CalculateTotalAsync(
+                It.IsAny<List<CarbIntake>>(),
+                It.IsAny<List<Bolus>?>(),
+                It.IsAny<List<TempBasal>?>(),
                 It.IsAny<long?>(),
-                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CobResult());
 

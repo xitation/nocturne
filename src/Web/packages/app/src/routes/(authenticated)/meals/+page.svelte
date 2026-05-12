@@ -19,6 +19,7 @@
   import { Button } from "$lib/components/ui/button";
   import MealsFilterBar from "$lib/components/meals/MealsFilterBar.svelte";
   import MealsTable from "$lib/components/meals/MealsTable.svelte";
+  import MealBolusDialog from "$lib/components/meals/MealBolusDialog.svelte";
   import { coachmark } from "@nocturne/coach";
 
   let dateRange = $state<{ from?: string; to?: string }>({});
@@ -50,6 +51,10 @@
   let showReviewDialog = $state(false);
   let reviewMatch = $state<SuggestedMealMatch | null>(null);
 
+  // Bolus dialog state
+  let showBolusDialog = $state(false);
+  let bolusMeal = $state<MealEvent | null>(null);
+
   // Unlink food confirmation state
   let showUnlinkConfirm = $state(false);
   let unlinkTarget = $state<{ meal: MealEvent; food: TreatmentFood } | null>(null);
@@ -69,9 +74,10 @@
   const meals = $derived<MealEvent[]>(mealsQuery.current ?? []);
 
   // Query for suggested meal matches using the endpoint
+  const today = new Date().toISOString().split("T")[0];
   const suggestionsQueryParams = $derived({
-    from: dateRange.from ?? new Date().toISOString().split("T")[0],
-    to: dateRange.to ?? new Date().toISOString().split("T")[0],
+    from: dateRange.from ?? today,
+    to: dateRange.to ?? today,
   });
   const suggestionsQuery = $derived(
     getMealMatchingSuggestions(suggestionsQueryParams)
@@ -256,6 +262,11 @@
     showAddFoodDialog = true;
   }
 
+  function openBolusDialog(meal: MealEvent) {
+    bolusMeal = meal;
+    showBolusDialog = true;
+  }
+
   function openEditFoodEntry(meal: MealEvent, food: TreatmentFood) {
     editFoodEntryMeal = meal;
     editFoodEntry = food;
@@ -423,6 +434,7 @@
       onAddFood={openAddFood}
       onEditFood={openEditFoodEntry}
       onUnlinkFood={confirmUnlinkFood}
+      onEditInsulin={openBolusDialog}
       onAcceptSuggestion={handleQuickAccept}
       onDismissSuggestion={handleDismiss}
       onReviewSuggestion={openReviewDialog}
@@ -459,6 +471,16 @@
     ? getRemainingCarbsForEntry(editFoodEntryMeal, editFoodEntry?.id)
     : 0}
   onSave={handleFoodEntrySaved}
+/>
+
+<MealBolusDialog
+  bind:open={showBolusDialog}
+  onOpenChange={(value) => {
+    showBolusDialog = value;
+    if (!value) bolusMeal = null;
+  }}
+  meal={bolusMeal}
+  onSave={() => mealsQuery.refresh()}
 />
 
 <MealMatchReviewDialog

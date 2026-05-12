@@ -112,6 +112,23 @@ export class CoachMarkContext {
     }
 
     this.updateStatus(key, "dismissed");
+
+    // If this mark belongs to a sequence, dismiss all remaining unseen/seen steps
+    // so the next step doesn't auto-show on the next load or selection cycle.
+    const seqName = this._keyToSequence.get(key);
+    if (seqName) {
+      const seq = this.sequences[seqName];
+      if (seq) {
+        for (const stepKey of seq.steps) {
+          if (stepKey === key) continue;
+          const status = this.getStatus(stepKey);
+          if (status === "unseen" || status === "seen") {
+            this.updateStatus(stepKey, "dismissed");
+          }
+        }
+      }
+    }
+
     this._activeSelection = null;
     this.scheduleSelection();
   }
@@ -125,7 +142,16 @@ export class CoachMarkContext {
     if (this._forcedSequence) {
       this.activateNextForcedStep();
     } else {
-      this.scheduleSelection();
+      // Select the next mark immediately rather than via scheduleSelection so that
+      // _activeSelection goes from the old key → new key in the same synchronous
+      // execution. Svelte batches the two writes and the overlay never unmounts
+      // between consecutive coachmarks (no flash). The settle delay is only needed
+      // during initial registration when marks may still be mounting.
+      this._activeSelection = selectActiveMark(
+        this._states,
+        this._registrations,
+        this.sequences,
+      );
     }
   }
 
@@ -184,6 +210,17 @@ export class CoachMarkContext {
   clearQuiet(): void {
     this._quietUntilNavigation = false;
     this._forcedSequence = null;
+    this.scheduleSelection();
+  }
+
+  async resetAll(): Promise<void> {
+    if (this.adapter.deleteAll) {
+      await this.adapter.deleteAll();
+    }
+    this._states = new Map();
+    this._activeSelection = null;
+    this._forcedSequence = null;
+    this._quietUntilNavigation = false;
     this.scheduleSelection();
   }
 
@@ -261,7 +298,9 @@ export class CoachMarkContext {
     this._states = newMap;
 
     // Fire and forget — optimistic
-    this.adapter.update(key, status).catch(() => {});
+    this.adapter.update(key, status).catch((err) => {
+      console.error(`[coach] Failed to persist status update for "${key}" to "${status}":`, err);
+    });
   }
 
   private scheduleSelection(): void {

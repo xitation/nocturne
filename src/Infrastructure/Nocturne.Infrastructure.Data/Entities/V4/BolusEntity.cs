@@ -143,6 +143,12 @@ public class BolusEntity : ITenantScoped, IAuditable
     public string? InsulinType { get; set; }
 
     /// <summary>
+    /// Snapshot of insulin pharmacokinetic settings at delivery time (JSONB).
+    /// </summary>
+    [Column("insulin_context", TypeName = "jsonb")]
+    public string? InsulinContextJson { get; set; }
+
+    /// <summary>
     /// Estimated unabsorbed insulin.
     /// </summary>
     [Column("unabsorbed")]
@@ -153,6 +159,12 @@ public class BolusEntity : ITenantScoped, IAuditable
     /// </summary>
     [Column("device_id")]
     public Guid? DeviceId { get; set; }
+
+    /// <summary>
+    /// Foreign key to the PatientDevice table.
+    /// </summary>
+    [Column("patient_device_id")]
+    public Guid? PatientDeviceId { get; set; }
 
     /// <summary>
     /// Pump-specific record identifier for deduplication.

@@ -8,21 +8,25 @@ export const load: LayoutServerLoad = async ({ locals, cookies, url }) => {
     // Check onboarding first — if the instance needs setup, redirect there
     // regardless of auth state. This covers fresh installs where no tenant
     // or credentials exist yet.
-    const onboarding = checkOnboarding(cookies);
+    const onboarding = await checkOnboarding(
+      cookies,
+      locals.apiClient,
+      url.protocol === "https:",
+    );
     if (!onboarding.isComplete) {
       throw redirect(303, "/setup");
     }
   }
 
   if (!locals.isAuthenticated || !locals.user) {
-    // Guest sessions with a valid cookie are authenticated in hooks;
-    // if we still land here, the session is invalid — send to the guest page.
-    const returnUrl = encodeURIComponent(url.pathname + url.search);
-    throw redirect(303, `/auth/login?returnUrl=${returnUrl}`);
+    if (locals.requireAuthentication) {
+      const returnUrl = encodeURIComponent(url.pathname + url.search);
+      throw redirect(303, `/auth/login?returnUrl=${returnUrl}`);
+    }
   }
 
   return {
-    user: locals.user,
+    user: locals.user ?? null,
     isGuestSession: locals.isGuestSession ?? false,
     guestExpiresAt: locals.guestExpiresAt ?? null,
   };

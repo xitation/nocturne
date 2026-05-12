@@ -14,6 +14,7 @@ namespace Nocturne.API.Controllers.V4.Monitoring;
 /// </summary>
 /// <seealso cref="NocturneDbContext"/>
 [ApiController]
+[Tags("Monitoring")]
 [Route("api/v4/alert-invites")]
 public class AlertInvitesController : ControllerBase
 {
@@ -34,7 +35,7 @@ public class AlertInvitesController : ControllerBase
     }
 
     /// <summary>
-    /// Generate an invite link for a follower to join an escalation step.
+    /// Generate an invite link for a follower to attach to a rule channel.
     /// </summary>
     [HttpPost]
     [Authorize]
@@ -46,12 +47,12 @@ public class AlertInvitesController : ControllerBase
     {
         await using var db = await _contextFactory.CreateDbContextAsync(ct);
 
-        // Verify the escalation step exists within this tenant
-        var stepExists = await db.AlertEscalationSteps
-            .AnyAsync(s => s.Id == request.EscalationStepId, ct);
+        // Verify the rule channel exists within this tenant
+        var stepExists = await db.AlertRuleChannels
+            .AnyAsync(s => s.Id == request.AlertRuleChannelId, ct);
 
         if (!stepExists)
-            return Problem(detail: "Escalation step not found", statusCode: 400, title: "Bad Request");
+            return Problem(detail: "Channel not found", statusCode: 400, title: "Bad Request");
 
         var subjectId = HttpContext.GetSubjectId();
         if (subjectId is null)
@@ -69,7 +70,7 @@ public class AlertInvitesController : ControllerBase
             TenantId = db.TenantId,
             CreatedBy = subjectId.Value,
             Token = token,
-            EscalationStepId = request.EscalationStepId,
+            AlertRuleChannelId = request.AlertRuleChannelId,
             PermissionScope = request.PermissionScope ?? "view_acknowledge",
             IsUsed = false,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
@@ -83,7 +84,7 @@ public class AlertInvitesController : ControllerBase
         {
             Id = invite.Id,
             Token = invite.Token,
-            EscalationStepId = invite.EscalationStepId,
+            AlertRuleChannelId = invite.AlertRuleChannelId,
             PermissionScope = invite.PermissionScope,
             IsUsed = invite.IsUsed,
             ExpiresAt = invite.ExpiresAt,
@@ -121,7 +122,7 @@ public class AlertInvitesController : ControllerBase
         {
             Id = invite.Id,
             Token = invite.Token,
-            EscalationStepId = invite.EscalationStepId,
+            AlertRuleChannelId = invite.AlertRuleChannelId,
             PermissionScope = invite.PermissionScope,
             IsUsed = invite.IsUsed,
             ExpiresAt = invite.ExpiresAt,
@@ -200,7 +201,7 @@ public class AlertInviteResponse
 {
     public Guid Id { get; set; }
     public string Token { get; set; } = string.Empty;
-    public Guid EscalationStepId { get; set; }
+    public Guid AlertRuleChannelId { get; set; }
     public string PermissionScope { get; set; } = string.Empty;
     public bool IsUsed { get; set; }
     public DateTime ExpiresAt { get; set; }
@@ -209,7 +210,7 @@ public class AlertInviteResponse
 
 public class CreateAlertInviteRequest
 {
-    public Guid EscalationStepId { get; set; }
+    public Guid AlertRuleChannelId { get; set; }
     public string? PermissionScope { get; set; }
 }
 

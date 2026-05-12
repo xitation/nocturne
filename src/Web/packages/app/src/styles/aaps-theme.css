@@ -91,6 +91,20 @@
   --data-exclusion-compression-low: rgba(255, 165, 0, 0.15);
   --data-exclusion-sensor-error: rgba(255, 0, 0, 0.1);
 
+  /* Health Overlays */
+  --heart-rate: oklch(0.6 0.2 25);
+  --steps: oklch(0.6 0.15 300);
+
+  /* Sidebar - AAPS Material 3 Style */
+  --sidebar: oklch(0.98 0.003 250);
+  --sidebar-foreground: oklch(0.18 0.02 280);
+  --sidebar-primary: oklch(0.45 0.12 240);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.95 0.008 240);
+  --sidebar-accent-foreground: oklch(0.18 0.02 280);
+  --sidebar-border: oklch(0.9 0.005 240);
+  --sidebar-ring: oklch(0.45 0.12 240);
+
   /* Chart Colors - AAPS palette */
   --chart-1: rgb(51, 120, 197);     /* Primary blue */
   --chart-2: rgb(64, 187, 170);     /* Accent teal */
@@ -131,6 +145,16 @@
   --border: oklch(0.28 0.02 280);
   --input: oklch(0.28 0.02 280);
   --ring: oklch(0.72 0.10 230);
+
+  /* Sidebar - AAPS Dark Mode */
+  --sidebar: oklch(0.16 0.012 280);
+  --sidebar-foreground: oklch(0.95 0.005 250);
+  --sidebar-primary: oklch(0.72 0.10 230);
+  --sidebar-primary-foreground: oklch(0.15 0.02 280);
+  --sidebar-accent: oklch(0.22 0.015 280);
+  --sidebar-accent-foreground: oklch(0.95 0.005 250);
+  --sidebar-border: oklch(0.28 0.02 280);
+  --sidebar-ring: oklch(0.72 0.10 230);
 
   /* Insulin Types - Dark Mode */
   --insulin-basal: rgba(150, 202, 242, 0.4);

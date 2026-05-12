@@ -30,10 +30,10 @@ export function getBot(): Bot {
 				"",
 		};
 		botInstance = createBot(options);
-		const baseDomain = process.env.PUBLIC_BASE_DOMAIN;
+		const baseDomain = process.env.BASE_DOMAIN;
 		if (!baseDomain) {
 			throw new Error(
-				"PUBLIC_BASE_DOMAIN is required for bot /connect link generation. " +
+				"BASE_DOMAIN is required for bot /connect link generation. " +
 					"Set it via Aspire AppHost parameters or your .env file (e.g. localhost:1612 for dev).",
 			);
 		}
@@ -48,6 +48,7 @@ export function getBot(): Bot {
 			if (apiBaseUrl) {
 				const heartbeatClient = createServerApiClient(apiBaseUrl, fetch, {
 					hashedInstanceKey: getHashedInstanceKey(),
+					extraHeaders: { "X-Forwarded-Proto": "https" },
 				});
 
 				const sendHeartbeat = () => {

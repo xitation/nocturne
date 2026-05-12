@@ -19,6 +19,8 @@ namespace Nocturne.Connectors.Glooko.Configurations;
     "Glooko",
     SupportsHistoricalSync = true,
     SupportsManualSync = true,
+    DefaultActiveThresholdMinutes = 180,
+    DefaultStaleThresholdMinutes = 360,
     SupportedDataTypes = [
         SyncDataType.Glucose,
         SyncDataType.Boluses,
@@ -47,10 +49,12 @@ public class GlookoConnectorConfiguration : BaseConnectorConfiguration
     public string Password { get; init; } = string.Empty;
 
     /// <summary>
-    ///     Glooko server region (US or EU)
+    ///     Glooko server region.
     /// </summary>
-    [ConnectorProperty(ConnectorPropertyKey.Server, DefaultValue = "US", AllowedValues = ["US", "EU"])]
-    public string Server { get; init; } = "US";
+    [ConnectorProperty(ConnectorPropertyKey.Server,
+        DefaultValue = GlookoConstants.RegionUS,
+        AllowedValues = [GlookoConstants.RegionCA, GlookoConstants.RegionEU, GlookoConstants.RegionUS])]
+    public string Server { get; init; } = GlookoConstants.RegionUS;
 
     /// <summary>
     ///     Use v3 API for additional data types (alarms, automatic boluses, consumables).

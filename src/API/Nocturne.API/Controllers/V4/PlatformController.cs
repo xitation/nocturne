@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using OpenApi.Remote.Attributes;
+using Nocturne.API.Configuration;
 using Nocturne.API.Multitenancy;
 using Nocturne.Core.Contracts.Multitenancy;
 using Nocturne.Core.Models.Authorization;
@@ -13,20 +14,24 @@ namespace Nocturne.API.Controllers.V4;
 /// These operate without a resolved tenant context.
 /// </summary>
 [ApiController]
+[Tags("Platform")]
 [Route("api/v4/platform")]
 [Produces("application/json")]
 [Authorize]
 public class PlatformController : ControllerBase
 {
     private readonly ITenantService _tenantService;
-    private readonly MultitenancyConfiguration _config;
+    private readonly OperatorConfiguration _config;
+    private readonly BaseDomainOptions _baseDomainOptions;
 
     public PlatformController(
         ITenantService tenantService,
-        IOptions<MultitenancyConfiguration> config)
+        IOptions<OperatorConfiguration> config,
+        IOptions<BaseDomainOptions> baseDomainOptions)
     {
         _tenantService = tenantService;
         _config = config.Value;
+        _baseDomainOptions = baseDomainOptions.Value;
     }
 
     /// <summary>
@@ -48,7 +53,7 @@ public class PlatformController : ControllerBase
 
     /// <summary>
     /// Creates a new tenant with the authenticated subject as owner.
-    /// Requires MultitenancyConfiguration.AllowSelfServiceCreation to be enabled.
+    /// Requires OperatorConfiguration.AllowSelfServiceCreation to be enabled.
     /// </summary>
     [HttpPost("tenants")]
     [RemoteCommand(Invalidates = ["GetTenants"])]
@@ -89,7 +94,7 @@ public class PlatformController : ControllerBase
     {
         return Ok(new TransitionStatusDto(
             MultitenancyEnabled: true,
-            BaseDomain: _config.BaseDomain,
+            BaseDomain: _baseDomainOptions.BaseDomain,
             Message: "Apps connect via subdomain URLs."));
     }
 }

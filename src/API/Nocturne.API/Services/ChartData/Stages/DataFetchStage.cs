@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Nocturne.Core.Contracts.V4.Repositories;
 using Nocturne.Core.Models;
 using Nocturne.Core.Models.V4;
+using Nocturne.Core.Contracts.Health;
 using Nocturne.Core.Contracts.Repositories;
 using Nocturne.Infrastructure.Data.Abstractions;
 
@@ -46,7 +47,9 @@ internal sealed class DataFetchStage(
     IStateSpanRepository stateSpanRepository,
     ISystemEventRepository systemEventRepository,
     ITrackerRepository trackerRepository,
-    ILogger<DataFetchStage> logger
+    ILogger<DataFetchStage> logger,
+    IHeartRateService heartRateService,
+    IStepCountService stepCountService
 ) : IChartDataStage
 {
     public async Task<ChartDataContext> ExecuteAsync(ChartDataContext context, CancellationToken cancellationToken)
@@ -60,8 +63,10 @@ internal sealed class DataFetchStage(
 
         // Calculate reasonable limits based on the actual time range
         var rangeHours = (endTime - startTime) / (60.0 * 60 * 1000);
-        // At 5-min CGM intervals: ~12 entries/hour. Add 50% safety margin.
-        var entryLimit = (int)Math.Max(500, Math.Ceiling(rangeHours * 12 * 1.5));
+        // 3 sensors × 60 readings/hour (1-minute resolution) = 4 320 for a 24-hour window.
+        // Covers the realistic worst case of multiple simultaneous high-frequency sources
+        // without removing the limit entirely.
+        var entryLimit = (int)Math.Max(500, Math.Ceiling(rangeHours * 3 * 60));
         // Treatments are less frequent but include the buffer window
         var bufferMs = startTime - bufferStartTime;
         var treatmentRangeHours = (endTime - (startTime - bufferMs)) / (60.0 * 60 * 1000);
@@ -188,6 +193,20 @@ internal sealed class DataFetchStage(
             cancellationToken: cancellationToken
         );
 
+        // Heart rate data
+        var heartRateList = (await heartRateService.GetHeartRatesByDateRangeAsync(
+            MillsToDateTime(startTime)!.Value,
+            MillsToDateTime(endTime)!.Value,
+            cancellationToken
+        )).ToList();
+
+        // Step count data
+        var stepCountList = (await stepCountService.GetStepCountsByDateRangeAsync(
+            MillsToDateTime(startTime)!.Value,
+            MillsToDateTime(endTime)!.Value,
+            cancellationToken
+        )).ToList();
+
         // Display-range subsets for markers
         var displayBoluses = bolusList
             .Where(b => b.Mills >= startTime && b.Mills <= endTime)
@@ -197,13 +216,15 @@ internal sealed class DataFetchStage(
             .ToList();
 
         logger.LogDebug(
-            "DataFetchStage: fetched {Glucose} glucose, {Bolus} bolus, {Carb} carb, {BgCheck} bg-check, {DeviceEvent} device-event, {TempBasal} temp-basal records",
+            "DataFetchStage: fetched {Glucose} glucose, {Bolus} bolus, {Carb} carb, {BgCheck} bg-check, {DeviceEvent} device-event, {TempBasal} temp-basal, {HeartRate} heart-rate, {StepCount} step-count records",
             sensorGlucoseList.Count,
             bolusList.Count,
             carbIntakeList.Count,
             bgCheckList.Count,
             deviceEventList.Count,
-            tempBasalList.Count
+            tempBasalList.Count,
+            heartRateList.Count,
+            stepCountList.Count
         );
 
         // Project Dictionary<K, List<V>> to IReadOnlyDictionary<K, IEnumerable<V>>
@@ -227,6 +248,8 @@ internal sealed class DataFetchStage(
             SystemEvents = systemEventsResult?.ToList() ?? [],
             TrackerDefinitions = trackerDefs?.ToList() ?? [],
             TrackerInstances = trackerInstances?.ToList() ?? [],
+            HeartRateList = heartRateList,
+            StepCountList = stepCountList,
         };
     }
 }

@@ -98,6 +98,11 @@ public static class DataSources
     public const string HomeAssistantConnector = "home-assistant-connector";
 
     /// <summary>
+    /// Data fetched from Eversense Now follower API via the Eversense connector.
+    /// </summary>
+    public const string EversenseConnector = "eversense-connector";
+
+    /// <summary>
     /// Data pulled from a remote Nocturne instance via the NocturneRemote connector.
     /// </summary>
     public const string NocturneRemoteConnector = "nocturne-remote-connector";
@@ -223,6 +228,7 @@ public static class DataSources
                 or TidepoolConnector
                 or TConnectSyncConnector
                 or HomeAssistantConnector
+                or EversenseConnector
                 or NocturneRemoteConnector;
     }
 
@@ -261,6 +267,16 @@ public static class DataSources
     }
 
     /// <summary>
+    /// Returns the default CGM update interval in minutes for a given data source.
+    /// Used as fallback when no PatientDevice is registered.
+    /// </summary>
+    public static int GetDefaultUpdateIntervalMinutes(string? dataSource) => dataSource switch
+    {
+        LibreConnector or MyLifeConnector => 1,
+        _ => 5,
+    };
+
+    /// <summary>
     /// Gets all known data source identifier values.
     /// </summary>
     /// <value>A read-only list of every data source constant defined in this class.</value>
@@ -277,6 +293,7 @@ public static class DataSources
             TidepoolConnector,
             TConnectSyncConnector,
             HomeAssistantConnector,
+            EversenseConnector,
             NocturneRemoteConnector,
             XDrip,
             Spike,

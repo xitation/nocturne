@@ -19,6 +19,7 @@
     Plus,
     X,
   } from "lucide-svelte";
+  import { Debounced } from "runed";
   import {
     getMyTenants,
     createTenant,
@@ -28,7 +29,7 @@
   import { getTransitionStatus } from "./transition-status.remote";
 
   // Transition status
-  const transitionQuery = $derived(getTransitionStatus());
+  const transitionQuery = getTransitionStatus();
   const transitionStatus = $derived(transitionQuery.current);
 
   const DISMISS_KEY = "nocturne:multitenancy-notice-dismissed";
@@ -47,7 +48,7 @@
   );
 
   // Reactive queries
-  const tenantsQuery = $derived(getMyTenants());
+  const tenantsQuery = getMyTenants();
 
   const tenants = $derived(
     (tenantsQuery.current as TenantDto[] | undefined) ?? [],
@@ -68,38 +69,54 @@
   let createError = $state<string | null>(null);
 
   // Debounced slug validation
-  let validationTimeout: ReturnType<typeof setTimeout> | null = null;
+  const normalizedSlug = $derived(slug.trim().toLowerCase());
+  const debouncedSlug = new Debounced(() => normalizedSlug, 400);
 
-  function onSlugInput() {
+  const slugValidation = $derived.by(() => {
+    const value = debouncedSlug.current;
+    if (!value || value.length < 3) return null;
+    return validateSlug({ slug: value });
+  });
+
+  $effect(() => {
+    const value = normalizedSlug;
+
     slugError = null;
     slugValid = false;
 
-    if (validationTimeout) clearTimeout(validationTimeout);
-
-    const value = slug.trim().toLowerCase();
-    if (!value || value.length < 3) {
-      if (value.length > 0) slugError = "Slug must be at least 3 characters";
+    if (!value) return;
+    if (value.length < 3) {
+      slugError = "Slug must be at least 3 characters";
       return;
     }
 
-    validating = true;
-    validationTimeout = setTimeout(async () => {
-      try {
-        const result = await validateSlug({ slug: value });
-        if (result?.isValid) {
-          slugValid = true;
-          slugError = null;
-        } else {
-          slugValid = false;
-          slugError = result?.message ?? "Invalid slug";
-        }
-      } catch {
-        slugError = "Could not validate slug";
-      } finally {
-        validating = false;
-      }
-    }, 400);
-  }
+    if (debouncedSlug.current !== value) {
+      validating = true;
+      return;
+    }
+
+    const result = slugValidation;
+    if (!result) return;
+
+    if (result.loading) {
+      validating = true;
+      return;
+    }
+
+    validating = false;
+
+    if (result.error) {
+      slugError = "Could not validate slug";
+      return;
+    }
+
+    const data = result.current;
+    if (data?.isValid) {
+      slugValid = true;
+    } else {
+      slugError = data?.message ?? "Invalid slug";
+    }
+  });
 
   async function handleCreate() {
     if (!slugValid || !displayName.trim()) return;
@@ -107,7 +124,7 @@
     createError = null;
     try {
       await createTenant({
-        slug: slug.trim().toLowerCase(),
+        slug: normalizedSlug,
         displayName: displayName.trim(),
         apiSecret: apiSecret.trim() || undefined,
       });
@@ -250,7 +267,6 @@
             <Input
               id="slug"
               bind:value={slug}
-              oninput={onSlugInput}
               placeholder="my-instance"
               class="font-mono {slugError
                 ? 'border-destructive'

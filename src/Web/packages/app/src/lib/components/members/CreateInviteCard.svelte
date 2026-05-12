@@ -12,7 +12,7 @@
     Copy,
     Loader2,
   } from "lucide-svelte";
-  import PermissionPicker from "$lib/components/rbac/PermissionPicker.svelte";
+  import PermissionCategorySelector from "$lib/components/rbac/PermissionCategorySelector.svelte";
   import { coachmark } from "@nocturne/coach";
   import { createInvite } from "$api/generated/tenants.generated.remote";
   import type { TenantRoleDto } from "$lib/api/generated/nocturne-api-client";
@@ -173,7 +173,7 @@
         <div class="space-y-2" {@attach coachmark({
           key: "setup-invite.roles",
           title: "Choose their access",
-          description: "Roles control what they can see \u2014 most caretakers just need Viewer.",
+          description: "Roles control what they can see and do. Viewer for a quick glance, Caretaker if they help manage your diabetes.",
         })}>
           <Label>Roles</Label>
           <div class="grid gap-2 sm:grid-cols-2">
@@ -210,7 +210,7 @@
           </Collapsible.Trigger>
           <Collapsible.Content>
             <div class="mt-3">
-              <PermissionPicker bind:selected={inviteDirectPermissions} />
+              <PermissionCategorySelector bind:selected={inviteDirectPermissions} />
             </div>
           </Collapsible.Content>
         </Collapsible.Root>
