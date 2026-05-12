@@ -403,6 +403,7 @@ const apiClientHandle: Handle = async ({ event, resolve }) => {
     hashedInstanceKey: getHashedInstanceKey(),
     extraHeaders,
     responseCookies: event.cookies,
+    signal: event.request.signal,
   });
 
   return resolve(event);
