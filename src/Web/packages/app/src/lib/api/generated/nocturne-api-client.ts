@@ -7546,6 +7546,815 @@ export class UserPreferencesClient {
     }
 }
 
+export class AccessRequestClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    getPendingRequests(signal?: AbortSignal): Promise<AccessRequestDto[]> {
+        let url_ = this.baseUrl + "/api/v4/admin/access-requests";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetPendingRequests(_response);
+        });
+    }
+
+    protected processGetPendingRequests(response: Response): Promise<AccessRequestDto[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AccessRequestDto[];
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<AccessRequestDto[]>(null as any);
+    }
+
+    approve(subjectId: string, request: ApproveAccessRequestRequest, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/access-requests/{subjectId}/approve";
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processApprove(_response);
+        });
+    }
+
+    protected processApprove(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    deny(subjectId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/access-requests/{subjectId}/deny";
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDeny(_response);
+        });
+    }
+
+    protected processDeny(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+}
+
+export class TenantClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    getAll(signal?: AbortSignal): Promise<TenantDto[]> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetAll(_response);
+        });
+    }
+
+    protected processGetAll(response: Response): Promise<TenantDto[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDto[];
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantDto[]>(null as any);
+    }
+
+    create(request: CreateTenantRequest, signal?: AbortSignal): Promise<TenantCreatedDto> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processCreate(_response);
+        });
+    }
+
+    protected processCreate(response: Response): Promise<TenantCreatedDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantCreatedDto;
+            return result201;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantCreatedDto>(null as any);
+    }
+
+    getById(id: string, signal?: AbortSignal): Promise<TenantDetailDto> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetById(_response);
+        });
+    }
+
+    protected processGetById(response: Response): Promise<TenantDetailDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDetailDto;
+            return result200;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantDetailDto>(null as any);
+    }
+
+    update(id: string, request: UpdateTenantRequest, signal?: AbortSignal): Promise<TenantDto> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdate(_response);
+        });
+    }
+
+    protected processUpdate(response: Response): Promise<TenantDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDto;
+            return result200;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<TenantDto>(null as any);
+    }
+
+    delete(id: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDelete(_response);
+        });
+    }
+
+    protected processDelete(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    addMember(id: string, request: AddMemberRequest, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddMember(_response);
+        });
+    }
+
+    protected processAddMember(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    removeMember(id: string, subjectId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRemoveMember(_response);
+        });
+    }
+
+    protected processRemoveMember(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    createInvite(id: string, request: CreateMemberInviteRequest, signal?: AbortSignal): Promise<MemberInviteResult> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processCreateInvite(_response);
+        });
+    }
+
+    protected processCreateInvite(response: Response): Promise<MemberInviteResult> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MemberInviteResult;
+            return result201;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<MemberInviteResult>(null as any);
+    }
+
+    listInvites(id: string, signal?: AbortSignal): Promise<MemberInviteInfo[]> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processListInvites(_response);
+        });
+    }
+
+    protected processListInvites(response: Response): Promise<MemberInviteInfo[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MemberInviteInfo[];
+            return result200;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<MemberInviteInfo[]>(null as any);
+    }
+
+    revokeInvite(id: string, inviteId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites/{inviteId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (inviteId === undefined || inviteId === null)
+            throw new globalThis.Error("The parameter 'inviteId' must be defined.");
+        url_ = url_.replace("{inviteId}", encodeURIComponent("" + inviteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRevokeInvite(_response);
+        });
+    }
+
+    protected processRevokeInvite(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    provision(request: ProvisionRequest, signal?: AbortSignal): Promise<ProvisionResult> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/provision";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processProvision(_response);
+        });
+    }
+
+    protected processProvision(response: Response): Promise<ProvisionResult> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProvisionResult;
+            return result201;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<ProvisionResult>(null as any);
+    }
+
+    /**
+     * Lists passkey credentials and OIDC identities for a member subject.
+     */
+    getMemberCredentials(id: string, subjectId: string, signal?: AbortSignal): Promise<SubjectCredentialsDto> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetMemberCredentials(_response);
+        });
+    }
+
+    protected processGetMemberCredentials(response: Response): Promise<SubjectCredentialsDto> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SubjectCredentialsDto;
+            return result200;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<SubjectCredentialsDto>(null as any);
+    }
+
+    /**
+     * Attaches an OIDC identity to a member subject.
+     */
+    attachOidcIdentity(id: string, subjectId: string, request: AdminAttachOidcRequest, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAttachOidcIdentity(_response);
+        });
+    }
+
+    protected processAttachOidcIdentity(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Removes a passkey credential from a member subject.
+     */
+    removePasskeyCredential(id: string, subjectId: string, credentialId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/passkey/{credentialId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        if (credentialId === undefined || credentialId === null)
+            throw new globalThis.Error("The parameter 'credentialId' must be defined.");
+        url_ = url_.replace("{credentialId}", encodeURIComponent("" + credentialId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRemovePasskeyCredential(_response);
+        });
+    }
+
+    protected processRemovePasskeyCredential(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Removes an OIDC identity from a member subject.
+     */
+    removeOidcIdentity(id: string, subjectId: string, identityId: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc/{identityId}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        if (subjectId === undefined || subjectId === null)
+            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
+        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
+        if (identityId === undefined || identityId === null)
+            throw new globalThis.Error("The parameter 'identityId' must be defined.");
+        url_ = url_.replace("{identityId}", encodeURIComponent("" + identityId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRemoveOidcIdentity(_response);
+        });
+    }
+
+    protected processRemoveOidcIdentity(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 403) {
+            return response.text().then((_responseText) => {
+            let result403: any = null;
+            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+}
+
 export class CompatibilityClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -9262,815 +10071,6 @@ export class SystemEventsClient {
             });
         }
         return Promise.resolve<FileResponse>(null as any);
-    }
-}
-
-export class AccessRequestClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
-
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl ?? "";
-    }
-
-    getPendingRequests(signal?: AbortSignal): Promise<AccessRequestDto[]> {
-        let url_ = this.baseUrl + "/api/v4/admin/access-requests";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            signal,
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetPendingRequests(_response);
-        });
-    }
-
-    protected processGetPendingRequests(response: Response): Promise<AccessRequestDto[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AccessRequestDto[];
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<AccessRequestDto[]>(null as any);
-    }
-
-    approve(subjectId: string, request: ApproveAccessRequestRequest, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/access-requests/{subjectId}/approve";
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processApprove(_response);
-        });
-    }
-
-    protected processApprove(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    deny(subjectId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/access-requests/{subjectId}/deny";
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "POST",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processDeny(_response);
-        });
-    }
-
-    protected processDeny(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-}
-
-export class TenantClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
-
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl ?? "";
-    }
-
-    getAll(signal?: AbortSignal): Promise<TenantDto[]> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            signal,
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetAll(_response);
-        });
-    }
-
-    protected processGetAll(response: Response): Promise<TenantDto[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDto[];
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<TenantDto[]>(null as any);
-    }
-
-    create(request: CreateTenantRequest, signal?: AbortSignal): Promise<TenantCreatedDto> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreate(_response);
-        });
-    }
-
-    protected processCreate(response: Response): Promise<TenantCreatedDto> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 201) {
-            return response.text().then((_responseText) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantCreatedDto;
-            return result201;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<TenantCreatedDto>(null as any);
-    }
-
-    getById(id: string, signal?: AbortSignal): Promise<TenantDetailDto> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            signal,
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetById(_response);
-        });
-    }
-
-    protected processGetById(response: Response): Promise<TenantDetailDto> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDetailDto;
-            return result200;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<TenantDetailDto>(null as any);
-    }
-
-    update(id: string, request: UpdateTenantRequest, signal?: AbortSignal): Promise<TenantDto> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processUpdate(_response);
-        });
-    }
-
-    protected processUpdate(response: Response): Promise<TenantDto> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TenantDto;
-            return result200;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<TenantDto>(null as any);
-    }
-
-    delete(id: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processDelete(_response);
-        });
-    }
-
-    protected processDelete(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    addMember(id: string, request: AddMemberRequest, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processAddMember(_response);
-        });
-    }
-
-    protected processAddMember(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    removeMember(id: string, subjectId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRemoveMember(_response);
-        });
-    }
-
-    protected processRemoveMember(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    createInvite(id: string, request: CreateMemberInviteRequest, signal?: AbortSignal): Promise<MemberInviteResult> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCreateInvite(_response);
-        });
-    }
-
-    protected processCreateInvite(response: Response): Promise<MemberInviteResult> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 201) {
-            return response.text().then((_responseText) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MemberInviteResult;
-            return result201;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<MemberInviteResult>(null as any);
-    }
-
-    listInvites(id: string, signal?: AbortSignal): Promise<MemberInviteInfo[]> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            signal,
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processListInvites(_response);
-        });
-    }
-
-    protected processListInvites(response: Response): Promise<MemberInviteInfo[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MemberInviteInfo[];
-            return result200;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<MemberInviteInfo[]>(null as any);
-    }
-
-    revokeInvite(id: string, inviteId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/invites/{inviteId}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (inviteId === undefined || inviteId === null)
-            throw new globalThis.Error("The parameter 'inviteId' must be defined.");
-        url_ = url_.replace("{inviteId}", encodeURIComponent("" + inviteId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRevokeInvite(_response);
-        });
-    }
-
-    protected processRevokeInvite(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    provision(request: ProvisionRequest, signal?: AbortSignal): Promise<ProvisionResult> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/provision";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processProvision(_response);
-        });
-    }
-
-    protected processProvision(response: Response): Promise<ProvisionResult> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 201) {
-            return response.text().then((_responseText) => {
-            let result201: any = null;
-            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProvisionResult;
-            return result201;
-            });
-        } else if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<ProvisionResult>(null as any);
-    }
-
-    /**
-     * Lists passkey credentials and OIDC identities for a member subject.
-     */
-    getMemberCredentials(id: string, subjectId: string, signal?: AbortSignal): Promise<SubjectCredentialsDto> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            signal,
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetMemberCredentials(_response);
-        });
-    }
-
-    protected processGetMemberCredentials(response: Response): Promise<SubjectCredentialsDto> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as SubjectCredentialsDto;
-            return result200;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<SubjectCredentialsDto>(null as any);
-    }
-
-    /**
-     * Attaches an OIDC identity to a member subject.
-     */
-    attachOidcIdentity(id: string, subjectId: string, request: AdminAttachOidcRequest, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(request);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processAttachOidcIdentity(_response);
-        });
-    }
-
-    protected processAttachOidcIdentity(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    /**
-     * Removes a passkey credential from a member subject.
-     */
-    removePasskeyCredential(id: string, subjectId: string, credentialId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/passkey/{credentialId}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        if (credentialId === undefined || credentialId === null)
-            throw new globalThis.Error("The parameter 'credentialId' must be defined.");
-        url_ = url_.replace("{credentialId}", encodeURIComponent("" + credentialId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRemovePasskeyCredential(_response);
-        });
-    }
-
-    protected processRemovePasskeyCredential(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    /**
-     * Removes an OIDC identity from a member subject.
-     */
-    removeOidcIdentity(id: string, subjectId: string, identityId: string, signal?: AbortSignal): Promise<void> {
-        let url_ = this.baseUrl + "/api/v4/admin/tenants/{id}/members/{subjectId}/credentials/oidc/{identityId}";
-        if (id === undefined || id === null)
-            throw new globalThis.Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        if (subjectId === undefined || subjectId === null)
-            throw new globalThis.Error("The parameter 'subjectId' must be defined.");
-        url_ = url_.replace("{subjectId}", encodeURIComponent("" + subjectId));
-        if (identityId === undefined || identityId === null)
-            throw new globalThis.Error("The parameter 'identityId' must be defined.");
-        url_ = url_.replace("{identityId}", encodeURIComponent("" + identityId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            signal,
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRemoveOidcIdentity(_response);
-        });
-    }
-
-    protected processRemoveOidcIdentity(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 204) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 403) {
-            return response.text().then((_responseText) => {
-            let result403: any = null;
-            result403 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
-            return throwException("A server side error occurred.", status, _responseText, _headers, result403);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
     }
 }
 
@@ -27349,6 +27349,159 @@ export interface UpdateUserPreferencesRequest {
     preferredLanguage?: string | undefined;
 }
 
+export interface AccessRequestDto {
+    subjectId?: string;
+    name?: string;
+    message?: string | undefined;
+    createdAt?: Date;
+}
+
+export interface ApproveAccessRequestRequest {
+    roleIds?: string[];
+    directPermissions?: string[] | undefined;
+}
+
+export interface TenantDetailDto {
+    id?: string;
+    slug?: string;
+    displayName?: string;
+    isActive?: boolean;
+    sysCreatedAt?: Date;
+    members?: TenantMemberDto[];
+}
+
+export interface TenantMemberDto {
+    id?: string;
+    subjectId?: string;
+    name?: string | undefined;
+    roles?: TenantMemberRoleDto[];
+    directPermissions?: string[] | undefined;
+    label?: string | undefined;
+    limitTo24Hours?: boolean;
+    lastUsedAt?: Date | undefined;
+    sysCreatedAt?: Date;
+}
+
+export interface TenantMemberRoleDto {
+    roleId?: string;
+    name?: string;
+    slug?: string;
+}
+
+export interface CreateTenantRequest {
+    slug?: string;
+    displayName?: string;
+}
+
+export interface UpdateTenantRequest {
+    displayName?: string;
+    isActive?: boolean;
+    allowAccessRequests?: boolean | undefined;
+}
+
+export interface AddMemberRequest {
+    subjectId?: string;
+    roleIds?: string[];
+    directPermissions?: string[] | undefined;
+}
+
+export interface MemberInviteResult {
+    id?: string;
+    token?: string;
+    inviteUrl?: string;
+    expiresAt?: Date;
+}
+
+export interface CreateMemberInviteRequest {
+    roleIds?: string[];
+    directPermissions?: string[] | undefined;
+    label?: string | undefined;
+    expiresInDays?: number;
+    maxUses?: number | undefined;
+    limitTo24Hours?: boolean;
+}
+
+export interface MemberInviteInfo {
+    id?: string;
+    tenantId?: string;
+    tenantName?: string;
+    createdByName?: string;
+    roleIds?: string[];
+    directPermissions?: string[] | undefined;
+    label?: string | undefined;
+    limitTo24Hours?: boolean;
+    expiresAt?: Date;
+    maxUses?: number | undefined;
+    useCount?: number;
+    isValid?: boolean;
+    isExpired?: boolean;
+    isRevoked?: boolean;
+    createdAt?: Date;
+    usedBy?: InviteUsageInfo[];
+}
+
+export interface InviteUsageInfo {
+    subjectId?: string;
+    name?: string | undefined;
+    joinedAt?: Date;
+}
+
+export interface ProvisionResult {
+    tenantId?: string;
+    subjectId?: string;
+    slug?: string;
+}
+
+export interface ProvisionRequest {
+    slug?: string;
+    displayName?: string;
+    ownerUsername?: string;
+    ownerEmail?: string;
+    credential?: ProvisionCredentialData | undefined;
+    oidcIdentity?: ProvisionOidcIdentityData | undefined;
+}
+
+export interface ProvisionCredentialData {
+    credentialId?: string;
+    publicKey?: string;
+    signCount?: number;
+    transports?: string[];
+    aaGuid?: string | undefined;
+    subjectId?: string | undefined;
+}
+
+export interface ProvisionOidcIdentityData {
+    provider?: string;
+    oidcSubjectId?: string;
+    issuer?: string;
+    email?: string;
+    subjectId?: string | undefined;
+}
+
+export interface SubjectCredentialsDto {
+    passkeys?: PasskeyCredentialDto[];
+    oidcIdentities?: OidcIdentityDto[];
+}
+
+export interface PasskeyCredentialDto {
+    id?: string;
+    displayName?: string | undefined;
+    createdAt?: Date;
+}
+
+export interface OidcIdentityDto {
+    id?: string;
+    provider?: string;
+    email?: string | undefined;
+}
+
+export interface AdminAttachOidcRequest {
+    providerId?: string;
+    oidcSubjectId?: string;
+    issuer?: string;
+    email?: string | undefined;
+}
+
 /** Proxy configuration DTO */
 export interface ProxyConfigurationDto {
     nightscoutUrl?: string;
@@ -27767,159 +27920,6 @@ export interface CreateSystemEventRequest {
     metadata?: { [key: string]: any; } | undefined;
     /** Gets or sets the original MongoDB ObjectId, preserved for migration compatibility. */
     originalId?: string | undefined;
-}
-
-export interface AccessRequestDto {
-    subjectId?: string;
-    name?: string;
-    message?: string | undefined;
-    createdAt?: Date;
-}
-
-export interface ApproveAccessRequestRequest {
-    roleIds?: string[];
-    directPermissions?: string[] | undefined;
-}
-
-export interface TenantDetailDto {
-    id?: string;
-    slug?: string;
-    displayName?: string;
-    isActive?: boolean;
-    sysCreatedAt?: Date;
-    members?: TenantMemberDto[];
-}
-
-export interface TenantMemberDto {
-    id?: string;
-    subjectId?: string;
-    name?: string | undefined;
-    roles?: TenantMemberRoleDto[];
-    directPermissions?: string[] | undefined;
-    label?: string | undefined;
-    limitTo24Hours?: boolean;
-    lastUsedAt?: Date | undefined;
-    sysCreatedAt?: Date;
-}
-
-export interface TenantMemberRoleDto {
-    roleId?: string;
-    name?: string;
-    slug?: string;
-}
-
-export interface CreateTenantRequest {
-    slug?: string;
-    displayName?: string;
-}
-
-export interface UpdateTenantRequest {
-    displayName?: string;
-    isActive?: boolean;
-    allowAccessRequests?: boolean | undefined;
-}
-
-export interface AddMemberRequest {
-    subjectId?: string;
-    roleIds?: string[];
-    directPermissions?: string[] | undefined;
-}
-
-export interface MemberInviteResult {
-    id?: string;
-    token?: string;
-    inviteUrl?: string;
-    expiresAt?: Date;
-}
-
-export interface CreateMemberInviteRequest {
-    roleIds?: string[];
-    directPermissions?: string[] | undefined;
-    label?: string | undefined;
-    expiresInDays?: number;
-    maxUses?: number | undefined;
-    limitTo24Hours?: boolean;
-}
-
-export interface MemberInviteInfo {
-    id?: string;
-    tenantId?: string;
-    tenantName?: string;
-    createdByName?: string;
-    roleIds?: string[];
-    directPermissions?: string[] | undefined;
-    label?: string | undefined;
-    limitTo24Hours?: boolean;
-    expiresAt?: Date;
-    maxUses?: number | undefined;
-    useCount?: number;
-    isValid?: boolean;
-    isExpired?: boolean;
-    isRevoked?: boolean;
-    createdAt?: Date;
-    usedBy?: InviteUsageInfo[];
-}
-
-export interface InviteUsageInfo {
-    subjectId?: string;
-    name?: string | undefined;
-    joinedAt?: Date;
-}
-
-export interface ProvisionResult {
-    tenantId?: string;
-    subjectId?: string;
-    slug?: string;
-}
-
-export interface ProvisionRequest {
-    slug?: string;
-    displayName?: string;
-    ownerUsername?: string;
-    ownerEmail?: string;
-    credential?: ProvisionCredentialData | undefined;
-    oidcIdentity?: ProvisionOidcIdentityData | undefined;
-}
-
-export interface ProvisionCredentialData {
-    credentialId?: string;
-    publicKey?: string;
-    signCount?: number;
-    transports?: string[];
-    aaGuid?: string | undefined;
-    subjectId?: string | undefined;
-}
-
-export interface ProvisionOidcIdentityData {
-    provider?: string;
-    oidcSubjectId?: string;
-    issuer?: string;
-    email?: string;
-    subjectId?: string | undefined;
-}
-
-export interface SubjectCredentialsDto {
-    passkeys?: PasskeyCredentialDto[];
-    oidcIdentities?: OidcIdentityDto[];
-}
-
-export interface PasskeyCredentialDto {
-    id?: string;
-    displayName?: string | undefined;
-    createdAt?: Date;
-}
-
-export interface OidcIdentityDto {
-    id?: string;
-    provider?: string;
-    email?: string | undefined;
-}
-
-export interface AdminAttachOidcRequest {
-    providerId?: string;
-    oidcSubjectId?: string;
-    issuer?: string;
-    email?: string | undefined;
 }
 
 export interface AlertCustomSoundResponse {
