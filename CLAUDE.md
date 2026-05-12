@@ -38,6 +38,17 @@ dotnet ef migrations add <Name> -p src/Infrastructure/Nocturne.Infrastructure.Da
 
 Aspire orchestrates everything: PostgreSQL, the API, the SvelteKit frontend, and background services. A YARP gateway is the single external HTTPS endpoint; API and Web run as plain HTTP behind it. You only need to restart Aspire if its `Program.cs` changes. The NSwag client is regenerated automatically on Aspire startup. If you come across a roadblock from the `.dll`s being in use, just kill the dotnet processes.
 
+### Generated API Client Files
+
+Generated files in `src/Web/packages/app/src/lib/api/generated/` are tracked in git so they're browsable on GitHub. CI regenerates and commits them on every merge to main. Locally, Aspire regenerates them on startup which dirties the working tree. To suppress this noise:
+
+```bash
+cd src/Web && pnpm run hide-generated   # set --skip-worktree (one-time after clone)
+cd src/Web && pnpm run unhide-generated # undo if you need to stage generated changes
+```
+
+The `--skip-worktree` bits may be cleared by git during branch switches that touch those files. Re-run `hide-generated` if generated files reappear in `git status`.
+
 ### Worktrees
 
 Git worktrees are supported. In the main checkout, `aspire start` uses persistent Postgres (named volume, pgAdmin) and binds the gateway to `https://localhost:1612`. In a worktree, Postgres is automatically ephemeral (anonymous volume, no pgAdmin) and ports are dynamic.

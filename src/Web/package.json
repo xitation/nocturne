@@ -16,7 +16,9 @@
     "generate-zod-schemas": "node --experimental-transform-types utils/generateZodSchemas/index.ts",
     "generate-remote-functions": "npx openapi-remote-codegen",
     "generate-api": "pnpm run generate-api-client && pnpm run generate-zod-schemas && pnpm run generate-remote-functions",
-    "translations:stage": "git add -f locales/*.po"
+    "translations:stage": "git add -f locales/*.po",
+    "hide-generated": "git ls-files packages/app/src/lib/api/generated/ | xargs git update-index --skip-worktree",
+    "unhide-generated": "git ls-files packages/app/src/lib/api/generated/ | xargs git update-index --no-skip-worktree"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
