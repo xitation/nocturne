@@ -102,6 +102,7 @@
   function handleCancel() {
     editingRoleIds = [...originalRoleIds];
     editingPermissions = [...originalPermissions];
+    editingLimitTo24Hours = originalLimitTo24Hours;
     onToggleExpand();
   }
 </script>

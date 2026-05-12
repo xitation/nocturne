@@ -54,6 +54,7 @@
       { name: "Manage Members", atom: "members.manage" },
       { name: "Tenant Settings", atom: "tenant.settings" },
       { name: "Manage Sharing", atom: "sharing.manage" },
+      { name: "Guest Links", atom: "sharing.guest" },
     ];
 
     for (const perm of adminPermissions) {

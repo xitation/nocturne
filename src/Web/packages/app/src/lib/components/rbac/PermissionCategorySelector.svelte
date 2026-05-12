@@ -89,6 +89,7 @@
         { name: "Manage Members", isSubItem: true, levels: toggle("members.manage") },
         { name: "Tenant Settings", isSubItem: true, levels: toggle("tenant.settings") },
         { name: "Manage Sharing", isSubItem: true, levels: toggle("sharing.manage") },
+        { name: "Guest Links", isSubItem: true, levels: toggle("sharing.guest") },
       ],
     },
     {

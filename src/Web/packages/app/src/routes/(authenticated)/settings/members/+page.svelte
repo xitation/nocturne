@@ -254,10 +254,15 @@
             onSaveRoles={(roleIds, permissions) =>
               saveMemberChanges(member.subjectId!, roleIds, permissions)}
             onSaveLimitTo24Hours={async (limitTo24Hours) => {
-              await setMemberLimitTo24Hours({
-                id: member.subjectId!,
-                request: { limitTo24Hours },
-              });
+              try {
+                await setMemberLimitTo24Hours({
+                  id: member.subjectId!,
+                  request: { limitTo24Hours },
+                });
+              } catch {
+                errorMessage = "Failed to update member. Please try again.";
+                clearMessages();
+              }
             }}
             onRemove={async () => {
               if (!tenantId || !member.subjectId) return;
