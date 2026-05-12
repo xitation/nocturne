@@ -11,9 +11,10 @@ public class LinkedRecordsFilterBenchmarks
 {
     private PostgresFixture _fixture = null!;
     private Guid _tenantId;
-    private const int RowCount = 100_000;
+    [Params(100_000, 500_000, 1_000_000)]
+    public int RowCount;
 
-    [Params(0.0, 0.01, 0.05)]
+    [Params(0.01, 0.05)]
     public double DuplicatePercent;
 
     [GlobalSetup]
