@@ -1066,6 +1066,14 @@ public class NocturneDbContext : DbContext
             .HasIndex(l => new { l.RecordType, l.SourceTimestamp })
             .HasDatabaseName("ix_linked_records_type_timestamp");
 
+        // Partial index for the NOT EXISTS anti-join in read queries —
+        // only non-primary rows enter the index, keeping it small.
+        modelBuilder
+            .Entity<LinkedRecordEntity>()
+            .HasIndex(l => new { l.RecordType, l.RecordId })
+            .HasDatabaseName("ix_linked_records_non_primary_record")
+            .HasFilter("NOT is_primary");
+
         // ConnectorConfiguration indexes - optimized for connector lookups
         modelBuilder
             .Entity<ConnectorConfigurationEntity>()
@@ -1280,6 +1288,12 @@ public class NocturneDbContext : DbContext
             .HasIndex(e => e.PatientDeviceId)
             .HasDatabaseName("ix_sensor_glucose_patient_device_id")
             .HasFilter("patient_device_id IS NOT NULL");
+
+        modelBuilder
+            .Entity<SensorGlucoseEntity>()
+            .HasIndex(e => new { e.TenantId, e.Timestamp })
+            .HasDatabaseName("ix_sensor_glucose_tenant_timestamp")
+            .IsDescending(false, true);
 
         // MeterGlucose indexes
         modelBuilder
