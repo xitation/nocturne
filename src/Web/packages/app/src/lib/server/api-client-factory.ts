@@ -45,6 +45,7 @@ export function createServerApiClient(
     hashedInstanceKey?: string | null;
     extraHeaders?: Record<string, string>;
     responseCookies?: CookieSetter;
+    signal?: AbortSignal;
   }
 ): ApiClient {
   const httpClient = {
@@ -75,9 +76,17 @@ export function createServerApiClient(
         headers.set("Cookie", cookies.join("; "));
       }
 
+      const boundSignal = options?.signal;
+      const callSignal = init?.signal;
+      const mergedSignal =
+        boundSignal && callSignal
+          ? AbortSignal.any([boundSignal, callSignal])
+          : boundSignal ?? callSignal;
+
       const response = await fetchFn(url, {
         ...init,
         headers,
+        signal: mergedSignal,
       });
 
       if (options?.responseCookies) {
