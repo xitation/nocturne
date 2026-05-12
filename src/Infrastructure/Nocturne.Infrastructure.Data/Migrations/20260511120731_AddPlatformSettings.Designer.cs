@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nocturne.Infrastructure.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Nocturne.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(NocturneDbContext))]
-    partial class NocturneDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260511120731_AddPlatformSettings")]
+    partial class AddPlatformSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1851,8 +1854,7 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_linked_records_canonical");
 
                     b.HasIndex("RecordType", "RecordId")
-                        .HasDatabaseName("ix_linked_records_non_primary_record")
-                        .HasFilter("NOT is_primary");
+                        .HasDatabaseName("ix_linked_records_record");
 
                     b.HasIndex("RecordType", "SourceTimestamp")
                         .HasDatabaseName("ix_linked_records_type_timestamp");
@@ -2446,10 +2448,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedBySubjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_subject_id");
-
-                    b.Property<DateTime?>("DismissedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("dismissed_at");
 
                     b.Property<DateTime?>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
@@ -4798,10 +4796,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_basal_schedules_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
 
-                    b.HasIndex("TenantId", "ProfileName", "Timestamp")
-                        .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_basal_schedules_tenant_profile_timestamp");
-
                     b.ToTable("basal_schedules");
                 });
 
@@ -5078,10 +5072,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_boluses_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
 
-                    b.HasIndex("TenantId", "Timestamp")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_boluses_tenant_timestamp");
-
                     b.HasIndex("TenantId", "DataSource", "SyncIdentifier")
                         .IsUnique()
                         .HasDatabaseName("ix_boluses_tenant_source_sync_id")
@@ -5260,10 +5250,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_carb_intakes_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
 
-                    b.HasIndex("TenantId", "Timestamp")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_carb_intakes_tenant_timestamp");
-
                     b.HasIndex("TenantId", "DataSource", "SyncIdentifier")
                         .IsUnique()
                         .HasDatabaseName("ix_carb_intakes_tenant_source_sync_id")
@@ -5354,10 +5340,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_carb_ratio_schedules_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
-
-                    b.HasIndex("TenantId", "ProfileName", "Timestamp")
-                        .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_carb_ratio_schedules_tenant_profile_timestamp");
 
                     b.ToTable("carb_ratio_schedules");
                 });
@@ -6195,10 +6177,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_sensitivity_schedules_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
 
-                    b.HasIndex("TenantId", "ProfileName", "Timestamp")
-                        .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_sensitivity_schedules_tenant_profile_timestamp");
-
                     b.ToTable("sensitivity_schedules");
                 });
 
@@ -6321,10 +6299,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_sensor_glucose_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
 
-                    b.HasIndex("TenantId", "Timestamp")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_sensor_glucose_tenant_timestamp");
-
                     b.ToTable("sensor_glucose");
                 });
 
@@ -6410,10 +6384,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_target_range_schedules_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
-
-                    b.HasIndex("TenantId", "ProfileName", "Timestamp")
-                        .IsDescending(false, false, true)
-                        .HasDatabaseName("ix_target_range_schedules_tenant_profile_timestamp");
 
                     b.ToTable("target_range_schedules");
                 });
@@ -6534,10 +6504,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_temp_basals_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
-
-                    b.HasIndex("TenantId", "StartTimestamp")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_temp_basals_tenant_start_timestamp");
 
                     b.ToTable("temp_basals");
                 });
@@ -6691,10 +6657,6 @@ namespace Nocturne.Infrastructure.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_therapy_settings_tenant_legacy_id")
                         .HasFilter("legacy_id IS NOT NULL");
-
-                    b.HasIndex("TenantId", "Timestamp")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_therapy_settings_tenant_timestamp");
 
                     b.ToTable("therapy_settings");
                 });
