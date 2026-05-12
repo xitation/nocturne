@@ -20,11 +20,15 @@ namespace Nocturne.Infrastructure.Data.Migrations
             ("health.read", "statistics.read"),
         ];
 
-        private static readonly (string Table, string Column)[] TenantScopedJsonbColumns =
+        private static readonly (string Table, string Column)[] JsonbColumns =
         [
             ("tenant_roles", "permissions"),
             ("tenant_members", "direct_permissions"),
             ("member_invites", "direct_permissions"),
+        ];
+
+        private static readonly (string Table, string Column)[] TextArrayColumns =
+        [
             ("oauth_grants", "scopes"),
             ("oauth_authorization_codes", "scopes"),
         ];
@@ -34,8 +38,8 @@ namespace Nocturne.Infrastructure.Data.Migrations
         {
             var updateStatements = new System.Text.StringBuilder();
 
-            // Atom renames across all JSONB permission/scope columns
-            foreach (var (table, column) in TenantScopedJsonbColumns)
+            // Atom renames across JSONB permission columns
+            foreach (var (table, column) in JsonbColumns)
             {
                 foreach (var (oldAtom, newAtom) in AtomRenames)
                 {
@@ -49,6 +53,19 @@ namespace Nocturne.Infrastructure.Data.Migrations
                             FROM jsonb_array_elements({{column}}) AS elem
                         )
                         WHERE {{column}} @> '["{{oldAtom}}"]';
+                    """);
+                }
+            }
+
+            // Atom renames across text[] scope columns
+            foreach (var (table, column) in TextArrayColumns)
+            {
+                foreach (var (oldAtom, newAtom) in AtomRenames)
+                {
+                    updateStatements.AppendLine($$"""
+                        UPDATE {{table}}
+                        SET {{column}} = array_replace({{column}}, '{{oldAtom}}', '{{newAtom}}')
+                        WHERE '{{oldAtom}}' = ANY({{column}});
                     """);
                 }
             }
@@ -112,7 +129,7 @@ namespace Nocturne.Infrastructure.Data.Migrations
 
             var updateStatements = new System.Text.StringBuilder();
 
-            foreach (var (table, column) in TenantScopedJsonbColumns)
+            foreach (var (table, column) in JsonbColumns)
             {
                 foreach (var (oldAtom, newAtom) in reverseRenames)
                 {
@@ -126,6 +143,18 @@ namespace Nocturne.Infrastructure.Data.Migrations
                             FROM jsonb_array_elements({{column}}) AS elem
                         )
                         WHERE {{column}} @> '["{{oldAtom}}"]';
+                    """);
+                }
+            }
+
+            foreach (var (table, column) in TextArrayColumns)
+            {
+                foreach (var (oldAtom, newAtom) in reverseRenames)
+                {
+                    updateStatements.AppendLine($$"""
+                        UPDATE {{table}}
+                        SET {{column}} = array_replace({{column}}, '{{oldAtom}}', '{{newAtom}}')
+                        WHERE '{{oldAtom}}' = ANY({{column}});
                     """);
                 }
             }
