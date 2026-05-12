@@ -8,6 +8,7 @@ using Nocturne.Core.Models.V4;
 using Nocturne.Infrastructure.Data.Entities.V4;
 using Nocturne.Infrastructure.Data.Extensions;
 using Nocturne.Infrastructure.Data.Mappers.V4;
+using Nocturne.Infrastructure.Data.Services;
 
 namespace Nocturne.Infrastructure.Data.Repositories.V4;
 
@@ -17,7 +18,7 @@ namespace Nocturne.Infrastructure.Data.Repositories.V4;
 /// </summary>
 public class CarbIntakeRepository : ICarbIntakeRepository
 {
-    private readonly NocturneDbContext _context;
+    private readonly ITenantDbContextFactory _contextFactory;
     private readonly IDeduplicationService _deduplicationService;
     private readonly IAuditContext _auditContext;
     private readonly ILogger<CarbIntakeRepository> _logger;
@@ -25,17 +26,17 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <summary>
     /// Initializes a new instance of the <see cref="CarbIntakeRepository"/> class.
     /// </summary>
-    /// <param name="context">The database context.</param>
+    /// <param name="contextFactory">The tenant database context factory.</param>
     /// <param name="deduplicationService">The deduplication service.</param>
     /// <param name="auditContext">The audit context for tracking mutations.</param>
     /// <param name="logger">The logger instance.</param>
     public CarbIntakeRepository(
-        NocturneDbContext context,
+        ITenantDbContextFactory contextFactory,
         IDeduplicationService deduplicationService,
         IAuditContext auditContext,
         ILogger<CarbIntakeRepository> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _deduplicationService = deduplicationService;
         _auditContext = auditContext;
         _logger = logger;
@@ -71,7 +72,8 @@ public class CarbIntakeRepository : ICarbIntakeRepository
         CancellationToken ct = default
     )
     {
-        var query = _context.CarbIntakes.AsNoTracking().AsQueryable();
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var query = ctx.CarbIntakes.AsNoTracking().AsQueryable();
         if (from.HasValue)
             query = query.Where(e => e.Timestamp >= from.Value);
         if (to.HasValue)
@@ -84,7 +86,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
             query = query.Where(e => e.LegacyId == null);
 
         // Exclude non-primary duplicates from cross-connector deduplication
-        query = query.Where(b => !_context.LinkedRecords
+        query = query.Where(b => !ctx.LinkedRecords
             .Any(lr => lr.RecordType == "carbintake" && !lr.IsPrimary && lr.RecordId == b.Id));
 
         // Keyset cursor — when provided, replaces OFFSET with a WHERE clause
@@ -119,7 +121,8 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <returns>The carbohydrate intake, or null if not found.</returns>
     public async Task<CarbIntake?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _context.CarbIntakes.FindAsync([id], ct);
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entity = await ctx.CarbIntakes.FindAsync([id], ct);
         return entity is null ? null : CarbIntakeMapper.ToDomainModel(entity);
     }
 
@@ -134,7 +137,8 @@ public class CarbIntakeRepository : ICarbIntakeRepository
         CancellationToken ct = default
     )
     {
-        var entity = await _context.CarbIntakes.FirstOrDefaultAsync(
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entity = await ctx.CarbIntakes.FirstOrDefaultAsync(
             e => e.LegacyId == legacyId,
             ct
         );
@@ -153,23 +157,24 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <returns>The created or updated carbohydrate intake.</returns>
     public async Task<CarbIntake> CreateAsync(CarbIntake model, CancellationToken ct = default)
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         if (!string.IsNullOrEmpty(model.DataSource) && !string.IsNullOrEmpty(model.SyncIdentifier))
         {
-            var existing = await _context.CarbIntakes
+            var existing = await ctx.CarbIntakes
                 .FirstOrDefaultAsync(
                     e => e.DataSource == model.DataSource && e.SyncIdentifier == model.SyncIdentifier,
                     ct);
             if (existing != null)
             {
                 CarbIntakeMapper.UpdateEntity(existing, model);
-                await _context.SaveChangesAsync(ct);
+                await ctx.SaveChangesAsync(ct);
                 return CarbIntakeMapper.ToDomainModel(existing);
             }
         }
 
         var entity = CarbIntakeMapper.ToEntity(model);
-        _context.CarbIntakes.Add(entity);
-        await _context.SaveChangesAsync(ct);
+        ctx.CarbIntakes.Add(entity);
+        await ctx.SaveChangesAsync(ct);
         return CarbIntakeMapper.ToDomainModel(entity);
     }
 
@@ -186,11 +191,12 @@ public class CarbIntakeRepository : ICarbIntakeRepository
         CancellationToken ct = default
     )
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entity =
-            await _context.CarbIntakes.FindAsync([id], ct)
+            await ctx.CarbIntakes.FindAsync([id], ct)
             ?? throw new KeyNotFoundException($"CarbIntake {id} not found");
         CarbIntakeMapper.UpdateEntity(entity, model);
-        await _context.SaveChangesAsync(ct);
+        await ctx.SaveChangesAsync(ct);
         return CarbIntakeMapper.ToDomainModel(entity);
     }
 
@@ -201,11 +207,12 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <param name="ct">The cancellation token.</param>
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entity =
-            await _context.CarbIntakes.FindAsync([id], ct)
+            await ctx.CarbIntakes.FindAsync([id], ct)
             ?? throw new KeyNotFoundException($"CarbIntake {id} not found");
-        _context.CarbIntakes.Remove(entity);
-        await _context.SaveChangesAsync(ct);
+        ctx.CarbIntakes.Remove(entity);
+        await ctx.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -217,7 +224,8 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <returns>The count of matching records.</returns>
     public async Task<int> CountAsync(DateTime? from, DateTime? to, CancellationToken ct = default)
     {
-        var query = _context.CarbIntakes.AsNoTracking().AsQueryable();
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var query = ctx.CarbIntakes.AsNoTracking().AsQueryable();
         if (from.HasValue)
             query = query.Where(e => e.Timestamp >= from.Value);
         if (to.HasValue)
@@ -236,7 +244,8 @@ public class CarbIntakeRepository : ICarbIntakeRepository
         CancellationToken ct = default
     )
     {
-        var entities = await _context
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entities = await ctx
             .CarbIntakes.AsNoTracking()
             .Where(e => e.CorrelationId == correlationId)
             .ToListAsync(ct);
@@ -251,8 +260,9 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <returns>The number of deleted records.</returns>
     public async Task<int> DeleteByLegacyIdAsync(string legacyId, CancellationToken ct = default)
     {
-        return await _context.AuditedExecuteDeleteAsync(
-            _context.CarbIntakes.Where(e => e.LegacyId == legacyId), _auditContext, ct);
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        return await ctx.AuditedExecuteDeleteAsync(
+            ctx.CarbIntakes.Where(e => e.LegacyId == legacyId), _auditContext, ct);
     }
 
     /// <summary>
@@ -264,8 +274,9 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     /// <returns>The number of deleted records.</returns>
     public async Task<int> DeleteBySyncIdentifierAsync(string dataSource, string syncIdentifier, CancellationToken ct = default)
     {
-        return await _context.AuditedExecuteDeleteAsync(
-            _context.CarbIntakes.Where(e => e.DataSource == dataSource && e.SyncIdentifier == syncIdentifier),
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        return await ctx.AuditedExecuteDeleteAsync(
+            ctx.CarbIntakes.Where(e => e.DataSource == dataSource && e.SyncIdentifier == syncIdentifier),
             _auditContext, ct);
     }
 
@@ -280,6 +291,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
         CancellationToken ct = default
     )
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entities = records.Select(CarbIntakeMapper.ToEntity).ToList();
         if (entities.Count == 0)
             return [];
@@ -309,7 +321,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
 
             // Over-fetches by a Cartesian amount; the partial unique index
             // on (tenant_id, data_source, sync_identifier) keeps this cheap.
-            var existingRows = await _context.CarbIntakes
+            var existingRows = await ctx.CarbIntakes
                 .Where(e => sources.Contains(e.DataSource!) && syncIds.Contains(e.SyncIdentifier!))
                 .ToListAsync(ct);
 
@@ -338,7 +350,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
             if (updatedEntities.Count > 0)
             {
                 // Persist updates before the insert-chunking loop clears the tracker.
-                await _context.SaveChangesAsync(ct);
+                await ctx.SaveChangesAsync(ct);
             }
 
             entities = toInsert;
@@ -358,7 +370,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
 
         if (legacyIds.Count > 0)
         {
-            var existingIds = await _context
+            var existingIds = await ctx
                 .CarbIntakes.AsNoTracking()
                 .Where(e => legacyIds.Contains(e.LegacyId!))
                 .Select(e => e.LegacyId)
@@ -375,9 +387,9 @@ public class CarbIntakeRepository : ICarbIntakeRepository
             const int batchSize = 500;
             foreach (var batch in entities.Chunk(batchSize))
             {
-                _context.CarbIntakes.AddRange(batch);
-                await _context.SaveChangesAsync(ct);
-                _context.ChangeTracker.Clear();
+                ctx.CarbIntakes.AddRange(batch);
+                await ctx.SaveChangesAsync(ct);
+                ctx.ChangeTracker.Clear();
             }
 
             // Insert-time deduplication: link saved records to canonical groups.

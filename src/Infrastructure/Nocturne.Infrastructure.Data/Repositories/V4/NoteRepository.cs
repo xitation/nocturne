@@ -5,6 +5,7 @@ using Nocturne.Core.Contracts.V4.Repositories;
 using Nocturne.Core.Models;
 using Nocturne.Core.Models.V4;
 using Nocturne.Infrastructure.Data.Mappers.V4;
+using Nocturne.Infrastructure.Data.Services;
 
 namespace Nocturne.Infrastructure.Data.Repositories.V4;
 
@@ -14,22 +15,22 @@ namespace Nocturne.Infrastructure.Data.Repositories.V4;
 /// </summary>
 public class NoteRepository : INoteRepository
 {
-    private readonly NocturneDbContext _context;
+    private readonly ITenantDbContextFactory _contextFactory;
     private readonly IDeduplicationService _deduplicationService;
     private readonly ILogger<NoteRepository> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NoteRepository"/> class.
     /// </summary>
-    /// <param name="context">The database context.</param>
+    /// <param name="contextFactory">The tenant database context factory.</param>
     /// <param name="deduplicationService">The deduplication service.</param>
     /// <param name="logger">The logger instance.</param>
     public NoteRepository(
-        NocturneDbContext context,
+        ITenantDbContextFactory contextFactory,
         IDeduplicationService deduplicationService,
         ILogger<NoteRepository> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _deduplicationService = deduplicationService;
         _logger = logger;
     }
@@ -60,7 +61,8 @@ public class NoteRepository : INoteRepository
         CancellationToken ct = default
     )
     {
-        var query = _context.Notes.AsNoTracking().AsQueryable();
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var query = ctx.Notes.AsNoTracking().AsQueryable();
         if (from.HasValue)
             query = query.Where(e => e.Timestamp >= from.Value);
         if (to.HasValue)
@@ -73,7 +75,7 @@ public class NoteRepository : INoteRepository
             query = query.Where(e => e.LegacyId == null);
 
         // Exclude non-primary duplicates from cross-connector deduplication
-        query = query.Where(b => !_context.LinkedRecords
+        query = query.Where(b => !ctx.LinkedRecords
             .Any(lr => lr.RecordType == "note" && !lr.IsPrimary && lr.RecordId == b.Id));
 
         query = descending ? query.OrderByDescending(e => e.Timestamp) : query.OrderBy(e => e.Timestamp);
@@ -89,7 +91,8 @@ public class NoteRepository : INoteRepository
     /// <returns>The note record, or null if not found.</returns>
     public async Task<Note?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
-        var entity = await _context.Notes.FindAsync([id], ct);
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entity = await ctx.Notes.FindAsync([id], ct);
         return entity is null ? null : NoteMapper.ToDomainModel(entity);
     }
 
@@ -101,7 +104,8 @@ public class NoteRepository : INoteRepository
     /// <returns>The note record, or null if not found.</returns>
     public async Task<Note?> GetByLegacyIdAsync(string legacyId, CancellationToken ct = default)
     {
-        var entity = await _context.Notes.FirstOrDefaultAsync(e => e.LegacyId == legacyId, ct);
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entity = await ctx.Notes.FirstOrDefaultAsync(e => e.LegacyId == legacyId, ct);
         return entity is null ? null : NoteMapper.ToDomainModel(entity);
     }
 
@@ -113,9 +117,10 @@ public class NoteRepository : INoteRepository
     /// <returns>The created note record.</returns>
     public async Task<Note> CreateAsync(Note model, CancellationToken ct = default)
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entity = NoteMapper.ToEntity(model);
-        _context.Notes.Add(entity);
-        await _context.SaveChangesAsync(ct);
+        ctx.Notes.Add(entity);
+        await ctx.SaveChangesAsync(ct);
         return NoteMapper.ToDomainModel(entity);
     }
 
@@ -128,11 +133,12 @@ public class NoteRepository : INoteRepository
     /// <returns>The updated note record.</returns>
     public async Task<Note> UpdateAsync(Guid id, Note model, CancellationToken ct = default)
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entity =
-            await _context.Notes.FindAsync([id], ct)
+            await ctx.Notes.FindAsync([id], ct)
             ?? throw new KeyNotFoundException($"Note {id} not found");
         NoteMapper.UpdateEntity(entity, model);
-        await _context.SaveChangesAsync(ct);
+        await ctx.SaveChangesAsync(ct);
         return NoteMapper.ToDomainModel(entity);
     }
 
@@ -143,11 +149,12 @@ public class NoteRepository : INoteRepository
     /// <param name="ct">The cancellation token.</param>
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entity =
-            await _context.Notes.FindAsync([id], ct)
+            await ctx.Notes.FindAsync([id], ct)
             ?? throw new KeyNotFoundException($"Note {id} not found");
-        _context.Notes.Remove(entity);
-        await _context.SaveChangesAsync(ct);
+        ctx.Notes.Remove(entity);
+        await ctx.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -159,7 +166,8 @@ public class NoteRepository : INoteRepository
     /// <returns>The count of matching records.</returns>
     public async Task<int> CountAsync(DateTime? from, DateTime? to, CancellationToken ct = default)
     {
-        var query = _context.Notes.AsNoTracking().AsQueryable();
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var query = ctx.Notes.AsNoTracking().AsQueryable();
         if (from.HasValue)
             query = query.Where(e => e.Timestamp >= from.Value);
         if (to.HasValue)
@@ -178,7 +186,8 @@ public class NoteRepository : INoteRepository
         CancellationToken ct = default
     )
     {
-        var entities = await _context
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        var entities = await ctx
             .Notes.AsNoTracking()
             .Where(e => e.CorrelationId == correlationId)
             .ToListAsync(ct);
@@ -193,7 +202,8 @@ public class NoteRepository : INoteRepository
     /// <returns>The number of deleted records.</returns>
     public async Task<int> DeleteByLegacyIdAsync(string legacyId, CancellationToken ct = default)
     {
-        return await _context.Notes.Where(e => e.LegacyId == legacyId).ExecuteDeleteAsync(ct);
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        return await ctx.Notes.Where(e => e.LegacyId == legacyId).ExecuteDeleteAsync(ct);
     }
 
     /// <summary>
@@ -205,7 +215,8 @@ public class NoteRepository : INoteRepository
     /// <returns>The number of deleted records.</returns>
     public async Task<int> DeleteBySyncIdentifierAsync(string dataSource, string syncIdentifier, CancellationToken ct = default)
     {
-        return await _context.Notes.Where(e => e.DataSource == dataSource && e.SyncIdentifier == syncIdentifier)
+        await using var ctx = await _contextFactory.CreateAsync(ct);
+        return await ctx.Notes.Where(e => e.DataSource == dataSource && e.SyncIdentifier == syncIdentifier)
             .ExecuteDeleteAsync(ct);
     }
 
@@ -220,6 +231,7 @@ public class NoteRepository : INoteRepository
         CancellationToken ct = default
     )
     {
+        await using var ctx = await _contextFactory.CreateAsync(ct);
         var entities = records.Select(NoteMapper.ToEntity).ToList();
         if (entities.Count == 0)
             return [];
@@ -238,7 +250,7 @@ public class NoteRepository : INoteRepository
 
         if (legacyIds.Count > 0)
         {
-            var existingIds = await _context
+            var existingIds = await ctx
                 .Notes.AsNoTracking()
                 .Where(e => legacyIds.Contains(e.LegacyId!))
                 .Select(e => e.LegacyId)
@@ -256,9 +268,9 @@ public class NoteRepository : INoteRepository
         const int batchSize = 500;
         foreach (var batch in entities.Chunk(batchSize))
         {
-            _context.Notes.AddRange(batch);
-            await _context.SaveChangesAsync(ct);
-            _context.ChangeTracker.Clear();
+            ctx.Notes.AddRange(batch);
+            await ctx.SaveChangesAsync(ct);
+            ctx.ChangeTracker.Clear();
         }
 
         // Insert-time deduplication: link saved records to canonical groups
