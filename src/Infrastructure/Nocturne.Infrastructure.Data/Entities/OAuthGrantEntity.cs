@@ -47,7 +47,7 @@ public class OAuthGrantEntity : ITenantScoped, IAuditable
     public string GrantType { get; set; } = OAuthGrantTypes.App;
 
     /// <summary>
-    /// Granted scopes (stored as JSON string array, e.g. ["entries.read", "treatments.readwrite"])
+    /// Granted scopes (stored as JSON string array, e.g. ["glucose.read", "treatments.readwrite"])
     /// </summary>
     [Required]
     [Column("scopes")]
