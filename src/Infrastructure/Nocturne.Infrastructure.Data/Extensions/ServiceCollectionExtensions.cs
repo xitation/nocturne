@@ -113,6 +113,9 @@ public static class ServiceCollectionExtensions
             return context;
         });
 
+        // Register tenant-aware context factory for V4 repositories
+        services.AddScoped<ITenantDbContextFactory, TenantDbContextFactory>();
+
         // Register deduplication service (required by repositories)
         services.AddScoped<IDeduplicationService, DeduplicationService>();
 
@@ -251,6 +254,9 @@ public static class ServiceCollectionExtensions
             }
             return context;
         });
+
+        // Register tenant-aware context factory for V4 repositories
+        services.AddScoped<ITenantDbContextFactory, TenantDbContextFactory>();
 
         // Register deduplication service (required by repositories)
         services.AddScoped<IDeduplicationService, DeduplicationService>();
