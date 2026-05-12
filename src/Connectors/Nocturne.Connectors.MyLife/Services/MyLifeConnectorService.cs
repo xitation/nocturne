@@ -151,8 +151,8 @@ public class MyLifeConnectorService(
 
             // Overlap window for cross-month consolidation context
             var overlapMs = Math.Max(
-                MyLifeTimeConstants.CarbSuppressionWindowMs,
-                config.TempBasalConsolidationWindowMinutes * 60_000);
+                (long)MyLifeTimeConstants.CarbSuppressionWindowMs,
+                (long)config.TempBasalConsolidationWindowMinutes * 60_000);
 
             var previousTail = new List<MyLifeEvent>();
             var glucoseSinceTicks = new DateTimeOffset(glucoseSince).ToUnixTimeMilliseconds() * 10_000;
@@ -205,55 +205,53 @@ public class MyLifeConnectorService(
                 }
 
                 // Shared treatment filtering and context for records + state spans
-                List<MyLifeEvent>? treatmentEvents = null;
-                MyLifeContext? treatmentContext = null;
                 if (needRecords || needStateSpans)
                 {
-                    treatmentEvents = batch.Events
+                    var treatmentEvents = batch.Events
                         .Where(e => e.EventDateTime >= treatmentSinceTicks)
                         .ToList();
 
-                    treatmentContext = MyLifeContext.Create(
+                    var treatmentContext = MyLifeContext.Create(
                         contextEvents,
                         config.EnableMealCarbConsolidation,
                         config.EnableTempBasalConsolidation,
                         config.TempBasalConsolidationWindowMinutes);
-                }
 
-                // Treatment records
-                if (needRecords)
-                {
-                    var records = eventProcessor.MapRecords(treatmentEvents!, treatmentContext!);
-
-                    // Persist decomposition batches before V4 records (FK constraint)
-                    if (records.DecompositionBatches.Count > 0)
+                    // Treatment records
+                    if (needRecords)
                     {
-                        await PublishDecompositionBatchesAsync(
-                            records.DecompositionBatches, config, cancellationToken);
+                        var records = eventProcessor.MapRecords(treatmentEvents, treatmentContext);
+
+                        // Persist decomposition batches before V4 records (FK constraint)
+                        if (records.DecompositionBatches.Count > 0)
+                        {
+                            await PublishDecompositionBatchesAsync(
+                                records.DecompositionBatches, config, cancellationToken);
+                        }
+
+                        var monthCtx = batch.Month;
+                        await PublishRecordTypeAsync(result, SyncDataType.Boluses, activeTypes,
+                            records.Boluses, PublishBolusDataAsync, config, cancellationToken, monthCtx);
+                        await PublishRecordTypeAsync(result, SyncDataType.CarbIntake, activeTypes,
+                            records.CarbIntakes, PublishCarbIntakeDataAsync, config, cancellationToken, monthCtx);
+                        await PublishRecordTypeAsync(result, SyncDataType.ManualBG, activeTypes,
+                            records.BGChecks, PublishBGCheckDataAsync, config, cancellationToken, monthCtx);
+                        await PublishRecordTypeAsync(result, SyncDataType.BolusCalculations, activeTypes,
+                            records.BolusCalculations, PublishBolusCalculationDataAsync, config, cancellationToken, monthCtx);
+                        await PublishRecordTypeAsync(result, SyncDataType.Notes, activeTypes,
+                            records.Notes, PublishNoteDataAsync, config, cancellationToken, monthCtx);
+                        await PublishRecordTypeAsync(result, SyncDataType.DeviceEvents, activeTypes,
+                            records.DeviceEvents, PublishDeviceEventDataAsync, config, cancellationToken, monthCtx);
                     }
 
-                    var monthCtx = batch.Month;
-                    await PublishRecordTypeAsync(result, SyncDataType.Boluses, activeTypes,
-                        records.Boluses, PublishBolusDataAsync, config, cancellationToken, monthCtx);
-                    await PublishRecordTypeAsync(result, SyncDataType.CarbIntake, activeTypes,
-                        records.CarbIntakes, PublishCarbIntakeDataAsync, config, cancellationToken, monthCtx);
-                    await PublishRecordTypeAsync(result, SyncDataType.ManualBG, activeTypes,
-                        records.BGChecks, PublishBGCheckDataAsync, config, cancellationToken, monthCtx);
-                    await PublishRecordTypeAsync(result, SyncDataType.BolusCalculations, activeTypes,
-                        records.BolusCalculations, PublishBolusCalculationDataAsync, config, cancellationToken, monthCtx);
-                    await PublishRecordTypeAsync(result, SyncDataType.Notes, activeTypes,
-                        records.Notes, PublishNoteDataAsync, config, cancellationToken, monthCtx);
-                    await PublishRecordTypeAsync(result, SyncDataType.DeviceEvents, activeTypes,
-                        records.DeviceEvents, PublishDeviceEventDataAsync, config, cancellationToken, monthCtx);
-                }
+                    // TempBasal state spans
+                    if (needStateSpans)
+                    {
+                        var tempBasals = MyLifeStateSpanMapper.MapTempBasals(treatmentEvents, treatmentContext).ToList();
 
-                // TempBasal state spans
-                if (needStateSpans)
-                {
-                    var tempBasals = MyLifeStateSpanMapper.MapTempBasals(treatmentEvents!, treatmentContext!).ToList();
-
-                    await PublishRecordTypeAsync(result, SyncDataType.StateSpans, activeTypes,
-                        tempBasals, PublishTempBasalDataAsync, config, cancellationToken, batch.Month);
+                        await PublishRecordTypeAsync(result, SyncDataType.StateSpans, activeTypes,
+                            tempBasals, PublishTempBasalDataAsync, config, cancellationToken, batch.Month);
+                    }
                 }
 
                 // Update overlap tail for next month's context
@@ -282,7 +280,7 @@ public class MyLifeConnectorService(
     private static void UpdatePreviousTail(
         List<MyLifeEvent> previousTail,
         IReadOnlyList<MyLifeEvent> monthEvents,
-        int overlapMs)
+        long overlapMs)
     {
         previousTail.Clear();
         if (monthEvents.Count == 0) return;
