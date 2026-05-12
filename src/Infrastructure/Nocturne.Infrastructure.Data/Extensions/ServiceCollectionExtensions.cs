@@ -58,6 +58,7 @@ public static class ServiceCollectionExtensions
         var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(
             postgreSqlConfig.ConnectionString
         );
+        dataSourceBuilder.ConnectionStringBuilder.MaxPoolSize = postgreSqlConfig.MaxPoolSize;
         var dataSource = dataSourceBuilder.Build();
         services.AddSingleton(dataSource);
 
@@ -171,6 +172,7 @@ public static class ServiceCollectionExtensions
             options.MaxRetryCount = config.MaxRetryCount;
             options.MaxRetryDelaySeconds = config.MaxRetryDelaySeconds;
             options.CommandTimeoutSeconds = config.CommandTimeoutSeconds;
+            options.MaxPoolSize = config.MaxPoolSize;
         });
 
         // Register interceptors as singletons so caches are shared across all DbContext instances.
@@ -182,6 +184,7 @@ public static class ServiceCollectionExtensions
 
         // Register NpgsqlDataSource as a singleton - this manages the connection pool
         var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(config.ConnectionString);
+        dataSourceBuilder.ConnectionStringBuilder.MaxPoolSize = config.MaxPoolSize;
         var dataSource = dataSourceBuilder.Build();
         services.AddSingleton(dataSource);
 
