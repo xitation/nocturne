@@ -9,6 +9,8 @@ overrides:
   svelte: ^5.37.0
   vite: ^6.3.5
 
+packageExtensionsChecksum: sha256-6F/1WkKxBVDJ8BZyE4tVp8Hz5H6dhFW1EHEBwWWMtEk=
+
 importers:
 
   .:
@@ -424,7 +426,7 @@ importers:
         version: 3.0.1(@floating-ui/dom@1.7.5)(@tiptap/core@3.22.3(@tiptap/pm@3.22.3))(@tiptap/extension-bubble-menu@3.22.3(@tiptap/core@3.22.3(@tiptap/pm@3.22.3))(@tiptap/pm@3.22.3))(@tiptap/extension-floating-menu@2.27.2(@tiptap/core@3.22.3(@tiptap/pm@3.22.3))(@tiptap/pm@3.22.3))(@tiptap/pm@3.22.3)(svelte@5.50.0)
       tiptap-extension-auto-joiner:
         specifier: ^0.1.3
-        version: 0.1.3
+        version: 0.1.3(@tiptap/core@3.22.3(@tiptap/pm@3.22.3))(@tiptap/pm@3.22.3)
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -5738,6 +5740,9 @@ packages:
 
   tiptap-extension-auto-joiner@0.1.3:
     resolution: {integrity: sha512-nY3aKeCpVb2WjjVEZkLtEqxsK3KU1zGioyglMhK1sUFNjKDccOfRyz/YDKrHRAVsKJPGnk2A8VA1827iGEAXWQ==}
+    peerDependencies:
+      '@tiptap/core': '*'
+      '@tiptap/pm': '*'
 
   to-regex-range@5.0.1:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
@@ -12231,7 +12236,10 @@ snapshots:
     dependencies:
       '@popperjs/core': 2.11.8
 
-  tiptap-extension-auto-joiner@0.1.3: {}
+  tiptap-extension-auto-joiner@0.1.3(@tiptap/core@3.22.3(@tiptap/pm@3.22.3))(@tiptap/pm@3.22.3):
+    dependencies:
+      '@tiptap/core': 3.22.3(@tiptap/pm@3.22.3)
+      '@tiptap/pm': 3.22.3
 
   to-regex-range@5.0.1:
     dependencies:
