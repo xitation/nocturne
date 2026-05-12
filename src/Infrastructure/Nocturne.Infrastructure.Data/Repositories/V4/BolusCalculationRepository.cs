@@ -235,9 +235,13 @@ public class BolusCalculationRepository : IBolusCalculationRepository
     )
     {
         await using var ctx = await _contextFactory.CreateAsync(ct);
+        await using var tx = await ctx.Database.BeginTransactionAsync(ct);
         var entities = records.Select(BolusCalculationMapper.ToEntity).ToList();
         if (entities.Count == 0)
+        {
+            await tx.CommitAsync(ct);
             return [];
+        }
 
         // Batch-level dedup: keep first occurrence per LegacyId
         entities = entities
@@ -266,7 +270,10 @@ public class BolusCalculationRepository : IBolusCalculationRepository
         }
 
         if (entities.Count == 0)
+        {
+            await tx.CommitAsync(ct);
             return [];
+        }
 
         const int batchSize = 500;
         foreach (var batch in entities.Chunk(batchSize))
@@ -275,6 +282,8 @@ public class BolusCalculationRepository : IBolusCalculationRepository
             await ctx.SaveChangesAsync(ct);
             ctx.ChangeTracker.Clear();
         }
+
+        await tx.CommitAsync(ct);
 
         // Insert-time deduplication: link saved records to canonical groups
         try

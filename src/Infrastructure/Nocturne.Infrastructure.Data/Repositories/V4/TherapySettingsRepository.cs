@@ -269,6 +269,7 @@ public class TherapySettingsRepository : ITherapySettingsRepository
             .ToHashSet();
 
         await using var ctx = await _contextFactory.CreateAsync(ct);
+        await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
         if (legacyIds.Count > 0)
         {
@@ -285,7 +286,10 @@ public class TherapySettingsRepository : ITherapySettingsRepository
         }
 
         if (entities.Count == 0)
+        {
+            await tx.CommitAsync(ct);
             return [];
+        }
 
         const int batchSize = 500;
         foreach (var batch in entities.Chunk(batchSize))
@@ -295,6 +299,7 @@ public class TherapySettingsRepository : ITherapySettingsRepository
             ctx.ChangeTracker.Clear();
         }
 
+        await tx.CommitAsync(ct);
         return entities.Select(TherapySettingsMapper.ToDomainModel);
     }
 }

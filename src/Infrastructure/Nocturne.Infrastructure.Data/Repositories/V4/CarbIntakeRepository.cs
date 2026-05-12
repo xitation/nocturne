@@ -292,9 +292,13 @@ public class CarbIntakeRepository : ICarbIntakeRepository
     )
     {
         await using var ctx = await _contextFactory.CreateAsync(ct);
+        await using var tx = await ctx.Database.BeginTransactionAsync(ct);
         var entities = records.Select(CarbIntakeMapper.ToEntity).ToList();
         if (entities.Count == 0)
+        {
+            await tx.CommitAsync(ct);
             return [];
+        }
 
         // Intra-batch SyncIdentifier dedup: keep last occurrence per
         // (DataSource, SyncIdentifier). Records without both keys keep a
@@ -412,6 +416,7 @@ public class CarbIntakeRepository : ICarbIntakeRepository
             }
         }
 
+        await tx.CommitAsync(ct);
         return updatedEntities.Concat(entities).Select(CarbIntakeMapper.ToDomainModel);
     }
 }
