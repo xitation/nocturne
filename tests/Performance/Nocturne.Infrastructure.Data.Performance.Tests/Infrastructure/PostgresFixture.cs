@@ -100,6 +100,7 @@ public class PostgresFixture : IAsyncDisposable
         );
 
         CREATE INDEX ix_sensor_glucose_timestamp ON sensor_glucose (timestamp DESC);
+        CREATE INDEX ix_sensor_glucose_tenant_timestamp ON sensor_glucose (tenant_id, timestamp DESC);
         CREATE INDEX ix_sensor_glucose_correlation_id ON sensor_glucose (correlation_id);
 
         CREATE TABLE IF NOT EXISTS boluses (
@@ -143,5 +144,6 @@ public class PostgresFixture : IAsyncDisposable
         CREATE UNIQUE INDEX ix_linked_records_tenant_type_id ON linked_records (tenant_id, record_type, record_id);
         CREATE INDEX ix_linked_records_type_canonical_primary ON linked_records (record_type, canonical_id, is_primary);
         CREATE INDEX ix_linked_records_type_timestamp ON linked_records (record_type, source_timestamp);
+        CREATE INDEX ix_linked_records_non_primary_record ON linked_records (record_type, record_id) WHERE NOT is_primary;
         """;
 }
