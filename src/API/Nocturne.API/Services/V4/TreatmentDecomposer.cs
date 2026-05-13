@@ -273,6 +273,11 @@ public class TreatmentDecomposer : ITreatmentDecomposer, IDecomposer<Treatment>
         if (produceDeviceEvent)
         {
             await DecomposeDeviceEventAsync(treatment, result, parsedDeviceEventType, ct);
+
+            if (parsedDeviceEventType is DeviceEventType.PumpSuspend or DeviceEventType.PumpResume)
+            {
+                await DecomposePumpSuspensionFromTreatmentAsync(treatment, parsedDeviceEventType, result, ct);
+            }
         }
 
         // After all decompositions, link records via FKs
@@ -475,6 +480,65 @@ public class TreatmentDecomposer : ITreatmentDecomposer, IDecomposer<Treatment>
             var created = await _deviceEventRepository.CreateAsync(model, ct);
             result.CreatedRecords.Add(created);
             _logger.LogDebug("Created DeviceEvent from legacy treatment {LegacyId}", treatment.Id);
+        }
+    }
+
+    /// <summary>
+    /// Opens or closes a <see cref="StateSpanCategory.PumpMode"/> /
+    /// <see cref="PumpModeState.Suspended"/> state span when a treatment-sourced
+    /// PumpSuspend or PumpResume device event is decomposed.
+    /// </summary>
+    private async Task DecomposePumpSuspensionFromTreatmentAsync(
+        Treatment treatment,
+        DeviceEventType deviceEventType,
+        V4Models.DecompositionResult result,
+        CancellationToken ct)
+    {
+        var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(treatment.Mills).UtcDateTime;
+
+        if (deviceEventType == DeviceEventType.PumpSuspend)
+        {
+            var span = new StateSpan
+            {
+                Category = StateSpanCategory.PumpMode,
+                State = PumpModeState.Suspended.ToString(),
+                StartTimestamp = timestamp,
+                EndTimestamp = null,
+                Source = treatment.DataSource ?? treatment.EnteredBy ?? "nightscout",
+                OriginalId = $"pump-suspended-tx:{treatment.Id}",
+            };
+
+            var upserted = await _stateSpanService.UpsertStateSpanAsync(span, ct);
+            result.CreatedRecords.Add(upserted);
+            _logger.LogDebug(
+                "Opened PumpMode/Suspended StateSpan from treatment {LegacyId}",
+                treatment.Id);
+        }
+        else if (deviceEventType == DeviceEventType.PumpResume)
+        {
+            var openSpans = await _stateSpanService.GetStateSpansAsync(
+                category: StateSpanCategory.PumpMode,
+                state: PumpModeState.Suspended.ToString(),
+                active: true,
+                count: 1,
+                descending: true,
+                cancellationToken: ct);
+
+            var openSpan = openSpans.FirstOrDefault();
+            if (openSpan is null)
+            {
+                _logger.LogWarning(
+                    "PumpResume treatment {LegacyId} but no open PumpMode/Suspended StateSpan to close",
+                    treatment.Id);
+                return;
+            }
+
+            openSpan.EndTimestamp = timestamp;
+            var closed = await _stateSpanService.UpsertStateSpanAsync(openSpan, ct);
+            result.UpdatedRecords.Add(closed);
+            _logger.LogDebug(
+                "Closed PumpMode/Suspended StateSpan {SpanId} from treatment {LegacyId}",
+                openSpan.Id, treatment.Id);
         }
     }
 
@@ -1060,6 +1124,8 @@ public class TreatmentDecomposer : ITreatmentDecomposer, IDecomposer<Treatment>
         // Track treatments that produce both bolus AND bolusCalculation for post-insert linking
         var bolusCalcLinkTreatmentIds = new HashSet<string>();
 
+        var pumpSuspendResumeTreatments = new List<(Treatment Treatment, DeviceEventType EventType)>();
+
         foreach (var treatment in treatments)
         {
             var eventType = treatment.EventType?.Trim();
@@ -1205,6 +1271,11 @@ public class TreatmentDecomposer : ITreatmentDecomposer, IDecomposer<Treatment>
                     V4Models.DeviceCategory.InsulinPump, treatment.PumpType, treatment.PumpSerial, treatment.Mills, ct);
                 model.PatientDeviceId = await _deviceService.ResolvePatientDeviceAsync(model.DeviceId, treatment.Mills, ct);
                 deviceEventList.Add(model);
+
+                if (parsedDeviceEventType is DeviceEventType.PumpSuspend or DeviceEventType.PumpResume)
+                {
+                    pumpSuspendResumeTreatments.Add((treatment, parsedDeviceEventType));
+                }
             }
 
             // Track for post-insert linking
@@ -1321,6 +1392,12 @@ public class TreatmentDecomposer : ITreatmentDecomposer, IDecomposer<Treatment>
         {
             var created = await _tempBasalRepository.BulkCreateAsync(tempBasalList, ct);
             result.CreatedRecords.AddRange(created);
+        }
+
+        // Post-insert pump suspend/resume pass: sequential, order-dependent
+        foreach (var (treatment, eventType) in pumpSuspendResumeTreatments.OrderBy(t => t.Treatment.Mills))
+        {
+            await DecomposePumpSuspensionFromTreatmentAsync(treatment, eventType, result, ct);
         }
 
         // Upsert remaining state spans (Override, TemporaryTarget — ProfileSwitch already done in pre-pass)
