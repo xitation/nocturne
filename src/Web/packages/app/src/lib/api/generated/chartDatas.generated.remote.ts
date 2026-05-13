@@ -27,3 +27,25 @@ export const getDashboardChartData = query(z.object({ startTime: z.number().opti
     throw error(500, message ?? 'Failed to get dashboard chart data');
   }
 });
+
+/** Gets the basal delivery series for a time window without running the
+full IOB/COB compute pipeline. Fetches only temp basals and profile
+data, making it significantly cheaper than the dashboard endpoint. */
+export const getBasalSeries = query(z.object({ startTime: z.number().optional(), endTime: z.number().optional() }).optional(), async (params) => {
+  const apiClient = getRequestEvent().locals.apiClient;
+  try {
+    return await apiClient.chartData.getBasalSeries(params?.startTime, params?.endTime);
+  } catch (err) {
+    const status = (err as any)?.status;
+    if (status === 401) { const { url } = getRequestEvent(); throw redirect(302, `/auth/login?returnUrl=${encodeURIComponent(url.pathname + url.search)}`); }
+    if (status === 403) throw error(403, (err as any)?.message ?? (err as any)?.detail ?? 'Forbidden');
+    console.error('Error in chartData.getBasalSeries:', err);
+    const e = err as any;
+    const body = e?.body ?? e?.response;
+    const errors = body?.errors ?? e?.errors;
+    const flat = errors ? Object.entries(errors).map(([k, v]: [string, any]) => Array.isArray(v) ? v.join(', ') : v).join('; ') : undefined;
+    const message = flat ?? body?.message ?? body?.title ?? body?.detail ?? e?.message ?? e?.title ?? e?.detail;
+    if (status === 400 || status === 409) throw error(status, message ?? 'Request rejected');
+    throw error(500, message ?? 'Failed to get basal series');
+  }
+});

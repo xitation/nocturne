@@ -19629,6 +19629,67 @@ export class ChartDataClient {
         }
         return Promise.resolve<DashboardChartData>(null as any);
     }
+
+    /**
+     * Gets the basal delivery series for a time window without running the
+    full IOB/COB compute pipeline. Fetches only temp basals and profile
+    data, making it significantly cheaper than the dashboard endpoint.
+     * @param startTime (optional) Start of the requested window as a Unix timestamp in milliseconds.
+     * @param endTime (optional) End of the requested window as a Unix timestamp in milliseconds.
+                Must be greater than startTime.
+     * @return A list of BasalPoint representing basal delivery over time.
+     */
+    getBasalSeries(startTime?: number | undefined, endTime?: number | undefined, signal?: AbortSignal): Promise<BasalPoint[]> {
+        let url_ = this.baseUrl + "/api/v4/ChartData/basal-series?";
+        if (startTime === null)
+            throw new globalThis.Error("The parameter 'startTime' cannot be null.");
+        else if (startTime !== undefined)
+            url_ += "startTime=" + encodeURIComponent("" + startTime) + "&";
+        if (endTime === null)
+            throw new globalThis.Error("The parameter 'endTime' cannot be null.");
+        else if (endTime !== undefined)
+            url_ += "endTime=" + encodeURIComponent("" + endTime) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetBasalSeries(_response);
+        });
+    }
+
+    protected processGetBasalSeries(response: Response): Promise<BasalPoint[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalPoint[];
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status === 500) {
+            return response.text().then((_responseText) => {
+            return throwException("A server side error occurred.", status, _responseText, _headers);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalPoint[]>(null as any);
+    }
 }
 
 export class CorrelationClient {

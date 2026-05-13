@@ -18135,6 +18135,66 @@
         "x-remote-type": "query"
       }
     },
+    "/api/v4/ChartData/basal-series": {
+      "get": {
+        "tags": [
+          "Chart Data"
+        ],
+        "summary": "Gets the basal delivery series for a time window without running the\nfull IOB/COB compute pipeline. Fetches only temp basals and profile\ndata, making it significantly cheaper than the dashboard endpoint.",
+        "operationId": "ChartData_GetBasalSeries",
+        "parameters": [
+          {
+            "name": "startTime",
+            "in": "query",
+            "description": "Start of the requested window as a Unix timestamp in milliseconds.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "description": "End of the requested window as a Unix timestamp in milliseconds.\n            Must be greater than startTime.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of BasalPoint representing basal delivery over time.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BasalPoint"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": ""
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
     "/api/v4/correlated/{correlationId}": {
       "get": {
         "tags": [
