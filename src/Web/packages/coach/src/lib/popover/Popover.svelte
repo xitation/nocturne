@@ -73,12 +73,17 @@
     }
   }
 
-  // Position popover
+  // Position popover — scroll the popover tooltip into view, not the target element.
+  // For large target elements, scrollIntoView on the element itself can push the
+  // tooltip off-screen because the browser centers the (potentially huge) element.
   $effect(() => {
     if (currentRegistration && popoverEl) {
-      currentRegistration.element.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Initial scroll: use "nearest" so the browser only scrolls if the element
+      // is fully off-screen, avoiding jarring jumps for large elements.
+      currentRegistration.element.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
       cleanupAutoUpdate?.();
+      let initialPosition = true;
       cleanupAutoUpdate = autoUpdate(currentRegistration.element, popoverEl, () => {
         if (!currentRegistration || !popoverEl) return;
 
@@ -101,6 +106,14 @@
               left: middlewareData.arrow.x != null ? `${middlewareData.arrow.x}px` : "",
               top: middlewareData.arrow.y != null ? `${middlewareData.arrow.y}px` : "",
             });
+          }
+
+          // After the first position computation, scroll the popover itself into
+          // view so the user can always see the tooltip — even when the target
+          // element is taller than the viewport.
+          if (initialPosition) {
+            initialPosition = false;
+            popoverEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
         });
       });
