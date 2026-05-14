@@ -34925,7 +34925,8 @@
           "TelegramDm",
           "TelegramGroup",
           "WhatsApp",
-          "WhatsAppDm"
+          "WhatsAppDm",
+          "HomeAssistant"
         ],
         "enum": [
           "web_push",
@@ -34939,7 +34940,8 @@
           "telegram_dm",
           "telegram_group",
           "whatsapp",
-          "whatsapp_dm"
+          "whatsapp_dm",
+          "home_assistant"
         ]
       },
       "ChannelStatus": {

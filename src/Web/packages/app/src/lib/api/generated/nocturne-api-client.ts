@@ -30085,6 +30085,7 @@ export enum ChannelType {
     TelegramGroup = "telegram_group",
     WhatsApp = "whatsapp",
     WhatsAppDm = "whatsapp_dm",
+    HomeAssistant = "home_assistant",
 }
 
 export enum ChannelStatus {
