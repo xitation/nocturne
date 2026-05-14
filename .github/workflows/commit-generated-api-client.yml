@@ -7,7 +7,7 @@ on:
 env:
   DOTNET_VERSION: "10.0.x"
   NODE_VERSION: "24"
-  PNPM_VERSION: "9"
+  PNPM_VERSION: "10"
 
 jobs:
   regenerate:

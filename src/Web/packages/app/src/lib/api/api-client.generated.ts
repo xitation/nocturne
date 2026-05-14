@@ -15,6 +15,7 @@ import {
   ApsSnapshotClient,
   AuditClient,
   AvatarClient,
+  BasalInjectionClient,
   BatteryClient,
   BGCheckClient,
   BodyWeightClient,
@@ -117,6 +118,7 @@ export class ApiClient {
   public readonly apsSnapshot: ApsSnapshotClient;
   public readonly audit: AuditClient;
   public readonly avatar: AvatarClient;
+  public readonly basalInjection: BasalInjectionClient;
   public readonly battery: BatteryClient;
   public readonly bGCheck: BGCheckClient;
   public readonly bodyWeight: BodyWeightClient;
@@ -219,6 +221,7 @@ export class ApiClient {
     this.apsSnapshot = new ApsSnapshotClient(apiBaseUrl, http);
     this.audit = new AuditClient(apiBaseUrl, http);
     this.avatar = new AvatarClient(apiBaseUrl, http);
+    this.basalInjection = new BasalInjectionClient(apiBaseUrl, http);
     this.battery = new BatteryClient(apiBaseUrl, http);
     this.bGCheck = new BGCheckClient(apiBaseUrl, http);
     this.bodyWeight = new BodyWeightClient(apiBaseUrl, http);

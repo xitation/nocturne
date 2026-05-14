@@ -11,7 +11,6 @@ import {
 import {
   predictionMinutes,
   predictionEnabled,
-  predictionDisplayMode,
   glucoseChartLookback,
   GLUCOSE_CHART_FETCH_HOURS,
 } from "$lib/stores/appearance-store.svelte";
@@ -565,7 +564,7 @@ export function createChartDataEngine(
   const cobData = $derived(
     (serverChartData?.cobSeries ?? []) as SeriesPoint[]
   );
-  const basalData = $derived(serverChartData?.basalSeries ?? []);
+  const basalData = $derived((serverChartData?.basalSeries ?? []) as BasalPoint[]);
   const maxIOB = $derived(serverChartData?.maxIob ?? 3);
   const maxBasalRate = $derived(serverChartData?.maxBasalRate ?? 3.0);
 
