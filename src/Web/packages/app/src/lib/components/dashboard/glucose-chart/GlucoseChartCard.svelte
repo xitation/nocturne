@@ -53,6 +53,7 @@
   import GlucoseInspectionDialog from "./dialogs/GlucoseInspectionDialog.svelte";
   import DeliveryInspectionDialog from "./dialogs/DeliveryInspectionDialog.svelte";
   import TreatmentInspectionDialog from "./dialogs/TreatmentInspectionDialog.svelte";
+  import BasalInjectionMarkers from "./markers/BasalInjectionMarkers.svelte";
 
   interface Props {
     dateRange?: { from: Date | string; to: Date | string };
@@ -115,6 +116,7 @@
   let showOverrideSpans = $state(false);
   let showProfileSpans = $state(false);
   let showActivitySpans = $state(false);
+  let showBasalInjections = $state(true);
   let showPumpModes = $state(true);
   let expandedPumpModes = $state(false);
 
@@ -127,6 +129,7 @@
     get deviceEvents() { return showDeviceEvents; },
     get alarms() { return showAlarms; },
     get scheduledTrackers() { return showScheduledTrackers; },
+    get basalInjections() { return showBasalInjections; },
     get overrideSpans() { return showOverrideSpans; },
     get profileSpans() { return showProfileSpans; },
     get activitySpans() { return showActivitySpans; },
@@ -142,6 +145,7 @@
         case "deviceEvents": showDeviceEvents = !showDeviceEvents; break;
         case "alarms": showAlarms = !showAlarms; break;
         case "scheduledTrackers": showScheduledTrackers = !showScheduledTrackers; break;
+        case "basalInjections": showBasalInjections = !showBasalInjections; break;
         case "overrideSpans": showOverrideSpans = !showOverrideSpans; break;
         case "profileSpans": showProfileSpans = !showProfileSpans; break;
         case "activitySpans": showActivitySpans = !showActivitySpans; break;
@@ -355,6 +359,7 @@
           <DeviceEventMarkers onMarkerClick={handleMarkerClick} />
           <SystemEventMarkers />
           <TrackerMarkers />
+          <BasalInjectionMarkers />
           <ChartHighlight />
         {/snippet}
         {#snippet overlays(_ctx)}
