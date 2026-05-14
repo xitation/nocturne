@@ -2580,6 +2580,12 @@ public class NocturneDbContext : DbContext
             entity.Property(e => e.IssuedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity
+                .HasOne<TenantEntity>()
+                .WithMany()
+                .HasForeignKey(e => e.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
                 .HasOne(e => e.Grant)
                 .WithMany(g => g.RefreshTokens)
                 .HasForeignKey(e => e.GrantId)

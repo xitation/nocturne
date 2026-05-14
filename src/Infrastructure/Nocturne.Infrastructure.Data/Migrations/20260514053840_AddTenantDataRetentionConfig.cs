@@ -37,11 +37,22 @@ namespace Nocturne.Infrastructure.Data.Migrations
                 table: "tenant_data_retention_config",
                 column: "tenant_id",
                 unique: true);
+
+            migrationBuilder.Sql("ALTER TABLE tenant_data_retention_config ENABLE ROW LEVEL SECURITY;");
+            migrationBuilder.Sql("ALTER TABLE tenant_data_retention_config FORCE ROW LEVEL SECURITY;");
+            migrationBuilder.Sql(
+                """
+                CREATE POLICY tenant_isolation ON tenant_data_retention_config
+                    USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
+                    WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid);
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP POLICY IF EXISTS tenant_isolation ON tenant_data_retention_config;");
+            migrationBuilder.Sql("ALTER TABLE tenant_data_retention_config DISABLE ROW LEVEL SECURITY;");
             migrationBuilder.DropTable(
                 name: "tenant_data_retention_config");
         }
