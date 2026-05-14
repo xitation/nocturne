@@ -2,7 +2,13 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { ArrowRight, ArrowLeft, Sprout, Cable, ShieldAlert } from "lucide-svelte";
+  import {
+    ArrowRight,
+    ArrowLeft,
+    Sprout,
+    Cable,
+    ShieldAlert,
+  } from "lucide-svelte";
   import { Button } from "$lib/components/ui/button";
   import { markSetupComplete } from "./setup.remote";
   import AppLogo from "$lib/components/ui/AppLogo.svelte";
@@ -37,7 +43,9 @@
 
   // ── HTTPS guard ─────────────────────────────────────────────────────
   const httpsRequired = $derived(
-    browser && window.location.protocol !== "https:" && !window.location.hostname.match(/^(localhost|127\.0\.0\.1|::1|\[::1\])$/)
+    browser &&
+      window.location.protocol !== "https:" &&
+      !window.location.hostname.match(/^(localhost|127\.0\.0\.1|::1|\[::1\])$/)
   );
 
   // ── Setup phase (pre-auth) ──────────────────────────────────────────
@@ -360,8 +368,12 @@
           <ShieldAlert class="mx-auto mb-4 h-12 w-12 text-red-400" />
           <h2 class="text-xl font-semibold text-white mb-3">HTTPS Required</h2>
           <p class="text-white/60 text-sm leading-relaxed">
-            Nocturne requires a secure connection. Please access this site
-            using <strong class="text-white">https://</strong> instead of http://.
+            Nocturne requires a secure connection. Please access this site using <strong
+              class="text-white"
+            >
+              https://
+            </strong>
+             instead of http://.
           </p>
           <p class="text-white/40 text-xs mt-4">
             Passkey authentication and secure cookies require HTTPS to function.
@@ -667,7 +679,7 @@
         target="_blank"
         rel="noopener noreferrer"
       >
-        <AppLogo icon="github" />
+        <AppLogo class="max-h-12" icon="github" />
         Source
       </a>
     </div>
