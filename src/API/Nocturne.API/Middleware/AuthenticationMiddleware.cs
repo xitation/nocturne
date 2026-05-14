@@ -138,6 +138,7 @@ public class AuthenticationMiddleware
                 var db = scope.ServiceProvider.GetRequiredService<Nocturne.Infrastructure.Data.NocturneDbContext>();
                 var isPlatformAdmin = await db.Subjects
                     .Where(s => s.Id == authContext.SubjectId.Value)
+                    .OrderBy(s => s.Id)
                     .Select(s => s.IsPlatformAdmin)
                     .FirstOrDefaultAsync();
                 authContext.IsPlatformAdmin = isPlatformAdmin;

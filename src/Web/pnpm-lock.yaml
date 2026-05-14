@@ -9,7 +9,7 @@ overrides:
   svelte: ^5.37.0
   vite: ^6.3.5
 
-packageExtensionsChecksum: cc6e768c19fc96dcea7488bed8095fd4
+packageExtensionsChecksum: sha256-6F/1WkKxBVDJ8BZyE4tVp8Hz5H6dhFW1EHEBwWWMtEk=
 
 importers:
 

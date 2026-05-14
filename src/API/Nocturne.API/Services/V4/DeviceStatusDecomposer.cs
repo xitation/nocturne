@@ -272,9 +272,33 @@ public class DeviceStatusDecomposer : IDeviceStatusDecomposer, IDecomposer<Devic
             var openSpan = openSpans.FirstOrDefault();
             if (openSpan is null)
             {
-                _logger.LogWarning(
-                    "PumpMode/Suspended transition true→false detected but no open StateSpan to close (snapshot {SnapshotId})",
-                    newSnapshot.Id);
+                // No open span exists — the suspended=true state predates the StateSpan feature
+                // or the opening snapshot was never decomposed. Create a retroactive closed span
+                // anchored at the prior snapshot's timestamp so the suspension timeline is complete.
+                if (prior is null)
+                {
+                    _logger.LogWarning(
+                        "PumpMode/Suspended transition true→false detected but no prior snapshot or open StateSpan (snapshot {SnapshotId})",
+                        newSnapshot.Id);
+                    return;
+                }
+
+                var retroactiveStart = ParseTimestampToDateTime(prior.Clock) ?? prior.Timestamp;
+                var backfilled = new StateSpan
+                {
+                    Category = StateSpanCategory.PumpMode,
+                    State = PumpModeState.Suspended.ToString(),
+                    StartTimestamp = retroactiveStart,
+                    EndTimestamp = transitionAt,
+                    Source = ds.Device,
+                    OriginalId = $"pump-suspended:{prior.Id}",
+                };
+
+                var upserted = await _stateSpanService.UpsertStateSpanAsync(backfilled, ct);
+                result.CreatedRecords.Add(upserted);
+                _logger.LogInformation(
+                    "Backfilled closed PumpMode/Suspended StateSpan from prior snapshot {PriorSnapshotId} to {EndTimestamp} (resume snapshot {SnapshotId})",
+                    prior.Id, transitionAt, newSnapshot.Id);
                 return;
             }
 
