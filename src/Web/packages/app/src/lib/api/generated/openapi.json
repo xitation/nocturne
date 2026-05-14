@@ -762,6 +762,444 @@
         }
       }
     },
+    "/api/v4/insulin/basal-injections": {
+      "post": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Creates a new record and returns it with a `Location` header pointing to the created resource.",
+        "description": "`Timestamp` must be set on the mapped model; requests that resolve to a default timestamp are rejected with `400 Bad Request`.\n            \nOn success, responds with `201 Created` and a `Location` header containing the URL of the newly created record.",
+        "operationId": "BasalInjection_Create",
+        "requestBody": {
+          "x-name": "request",
+          "description": "The data used to create the record.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBasalInjectionRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasalInjection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "form"
+      },
+      "get": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Lists records with pagination, optional date range, device, and source filtering.",
+        "description": "The `sort` parameter accepts exactly two values:\n- `timestamp_asc` — oldest records first\n- `timestamp_desc` — newest records first (default)\n            \nUse `limit` and `offset` together for paginated access to large result sets.",
+        "operationId": "BasalInjection_GetAll",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Inclusive start of the date range filter.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Inclusive end of the date range filter.",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of records to return. Defaults to `100`.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            },
+            "x-position": 3
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of records to skip for pagination. Defaults to `0`.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            },
+            "x-position": 4
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sort order for results by timestamp. Defaults to `timestamp_desc`.",
+            "schema": {
+              "type": "string",
+              "default": "timestamp_desc"
+            },
+            "x-position": 5
+          },
+          {
+            "name": "device",
+            "in": "query",
+            "description": "Optional filter to restrict results to a specific device.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Optional filter to restrict results to a specific data source.",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 7
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseOfBasalInjection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
+    "/api/v4/insulin/basal-injections/{id}": {
+      "put": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Updates an existing record by ID and returns the updated record.",
+        "description": "Returns `404 Not Found` if no record with the given id exists.\n            \n`Timestamp` must be set on the mapped model; requests that resolve to a default timestamp are rejected with `400 Bad Request`.",
+        "operationId": "BasalInjection_Update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the record to update.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "description": "The data to apply to the existing record.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBasalInjectionRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasalInjection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "form"
+      },
+      "delete": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Deletes a record by ID.",
+        "description": "Returns `204 No Content` on success, or `404 Not Found` if no record with the given id exists.",
+        "operationId": "BasalInjection_Delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the record to delete.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "command"
+      },
+      "get": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Retrieves a single record by its unique identifier.",
+        "description": "Returns `404 Not Found` if no record with the given id exists.",
+        "operationId": "BasalInjection_GetById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the record.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasalInjection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
+    "/api/v4/insulin/basal-injections/deleted": {
+      "get": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Lists soft-deleted records available for restoration, ordered by deletion date (newest first).",
+        "operationId": "BasalInjection_ListDeleted",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of records to return. Defaults to `100`.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 100
+            },
+            "x-position": 1
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of records to skip for pagination. Defaults to `0`.",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 0
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseOfBasalInjection"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "query"
+      }
+    },
+    "/api/v4/insulin/basal-injections/{id}/restore": {
+      "post": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Restores a soft-deleted record by ID.",
+        "description": "Returns `200 OK` with the restored record, or `404 Not Found` if no soft-deleted record with the given id exists.",
+        "operationId": "BasalInjection_Restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the soft-deleted record.",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasalInjection"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "command"
+      }
+    },
+    "/api/v4/insulin/basal-injections/restore": {
+      "post": {
+        "tags": [
+          "Basal Injection"
+        ],
+        "summary": "Restores multiple soft-deleted records by their IDs.",
+        "description": "Returns `200 OK` with the restored records. IDs that don't match a soft-deleted record are silently ignored.",
+        "operationId": "BasalInjection_BulkRestore",
+        "requestBody": {
+          "x-name": "ids",
+          "description": "The unique identifiers of the soft-deleted records.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "guid"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BasalInjection"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-remote-type": "command"
+      }
+    },
     "/api/v4/insulin/calculations": {
       "post": {
         "tags": [
@@ -26157,6 +26595,257 @@
           }
         }
       },
+      "BasalInjection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mills": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "utcOffset": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "device": {
+            "type": "string",
+            "nullable": true
+          },
+          "app": {
+            "type": "string",
+            "nullable": true
+          },
+          "dataSource": {
+            "type": "string",
+            "nullable": true
+          },
+          "syncIdentifier": {
+            "type": "string",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "legacyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "units": {
+            "type": "number",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "insulinContext": {
+            "$ref": "#/components/schemas/TreatmentInsulinContext"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {}
+          }
+        }
+      },
+      "TreatmentInsulinContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "patientInsulinId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "insulinName": {
+            "type": "string"
+          },
+          "dia": {
+            "type": "number",
+            "format": "double"
+          },
+          "peak": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "curve": {
+            "type": "string"
+          },
+          "concentration": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CreateBasalInjectionRequest": {
+        "type": "object",
+        "description": "Request body for creating a new basal insulin injection record via the V4 API.",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "When the basal insulin was injected. Cannot be more than 5 minutes in the future.",
+            "format": "date-time"
+          },
+          "utcOffset": {
+            "type": "integer",
+            "description": "UTC offset in minutes at the time of the event, for local-time display.",
+            "format": "int32",
+            "nullable": true
+          },
+          "device": {
+            "type": "string",
+            "description": "Identifier of the device used to record the injection (e.g. \"iPhone-app\").",
+            "nullable": true
+          },
+          "app": {
+            "type": "string",
+            "description": "Name of the application that submitted this record.",
+            "nullable": true
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "Upstream data source identifier; required when SyncIdentifier is supplied.",
+            "nullable": true
+          },
+          "syncIdentifier": {
+            "type": "string",
+            "description": "Upstream sync identifier for deduplication, paired with DataSource.",
+            "nullable": true
+          },
+          "patientInsulinId": {
+            "type": "string",
+            "description": "Reference to the PatientInsulin used for this injection. The referenced\ninsulin's role must be Basal or Both. The server resolves this to a\nTreatmentInsulinContext snapshot at write time.",
+            "format": "guid"
+          },
+          "units": {
+            "type": "number",
+            "description": "Insulin units injected. Must be greater than zero.",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-text user note.",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Correlation identifier for grouping related events.",
+            "format": "guid",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateBasalInjectionRequest": {
+        "type": "object",
+        "description": "Request body for updating an existing basal insulin injection record via the V4 API.\nThe injection is identified by the route-level ID parameter.",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "When the basal insulin was injected. Cannot be more than 5 minutes in the future.",
+            "format": "date-time"
+          },
+          "utcOffset": {
+            "type": "integer",
+            "description": "UTC offset in minutes at the time of the event, for local-time display.",
+            "format": "int32",
+            "nullable": true
+          },
+          "device": {
+            "type": "string",
+            "description": "Identifier of the device used to record the injection.",
+            "nullable": true
+          },
+          "app": {
+            "type": "string",
+            "description": "Name of the application that submitted this record.",
+            "nullable": true
+          },
+          "dataSource": {
+            "type": "string",
+            "description": "Upstream data source identifier; required when SyncIdentifier is supplied.",
+            "nullable": true
+          },
+          "syncIdentifier": {
+            "type": "string",
+            "description": "Upstream sync identifier for deduplication, paired with DataSource.",
+            "nullable": true
+          },
+          "patientInsulinId": {
+            "type": "string",
+            "description": "Reference to the PatientInsulin used for this injection. The referenced\ninsulin's role must be Basal or Both. The server resolves this to a\nTreatmentInsulinContext snapshot at write time.",
+            "format": "guid"
+          },
+          "units": {
+            "type": "number",
+            "description": "Insulin units injected. Must be greater than zero.",
+            "format": "double"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Optional free-text user note.",
+            "nullable": true
+          },
+          "correlationId": {
+            "type": "string",
+            "description": "Correlation identifier for grouping related events.",
+            "format": "guid",
+            "nullable": true
+          }
+        }
+      },
+      "PaginatedResponseOfBasalInjection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasalInjection"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationInfo"
+          }
+        }
+      },
+      "PaginationInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "BolusCalculation": {
         "type": "object",
         "additionalProperties": false,
@@ -26423,24 +27112,6 @@
           }
         }
       },
-      "PaginationInfo": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "limit": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "offset": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "PaginatedResponseOfBolus": {
         "type": "object",
         "additionalProperties": false,
@@ -26616,34 +27287,6 @@
           "Manual",
           "Algorithm"
         ]
-      },
-      "TreatmentInsulinContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "patientInsulinId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "insulinName": {
-            "type": "string"
-          },
-          "dia": {
-            "type": "number",
-            "format": "double"
-          },
-          "peak": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "curve": {
-            "type": "string"
-          },
-          "concentration": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
       },
       "CreateBolusRequest": {
         "type": "object",
@@ -40650,6 +41293,12 @@
               "$ref": "#/components/schemas/BasalDeliverySpanDto"
             }
           },
+          "basalInjectionMarkers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BasalInjectionMarkerDto"
+            }
+          },
           "systemEventMarkers": {
             "type": "array",
             "items": {
@@ -41014,6 +41663,27 @@
           },
           "strokeColor": {
             "$ref": "#/components/schemas/ChartColor"
+          }
+        }
+      },
+      "BasalInjectionMarkerDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "time": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "units": {
+            "type": "number",
+            "format": "double"
+          },
+          "insulinName": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

@@ -1037,6 +1037,420 @@ export class SetupClient {
     }
 }
 
+export class BasalInjectionClient {
+    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+        this.http = http ? http : window as any;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * Creates a new record and returns it with a `Location` header pointing to the created resource.
+     * @param request The data used to create the record.
+     */
+    create(request: CreateBasalInjectionRequest, signal?: AbortSignal): Promise<BasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processCreate(_response);
+        });
+    }
+
+    protected processCreate(response: Response): Promise<BasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 201) {
+            return response.text().then((_responseText) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalInjection;
+            return result201;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalInjection>(null as any);
+    }
+
+    /**
+     * Lists records with pagination, optional date range, device, and source filtering.
+     * @param from (optional) Inclusive start of the date range filter.
+     * @param to (optional) Inclusive end of the date range filter.
+     * @param limit (optional) Maximum number of records to return. Defaults to `100`.
+     * @param offset (optional) Number of records to skip for pagination. Defaults to `0`.
+     * @param sort (optional) Sort order for results by timestamp. Defaults to `timestamp_desc`.
+     * @param device (optional) Optional filter to restrict results to a specific device.
+     * @param source (optional) Optional filter to restrict results to a specific data source.
+     */
+    getAll(from?: Date | null | undefined, to?: Date | null | undefined, limit?: number | undefined, offset?: number | undefined, sort?: string | undefined, device?: string | null | undefined, source?: string | null | undefined, signal?: AbortSignal): Promise<PaginatedResponseOfBasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections?";
+        if (from !== undefined && from !== null)
+            url_ += "from=" + encodeURIComponent(from ? "" + from.toISOString() : "") + "&";
+        if (to !== undefined && to !== null)
+            url_ += "to=" + encodeURIComponent(to ? "" + to.toISOString() : "") + "&";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        if (offset === null)
+            throw new globalThis.Error("The parameter 'offset' cannot be null.");
+        else if (offset !== undefined)
+            url_ += "offset=" + encodeURIComponent("" + offset) + "&";
+        if (sort === null)
+            throw new globalThis.Error("The parameter 'sort' cannot be null.");
+        else if (sort !== undefined)
+            url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (device !== undefined && device !== null)
+            url_ += "device=" + encodeURIComponent("" + device) + "&";
+        if (source !== undefined && source !== null)
+            url_ += "source=" + encodeURIComponent("" + source) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetAll(_response);
+        });
+    }
+
+    protected processGetAll(response: Response): Promise<PaginatedResponseOfBasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PaginatedResponseOfBasalInjection;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PaginatedResponseOfBasalInjection>(null as any);
+    }
+
+    /**
+     * Updates an existing record by ID and returns the updated record.
+     * @param id The unique identifier of the record to update.
+     * @param request The data to apply to the existing record.
+     */
+    update(id: string, request: UpdateBasalInjectionRequest, signal?: AbortSignal): Promise<BasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processUpdate(_response);
+        });
+    }
+
+    protected processUpdate(response: Response): Promise<BasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalInjection;
+            return result200;
+            });
+        } else if (status === 400) {
+            return response.text().then((_responseText) => {
+            let result400: any = null;
+            result400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalInjection>(null as any);
+    }
+
+    /**
+     * Deletes a record by ID.
+     * @param id The unique identifier of the record to delete.
+     */
+    delete(id: string, signal?: AbortSignal): Promise<void> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "DELETE",
+            signal,
+            headers: {
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processDelete(_response);
+        });
+    }
+
+    protected processDelete(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 204) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
+    }
+
+    /**
+     * Retrieves a single record by its unique identifier.
+     * @param id The unique identifier of the record.
+     */
+    getById(id: string, signal?: AbortSignal): Promise<BasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/{id}";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processGetById(_response);
+        });
+    }
+
+    protected processGetById(response: Response): Promise<BasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalInjection;
+            return result200;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalInjection>(null as any);
+    }
+
+    /**
+     * Lists soft-deleted records available for restoration, ordered by deletion date (newest first).
+     * @param limit (optional) Maximum number of records to return. Defaults to `100`.
+     * @param offset (optional) Number of records to skip for pagination. Defaults to `0`.
+     */
+    listDeleted(limit?: number | undefined, offset?: number | undefined, signal?: AbortSignal): Promise<PaginatedResponseOfBasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/deleted?";
+        if (limit === null)
+            throw new globalThis.Error("The parameter 'limit' cannot be null.");
+        else if (limit !== undefined)
+            url_ += "limit=" + encodeURIComponent("" + limit) + "&";
+        if (offset === null)
+            throw new globalThis.Error("The parameter 'offset' cannot be null.");
+        else if (offset !== undefined)
+            url_ += "offset=" + encodeURIComponent("" + offset) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "GET",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processListDeleted(_response);
+        });
+    }
+
+    protected processListDeleted(response: Response): Promise<PaginatedResponseOfBasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as PaginatedResponseOfBasalInjection;
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PaginatedResponseOfBasalInjection>(null as any);
+    }
+
+    /**
+     * Restores a soft-deleted record by ID.
+     * @param id The unique identifier of the soft-deleted record.
+     */
+    restore(id: string, signal?: AbortSignal): Promise<BasalInjection> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/{id}/restore";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_: RequestInit = {
+            method: "POST",
+            signal,
+            headers: {
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processRestore(_response);
+        });
+    }
+
+    protected processRestore(response: Response): Promise<BasalInjection> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalInjection;
+            return result200;
+            });
+        } else if (status === 404) {
+            return response.text().then((_responseText) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalInjection>(null as any);
+    }
+
+    /**
+     * Restores multiple soft-deleted records by their IDs.
+     * @param ids The unique identifiers of the soft-deleted records.
+     */
+    bulkRestore(ids: string[], signal?: AbortSignal): Promise<BasalInjection[]> {
+        let url_ = this.baseUrl + "/api/v4/insulin/basal-injections/restore";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(ids);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            signal,
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processBulkRestore(_response);
+        });
+    }
+
+    protected processBulkRestore(response: Response): Promise<BasalInjection[]> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as BasalInjection[];
+            return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BasalInjection[]>(null as any);
+    }
+}
+
 export class BolusCalculationClient {
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     private baseUrl: string;
@@ -27052,6 +27466,97 @@ export interface SetupOwnerOidcRequest {
     providerId?: string;
 }
 
+export interface BasalInjection {
+    id?: string;
+    timestamp?: Date;
+    mills?: number;
+    utcOffset?: number | undefined;
+    device?: string | undefined;
+    app?: string | undefined;
+    dataSource?: string | undefined;
+    syncIdentifier?: string | undefined;
+    correlationId?: string | undefined;
+    legacyId?: string | undefined;
+    createdAt?: Date;
+    modifiedAt?: Date;
+    units?: number;
+    notes?: string | undefined;
+    insulinContext?: TreatmentInsulinContext;
+    additionalProperties?: { [key: string]: any; } | undefined;
+}
+
+export interface TreatmentInsulinContext {
+    patientInsulinId?: string;
+    insulinName?: string;
+    dia?: number;
+    peak?: number;
+    curve?: string;
+    concentration?: number;
+}
+
+/** Request body for creating a new basal insulin injection record via the V4 API. */
+export interface CreateBasalInjectionRequest {
+    /** When the basal insulin was injected. Cannot be more than 5 minutes in the future. */
+    timestamp?: Date;
+    /** UTC offset in minutes at the time of the event, for local-time display. */
+    utcOffset?: number | undefined;
+    /** Identifier of the device used to record the injection (e.g. "iPhone-app"). */
+    device?: string | undefined;
+    /** Name of the application that submitted this record. */
+    app?: string | undefined;
+    /** Upstream data source identifier; required when SyncIdentifier is supplied. */
+    dataSource?: string | undefined;
+    /** Upstream sync identifier for deduplication, paired with DataSource. */
+    syncIdentifier?: string | undefined;
+    /** Reference to the PatientInsulin used for this injection. The referenced
+insulin's role must be Basal or Both. The server resolves this to a
+TreatmentInsulinContext snapshot at write time. */
+    patientInsulinId?: string;
+    /** Insulin units injected. Must be greater than zero. */
+    units?: number;
+    /** Optional free-text user note. */
+    notes?: string | undefined;
+    /** Correlation identifier for grouping related events. */
+    correlationId?: string | undefined;
+}
+
+/** Request body for updating an existing basal insulin injection record via the V4 API. The injection is identified by the route-level ID parameter. */
+export interface UpdateBasalInjectionRequest {
+    /** When the basal insulin was injected. Cannot be more than 5 minutes in the future. */
+    timestamp?: Date;
+    /** UTC offset in minutes at the time of the event, for local-time display. */
+    utcOffset?: number | undefined;
+    /** Identifier of the device used to record the injection. */
+    device?: string | undefined;
+    /** Name of the application that submitted this record. */
+    app?: string | undefined;
+    /** Upstream data source identifier; required when SyncIdentifier is supplied. */
+    dataSource?: string | undefined;
+    /** Upstream sync identifier for deduplication, paired with DataSource. */
+    syncIdentifier?: string | undefined;
+    /** Reference to the PatientInsulin used for this injection. The referenced
+insulin's role must be Basal or Both. The server resolves this to a
+TreatmentInsulinContext snapshot at write time. */
+    patientInsulinId?: string;
+    /** Insulin units injected. Must be greater than zero. */
+    units?: number;
+    /** Optional free-text user note. */
+    notes?: string | undefined;
+    /** Correlation identifier for grouping related events. */
+    correlationId?: string | undefined;
+}
+
+export interface PaginatedResponseOfBasalInjection {
+    data?: BasalInjection[];
+    pagination?: PaginationInfo;
+}
+
+export interface PaginationInfo {
+    limit?: number;
+    offset?: number;
+    total?: number;
+}
+
 export interface BolusCalculation {
     id?: string;
     timestamp?: Date;
@@ -27131,12 +27636,6 @@ export interface PaginatedResponseOfBolusCalculation {
     pagination?: PaginationInfo;
 }
 
-export interface PaginationInfo {
-    limit?: number;
-    offset?: number;
-    total?: number;
-}
-
 export interface PaginatedResponseOfBolus {
     data?: Bolus[];
     pagination?: PaginationInfo;
@@ -27182,15 +27681,6 @@ export enum BolusType {
 export enum BolusKind {
     Manual = "Manual",
     Algorithm = "Algorithm",
-}
-
-export interface TreatmentInsulinContext {
-    patientInsulinId?: string;
-    insulinName?: string;
-    dia?: number;
-    peak?: number;
-    curve?: string;
-    concentration?: number;
 }
 
 /** Request body for creating a new insulin bolus record via the V4 API. */
@@ -31587,6 +32077,7 @@ export interface DashboardChartData {
     activitySpans?: ChartStateSpanDto[];
     tempBasalSpans?: ChartStateSpanDto[];
     basalDeliverySpans?: BasalDeliverySpanDto[];
+    basalInjectionMarkers?: BasalInjectionMarkerDto[];
     systemEventMarkers?: SystemEventMarkerDto[];
     trackerMarkers?: TrackerMarkerDto[];
     heartRateSeries?: HeartRatePointDto[];
@@ -31721,6 +32212,13 @@ export interface BasalDeliverySpanDto {
     source?: string | undefined;
     fillColor?: ChartColor;
     strokeColor?: ChartColor;
+}
+
+export interface BasalInjectionMarkerDto {
+    id?: string;
+    time?: number;
+    units?: number;
+    insulinName?: string | undefined;
 }
 
 export interface SystemEventMarkerDto {

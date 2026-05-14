@@ -8,6 +8,7 @@ export { deleteAll, updateStatus } from './coachMarks.generated.remote';
 // './insulinCatalogs.generated.remote' - all exports collide, import directly
 export { getTenants, getTransitionStatus } from './platforms.generated.remote';
 export { validateUsername, ownerOptions, ownerComplete, ownerOidc } from './setups.generated.remote';
+// './basalInjections.generated.remote' - all exports collide, import directly
 // './bolusCalculations.generated.remote' - all exports collide, import directly
 // './bolus.generated.remote' - all exports collide, import directly
 export * from './foods.generated.remote';
