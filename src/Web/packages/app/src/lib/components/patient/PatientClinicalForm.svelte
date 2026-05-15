@@ -110,5 +110,24 @@
         placeholder="e.g. she/her, he/him, they/them"
       />
     </div>
+
+    <div class="space-y-2 sm:col-span-2">
+      <Label for="timezone">Timezone</Label>
+      <Input
+        id="timezone"
+        name="timezone"
+        bind:value={state.timezone}
+        placeholder="e.g. Australia/Sydney"
+      />
+      {#if state.timezoneAutoDetected}
+        <p class="text-xs text-muted-foreground">
+          Auto-detected from your browser. Save to confirm — alerts with time-of-day rules use this to interpret window hours in your local time.
+        </p>
+      {:else}
+        <p class="text-xs text-muted-foreground">
+          IANA timezone id (e.g. Europe/London). Used by alerts, schedules, and analytics.
+        </p>
+      {/if}
+    </div>
   </div>
 </form>

@@ -72,6 +72,17 @@ public class PatientRecordEntity : ITenantScoped, ISoftDeletable
     public string? AvatarUrl { get; set; }
 
     /// <summary>
+    /// IANA timezone id (e.g. "Australia/Sydney"). Canonical source of patient timezone,
+    /// replacing the deprecated per-profile <c>therapy_settings.timezone</c>. Drives
+    /// wall-clock interpretation in alerts (time-of-day windows, DND, glucose-bucket
+    /// schedule lookup) and analytics. Null until the patient sets it; readers must
+    /// fall back gracefully.
+    /// </summary>
+    [Column("timezone")]
+    [MaxLength(64)]
+    public string? Timezone { get; set; }
+
+    /// <summary>
     /// System tracking: when record was inserted
     /// </summary>
     [Column("sys_created_at")]
