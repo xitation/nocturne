@@ -164,17 +164,38 @@ internal sealed class SensorContextEnricher : ISensorContextEnricher
             }
         }
 
+        enriched = await EnrichLoopingFactsAsync(enriched, needs, now, isReplay, ct);
+        enriched = await EnrichPhase2FactsAsync(enriched, needs, now, ct);
+
         // DND state is fetched unconditionally — engine-level suppression in the orchestrator
         // applies to every rule regardless of whether its tree references the do_not_disturb
         // condition fact. Gating on a NeedsDoNotDisturb walker flag would silently exempt
         // every typical glucose/threshold rule from suppression, which is the opposite of
         // what users expect. The lookup is one indexed row from `tenant_alert_settings` per
-        // evaluation pass — cheap enough to make unconditional.
+        // evaluation pass — cheap enough to make unconditional. Runs after Phase 2 so
+        // `enriched.TenantTimeZoneId` (populated from the canonical PatientRecord) is
+        // available to interpret the scheduled DND window.
         if (!isReplay)
         {
+            // Force the timezone fetch even when no other leaf demands it — scheduled DND
+            // needs the patient's tz to interpret window hours, and Phase 2 only fetches
+            // when NeedsTenantTimeZone is set.
+            if (!needs.NeedsTenantTimeZone && string.IsNullOrEmpty(enriched.TenantTimeZoneId))
+            {
+                try
+                {
+                    var tz = await _deps.TherapySettings.GetTimezoneAsync(ct: ct);
+                    enriched = enriched with { TenantTimeZoneId = tz };
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to resolve tenant timezone for DND scheduling; scheduled window will fall back to UTC");
+                }
+            }
+
             var settings = await _deps.Alerts.GetTenantAlertSettingsAsync(tenantId, ct);
             // No row yet means DND has never been configured for this tenant — treat as off.
-            var projection = settings?.Resolve(now);
+            var projection = settings?.Resolve(now, enriched.TenantTimeZoneId);
             enriched = enriched with
             {
                 ActiveDoNotDisturb = projection is null
@@ -182,9 +203,6 @@ internal sealed class SensorContextEnricher : ISensorContextEnricher
                     : new DoNotDisturbSnapshot(projection.StartedAt, projection.Source),
             };
         }
-
-        enriched = await EnrichLoopingFactsAsync(enriched, needs, now, isReplay, ct);
-        enriched = await EnrichPhase2FactsAsync(enriched, needs, now, ct);
 
         return enriched;
     }

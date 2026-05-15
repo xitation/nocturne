@@ -325,8 +325,7 @@ public class AlertRepository : IAlertRepository
                 s.DndManualStartedAt,
                 s.DndScheduleEnabled,
                 s.DndScheduleStart,
-                s.DndScheduleEnd,
-                s.Timezone))
+                s.DndScheduleEnd))
             .FirstOrDefaultAsync(ct);
 
         return row ?? TenantAlertSettingsSnapshot.Empty;
