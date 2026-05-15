@@ -27276,6 +27276,8 @@ export enum OAuthScope {
     HeartRateReadWrite = "heartrate.readwrite",
     StepCountRead = "stepcount.read",
     StepCountReadWrite = "stepcount.readwrite",
+    FoodRead = "food.read",
+    FoodReadWrite = "food.readwrite",
     StatisticsRead = "statistics.read",
     HealthRead = "health.read",
     HealthReadWrite = "health.readwrite",
