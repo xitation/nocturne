@@ -21,6 +21,7 @@ import type {
   DeviceEvent,
   ApsSnapshot,
   PumpModeState,
+  ProfileSummary,
 } from "$lib/api";
 
 /**
@@ -35,20 +36,6 @@ export interface DeviceStatus {
   openaps?: Record<string, any>;
   pump?: Record<string, any>;
   uploader?: Record<string, any>;
-  [key: string]: any;
-}
-
-/**
- * Nightscout v1/v2 profile shape used for pills (COB, IOB, basal rate, etc.).
- * The generated client no longer exports this type; define it locally.
- */
-export interface Profile {
-  _id?: string;
-  defaultProfile?: string;
-  mills?: number;
-  startDate?: string;
-  units?: string;
-  store?: Record<string, any>;
   [key: string]: any;
 }
 import { NotificationUrgency } from "$lib/api";
@@ -98,7 +85,7 @@ export class RealtimeStore {
   /** Reactive state using Svelte 5 runes - using $state.raw for arrays to avoid deep proxy issues */
   entries = $state.raw<Entry[]>([]);
   deviceStatuses = $state.raw<DeviceStatus[]>([]);
-  profile = $state<Profile | null>(null);
+  profile = $state<ProfileSummary | null>(null);
   trackerInstances = $state.raw<TrackerInstanceDto[]>([]);
   trackerDefinitions = $state.raw<TrackerDefinitionDto[]>([]);
   inAppNotifications = $state.raw<InAppNotificationDto[]>([]);
@@ -347,7 +334,7 @@ export class RealtimeStore {
         }
 
         if (profileData) {
-          this.profile = profileData as unknown as Profile;
+          this.profile = profileData;
         }
 
         if (trackerDefs && trackerDefs.length > 0) {
