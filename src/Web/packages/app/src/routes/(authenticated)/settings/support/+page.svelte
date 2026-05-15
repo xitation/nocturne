@@ -56,6 +56,7 @@
 
   const coachCtx = getCoachMarkContext();
   let resettingTutorials = $state(false);
+  const tutorialsDisabled = $derived(coachCtx.disabled);
 
   async function resetTutorials() {
     resettingTutorials = true;
@@ -67,6 +68,11 @@
     } finally {
       resettingTutorials = false;
     }
+  }
+
+  function setTutorialsDisabled(value: boolean) {
+    coachCtx.setDisabled(value);
+    toast.success(value ? "Tutorials disabled" : "Tutorials enabled");
   }
 
   const communityLinks = $derived([
@@ -305,7 +311,7 @@
       </CardTitle>
       <CardDescription>Guided walkthroughs to help you learn the app</CardDescription>
     </CardHeader>
-    <CardContent>
+    <CardContent class="space-y-4">
       <div class="flex items-center justify-between">
         <div class="space-y-0.5">
           <p class="text-sm font-medium">Show all tutorials again</p>
@@ -322,6 +328,22 @@
           <GraduationCap class="h-4 w-4" />
           {resettingTutorials ? "Resetting..." : "Reset Tutorials"}
         </Button>
+      </div>
+
+      <Separator />
+
+      <div class="flex items-center justify-between">
+        <div class="space-y-0.5">
+          <Label for="disable-tutorials">Disable all tutorials</Label>
+          <p class="text-sm text-muted-foreground">
+            Stop showing guided walkthroughs anywhere in the app
+          </p>
+        </div>
+        <Switch
+          id="disable-tutorials"
+          checked={tutorialsDisabled}
+          onCheckedChange={setTutorialsDisabled}
+        />
       </div>
     </CardContent>
   </Card>

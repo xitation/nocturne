@@ -10,6 +10,26 @@ import type {
 import { selectActiveMark, isSequenceDone, sequenceProgress, type SelectionResult } from "./sequencing.js";
 
 const COACH_CONTEXT_KEY = Symbol("coach-mark-context");
+const DISABLED_STORAGE_KEY = "nocturne:coach-marks-disabled";
+
+function readDisabledFlag(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  try {
+    return localStorage.getItem(DISABLED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeDisabledFlag(value: boolean): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (value) localStorage.setItem(DISABLED_STORAGE_KEY, "true");
+    else localStorage.removeItem(DISABLED_STORAGE_KEY);
+  } catch {
+    // storage full or unavailable — silently ignore
+  }
+}
 
 export class CoachMarkContext {
   private adapter: CoachMarkAdapter;
@@ -26,6 +46,7 @@ export class CoachMarkContext {
 
   private _forcedSequence = $state<string | null>(null);
   private _quietUntilNavigation = $state(false);
+  private _disabled = $state(false);
 
   activeKey = $derived(this._activeSelection?.key ?? null);
   activeStep = $derived(this._activeSelection?.step ?? null);
@@ -51,6 +72,7 @@ export class CoachMarkContext {
   }
 
   async initialize(): Promise<void> {
+    this._disabled = readDisabledFlag();
     const states = await this.adapter.fetchAll();
     const map = new Map<string, MarkState>();
     for (const s of states) {
@@ -59,6 +81,25 @@ export class CoachMarkContext {
     this._states = map;
     this._initialized = true;
     this.scheduleSelection();
+  }
+
+  get disabled(): boolean {
+    return this._disabled;
+  }
+
+  setDisabled(value: boolean): void {
+    this._disabled = value;
+    writeDisabledFlag(value);
+    if (value) {
+      this._activeSelection = null;
+      this._forcedSequence = null;
+      if (this._settleTimer) {
+        clearTimeout(this._settleTimer);
+        this._settleTimer = null;
+      }
+    } else {
+      this.scheduleSelection();
+    }
   }
 
   register(registration: MarkRegistration): () => void {
@@ -200,6 +241,7 @@ export class CoachMarkContext {
 
   /** Force-activate a named sequence, overriding quiet mode if set. */
   startSequence(name: string): void {
+    if (this._disabled) return;
     const seq = this.sequences[name];
     if (!seq) {
       console.warn(`[coach] Sequence "${name}" not found.`);
@@ -311,6 +353,7 @@ export class CoachMarkContext {
 
   private scheduleSelection(): void {
     if (!this._initialized) return;
+    if (this._disabled) return;
     if (this._quietUntilNavigation) return;
     if (this._forcedSequence) return;
     if (this._settleTimer) clearTimeout(this._settleTimer);
