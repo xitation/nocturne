@@ -604,7 +604,9 @@
 </div>
 
 <Dialog.Root bind:open={replayOpen}>
-  <Dialog.Content class="flex max-w-6xl w-6xl flex-col sm:max-w-[95vw]">
+  <Dialog.Content
+    class="flex max-h-[90vh] max-w-6xl w-6xl flex-col sm:max-w-[95vw]"
+  >
     <Dialog.Header>
       <Dialog.Title class="flex items-center gap-2">
         <PlayCircle class="h-4 w-4" /> Replay
