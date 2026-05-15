@@ -133,8 +133,6 @@ public class DevAdminController : ControllerBase
                     DisplayName = tenant.DisplayName,
                     IsActive = tenant.IsActive,
                     LastReadingAt = tenant.LastReadingAt,
-                    Timezone = tenant.Timezone,
-                    SubjectName = tenant.SubjectName,
                     AllowAccessRequests = tenant.AllowAccessRequests,
                     SysCreatedAt = tenant.SysCreatedAt,
                     SysUpdatedAt = tenant.SysUpdatedAt,
@@ -366,8 +364,6 @@ public class DevAdminController : ControllerBase
                         existingTenant.DisplayName = td.DisplayName;
                         existingTenant.IsActive = td.IsActive;
                         existingTenant.LastReadingAt = td.LastReadingAt;
-                        existingTenant.Timezone = td.Timezone;
-                        existingTenant.SubjectName = td.SubjectName;
                         existingTenant.AllowAccessRequests = td.AllowAccessRequests;
                         existingTenant.SysCreatedAt = td.SysCreatedAt;
                         existingTenant.SysUpdatedAt = td.SysUpdatedAt;
@@ -381,8 +377,6 @@ public class DevAdminController : ControllerBase
                             DisplayName = td.DisplayName,
                             IsActive = td.IsActive,
                             LastReadingAt = td.LastReadingAt,
-                            Timezone = td.Timezone,
-                            SubjectName = td.SubjectName,
                             AllowAccessRequests = td.AllowAccessRequests,
                             SysCreatedAt = td.SysCreatedAt,
                             SysUpdatedAt = td.SysUpdatedAt,
@@ -693,7 +687,6 @@ public class DevAdminController : ControllerBase
                 tenant.Slug,
                 tenant.DisplayName,
                 tenant.IsActive,
-                tenant.Timezone,
                 tenant.SysCreatedAt,
                 entryCount,
                 treatmentCount,
@@ -1024,7 +1017,6 @@ public record DevTenantSummaryDto(
     string Slug,
     string DisplayName,
     bool IsActive,
-    string Timezone,
     DateTime CreatedAt,
     long Entries,
     long Treatments,

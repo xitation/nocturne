@@ -260,13 +260,27 @@ public class AlertRepository : IAlertRepository
     {
         await using var context = await _contextFactory.CreateDbContextAsync(ct);
 
-        return await context.Tenants
+        var tenant = await context.Tenants
             .AsNoTracking()
             .Where(t => t.Id == tenantId)
-            .Select(t => new TenantAlertContext(
-                t.Id, t.SubjectName ?? string.Empty, t.Slug, t.DisplayName,
-                t.IsActive, t.LastReadingAt))
+            .Select(t => new { t.Id, t.Slug, t.DisplayName, t.IsActive, t.LastReadingAt })
             .FirstOrDefaultAsync(ct);
+
+        if (tenant is null) return null;
+
+        // patient_records is RLS-protected; the factory-built context lands with TenantId
+        // unset (this method takes tenantId as a parameter — it can be called for any
+        // tenant from background services). Stamp the tenant context before the read so
+        // the interceptor sets app.current_tenant_id and the row is visible.
+        context.TenantId = tenantId;
+        var preferredName = await context.PatientRecords
+            .AsNoTracking()
+            .Select(p => p.PreferredName)
+            .FirstOrDefaultAsync(ct);
+
+        return new TenantAlertContext(
+            tenant.Id, preferredName ?? string.Empty, tenant.Slug, tenant.DisplayName,
+            tenant.IsActive, tenant.LastReadingAt);
     }
 
     /// <inheritdoc/>
