@@ -29,12 +29,14 @@
   "dependencies": {
     "@microsoft/signalr": "^8.0.0",
     "socket.io": "^4.7.5",
+    "tough-cookie": "^6.0.1",
     "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
-    "typescript": "^5.3.3",
-    "rimraf": "^5.0.5"
+    "@types/tough-cookie": "^4.0.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=24"
