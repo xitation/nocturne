@@ -37882,6 +37882,10 @@
             "type": "string",
             "nullable": true
           },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"

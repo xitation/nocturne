@@ -31057,6 +31057,7 @@ export interface PatientRecord {
     preferredName?: string | undefined;
     pronouns?: string | undefined;
     avatarUrl?: string | undefined;
+    timezone?: string | undefined;
     createdAt?: Date;
     modifiedAt?: Date;
 }
