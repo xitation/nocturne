@@ -623,6 +623,7 @@
         rule={buildReplayRule}
         editingRuleId={isNew ? undefined : ruleId}
         editingTree={state.condition ?? undefined}
+        availableRules={rulesQuery.current ?? []}
       />
     </div>
   </Dialog.Content>
