@@ -33,20 +33,7 @@
   async function handleVerify() {
     if (loading) return;
     if (verifyCode.length !== 6) return;
-
-    loading = true;
-    error = null;
-
-    try {
-      await onVerify(verifyCode, label);
-    } catch (err) {
-      error =
-        err instanceof Error
-          ? err.message
-          : "Verification failed. Check the code and try again.";
-    } finally {
-      loading = false;
-    }
+    await onVerify(verifyCode, label);
   }
 
   function handleCancel() {
