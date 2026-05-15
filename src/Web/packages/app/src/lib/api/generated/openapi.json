@@ -36148,7 +36148,7 @@
           },
           "dndScheduleStart": {
             "type": "string",
-            "description": "Local-time start of the scheduled DND window (in Timezone).",
+            "description": "Local-time start of the scheduled DND window, interpreted in the patient's timezone.",
             "format": "time",
             "nullable": true
           },
@@ -36157,10 +36157,6 @@
             "description": "Local-time end of the scheduled DND window. Cross-midnight windows allowed.",
             "format": "time",
             "nullable": true
-          },
-          "timezone": {
-            "type": "string",
-            "description": "IANA timezone (e.g. Europe/London) for the scheduled window."
           }
         }
       },
@@ -36188,9 +36184,6 @@
             "type": "string",
             "format": "time",
             "nullable": true
-          },
-          "timezone": {
-            "type": "string"
           }
         }
       },
@@ -39043,13 +39036,6 @@
             "format": "date-time",
             "nullable": true
           },
-          "timezone": {
-            "type": "string"
-          },
-          "subjectName": {
-            "type": "string",
-            "nullable": true
-          },
           "allowAccessRequests": {
             "type": "boolean"
           },
@@ -39453,9 +39439,6 @@
           },
           "isActive": {
             "type": "boolean"
-          },
-          "timezone": {
-            "type": "string"
           },
           "createdAt": {
             "type": "string",

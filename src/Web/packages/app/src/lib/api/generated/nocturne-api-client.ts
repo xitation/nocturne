@@ -30492,12 +30492,10 @@ export interface TenantAlertSettingsResponse {
     dndManualStartedAt?: Date | undefined;
     /** True when a recurring scheduled DND window is configured. */
     dndScheduleEnabled?: boolean;
-    /** Local-time start of the scheduled DND window (in Timezone). */
+    /** Local-time start of the scheduled DND window, interpreted in the patient's timezone. */
     dndScheduleStart?: string | undefined;
     /** Local-time end of the scheduled DND window. Cross-midnight windows allowed. */
     dndScheduleEnd?: string | undefined;
-    /** IANA timezone (e.g. Europe/London) for the scheduled window. */
-    timezone?: string;
 }
 
 export interface UpdateTenantAlertSettingsRequest {
@@ -30506,7 +30504,6 @@ export interface UpdateTenantAlertSettingsRequest {
     dndScheduleEnabled?: boolean;
     dndScheduleStart?: string | undefined;
     dndScheduleEnd?: string | undefined;
-    timezone?: string;
 }
 
 /** DTO for tracker alerts returned to the frontend */
@@ -31432,8 +31429,6 @@ export interface TenantEntityDto {
     displayName?: string;
     isActive?: boolean;
     lastReadingAt?: Date | undefined;
-    timezone?: string;
-    subjectName?: string | undefined;
     allowAccessRequests?: boolean;
     sysCreatedAt?: Date;
     sysUpdatedAt?: Date;
@@ -31553,7 +31548,6 @@ export interface DevTenantSummaryDto {
     slug?: string;
     displayName?: string;
     isActive?: boolean;
-    timezone?: string;
     createdAt?: Date;
     entries?: number;
     treatments?: number;
