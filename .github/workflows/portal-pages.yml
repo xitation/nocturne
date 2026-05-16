@@ -55,8 +55,6 @@ jobs:
 
       - name: Build portal
         working-directory: src/Web/packages/portal
-        env:
-          BASE_PATH: '/${{ github.event.repository.name }}'
         run: pnpm run build
 
       - name: Upload artifact
