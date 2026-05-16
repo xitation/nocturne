@@ -55,6 +55,9 @@ jobs:
 
       - name: Build portal
         working-directory: src/Web/packages/portal
+        env:
+          VITE_DEMO_ENABLED: 'true'
+          VITE_DEMO_WEB_URL: 'https://demo.nocturne.run'
         run: pnpm run build
 
       - name: Upload artifact
