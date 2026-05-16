@@ -75,4 +75,9 @@ public class TenantEntity
     /// Collection of members belonging to this tenant
     /// </summary>
     public ICollection<TenantMemberEntity> Members { get; set; } = [];
+
+    /// <summary>
+    /// Demo configuration (null for non-demo tenants).
+    /// </summary>
+    public TenantDemoConfigEntity? DemoConfig { get; set; }
 }
