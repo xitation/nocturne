@@ -55,6 +55,10 @@ public class TenantEntity
     [Column("onboarding_completed_at")]
     public DateTime? OnboardingCompletedAt { get; set; }
 
+    /// <summary>Whether this tenant is a demo instance with synthetic data.</summary>
+    [Column("is_demo")]
+    public bool IsDemo { get; set; }
+
     /// <summary>
     /// When the tenant record was created
     /// </summary>
