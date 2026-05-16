@@ -47,6 +47,12 @@ jobs:
         working-directory: src/Web
         run: pnpm install --frozen-lockfile
 
+      - name: Sync SvelteKit packages
+        working-directory: src/Web
+        run: |
+          pnpm --filter @nocturne/app exec svelte-kit sync
+          pnpm --filter @nocturne/portal exec svelte-kit sync
+
       - name: Build portal
         working-directory: src/Web/packages/portal
         env:
