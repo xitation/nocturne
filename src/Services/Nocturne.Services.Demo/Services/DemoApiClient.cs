@@ -131,6 +131,17 @@ public sealed class DemoApiClient
     }
 
     /// <summary>
+    /// Updates the demo tenant status (next reset time, last reset time, active state).
+    /// </summary>
+    public async Task UpdateStatusAsync(DateTime? nextResetAt = null, DateTime? lastResetAt = null, bool? isActive = null, CancellationToken ct = default)
+    {
+        var client = _httpClientFactory.CreateClient("DemoAdmin");
+        var payload = new { nextResetAt, lastResetAt, isActive };
+        var response = await client.PatchAsJsonAsync("api/v4/admin/demo/status", payload, ct);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>
     /// Ensures the demo PatientInsulin record exists via the admin endpoint.
     /// </summary>
     public async Task EnsurePatientInsulinAsync(CancellationToken ct)

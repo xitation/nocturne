@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nocturne.Core.Constants;
 using Nocturne.Core.Contracts.Multitenancy;
 using Nocturne.Infrastructure.Data;
 using Nocturne.Infrastructure.Data.Entities;
+using Nocturne.Infrastructure.Data.Entities.V4;
 
 namespace Nocturne.API.Controllers.V4.Admin;
 
@@ -113,6 +115,141 @@ public class DemoAdminController : ControllerBase
         return Ok(ToDto(tenant, alreadyExisted: true));
     }
 
+    /// <summary>
+    /// Deletes all demo entries (sensor glucose, meter glucose, calibrations) for the demo tenant.
+    /// </summary>
+    [HttpDelete("entries")]
+    [ProducesResponseType(typeof(DemoDeleteResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteEntries(CancellationToken ct)
+    {
+        await using var db = await _factory.CreateDbContextAsync(ct);
+
+        var tenant = await db.Set<TenantEntity>().FirstOrDefaultAsync(t => t.IsDemo, ct);
+        if (tenant is null)
+            return NotFound();
+
+        db.TenantId = tenant.Id;
+
+        var deleted = 0L;
+        deleted += await db.SensorGlucose.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.MeterGlucose.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.Calibrations.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+
+        return Ok(new DemoDeleteResultDto(deleted));
+    }
+
+    /// <summary>
+    /// Deletes all demo treatments (boluses, carbs, BG checks, notes, device events, bolus calculations, temp basals, state spans, APS snapshots) for the demo tenant.
+    /// </summary>
+    [HttpDelete("treatments")]
+    [ProducesResponseType(typeof(DemoDeleteResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteTreatments(CancellationToken ct)
+    {
+        await using var db = await _factory.CreateDbContextAsync(ct);
+
+        var tenant = await db.Set<TenantEntity>().FirstOrDefaultAsync(t => t.IsDemo, ct);
+        if (tenant is null)
+            return NotFound();
+
+        db.TenantId = tenant.Id;
+
+        var deleted = 0L;
+        deleted += await db.Boluses.Where(b => b.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.CarbIntakes.Where(c => c.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.BGChecks.Where(b => b.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.Notes.Where(n => n.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.DeviceEvents.Where(de => de.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.BolusCalculations.Where(bc => bc.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.TempBasals.Where(t => t.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.StateSpans.Where(s => s.Source == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.ApsSnapshots.Where(a => a.Device == DataSources.DemoService).ExecuteDeleteAsync(ct);
+
+        return Ok(new DemoDeleteResultDto(deleted));
+    }
+
+    /// <summary>
+    /// Deletes all demo data (entries + treatments) for the demo tenant.
+    /// </summary>
+    [HttpDelete("data")]
+    [ProducesResponseType(typeof(DemoDeleteResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAllData(CancellationToken ct)
+    {
+        await using var db = await _factory.CreateDbContextAsync(ct);
+
+        var tenant = await db.Set<TenantEntity>().FirstOrDefaultAsync(t => t.IsDemo, ct);
+        if (tenant is null)
+            return NotFound();
+
+        db.TenantId = tenant.Id;
+
+        var deleted = 0L;
+
+        // Entries
+        deleted += await db.SensorGlucose.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.MeterGlucose.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.Calibrations.Where(e => e.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+
+        // Treatments
+        deleted += await db.Boluses.Where(b => b.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.CarbIntakes.Where(c => c.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.BGChecks.Where(b => b.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.Notes.Where(n => n.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.DeviceEvents.Where(de => de.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.BolusCalculations.Where(bc => bc.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.TempBasals.Where(t => t.DataSource == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.StateSpans.Where(s => s.Source == DataSources.DemoService).ExecuteDeleteAsync(ct);
+        deleted += await db.ApsSnapshots.Where(a => a.Device == DataSources.DemoService).ExecuteDeleteAsync(ct);
+
+        return Ok(new DemoDeleteResultDto(deleted));
+    }
+
+    /// <summary>
+    /// Ensures a demo PatientInsulin record exists for the demo tenant.
+    /// Creates a default rapid-acting insulin (Humalog) if none exists.
+    /// </summary>
+    [HttpPost("ensure-insulin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EnsureInsulin(CancellationToken ct)
+    {
+        await using var db = await _factory.CreateDbContextAsync(ct);
+
+        var tenant = await db.Set<TenantEntity>().FirstOrDefaultAsync(t => t.IsDemo, ct);
+        if (tenant is null)
+            return NotFound();
+
+        db.TenantId = tenant.Id;
+
+        var exists = await db.PatientInsulins.AnyAsync(ct);
+        if (exists)
+            return Ok(new { created = false });
+
+        var insulin = new PatientInsulinEntity
+        {
+            Id = Guid.CreateVersion7(),
+            TenantId = tenant.Id,
+            InsulinCategory = "RapidActing",
+            Name = "Humalog",
+            IsCurrent = true,
+            Dia = 4.0,
+            Peak = 75,
+            Curve = "rapid-acting",
+            Concentration = 100,
+            Role = "Bolus",
+            IsPrimary = true,
+            SysCreatedAt = DateTime.UtcNow,
+            SysUpdatedAt = DateTime.UtcNow,
+        };
+
+        db.PatientInsulins.Add(insulin);
+        await db.SaveChangesAsync(ct);
+
+        return Ok(new { created = true });
+    }
+
     private static DemoStateDto ToDto(TenantEntity tenant, bool alreadyExisted) => new(
         TenantId: tenant.Id,
         Slug: tenant.Slug,
@@ -142,3 +279,5 @@ public record DemoStatusPatchDto(
     DateTime? NextResetAt = null,
     DateTime? LastResetAt = null,
     bool? IsActive = null);
+
+public record DemoDeleteResultDto(long DeletedCount);

@@ -145,6 +145,18 @@ public class DemoDataHostedService : BackgroundService
                         await RegenerateDataAsync(stoppingToken);
                         now = DateTime.UtcNow;
                         nextResetUtc = now.Add(resetInterval!.Value);
+
+                        try
+                        {
+                            await _apiClient.UpdateStatusAsync(
+                                nextResetAt: nextResetUtc.Value,
+                                lastResetAt: now,
+                                ct: stoppingToken);
+                        }
+                        catch (HttpRequestException ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to update demo status after reset");
+                        }
                     }
 
                     if (now >= nextGenerationUtc)
