@@ -267,15 +267,16 @@ jobs:
           name: openapi-v4-spec
           path: sdk/
 
+      - name: Install OpenAPI Generator
+        run: brew install openapi-generator
+
       - name: Generate Swift SDK
         run: |
-          docker run --rm \
-            -v "$(pwd)/sdk:/sdk" \
-            openapitools/openapi-generator-cli:latest generate \
-            -i /sdk/openapi-v4.json \
-            -c /sdk/swift/config.yaml \
-            -o /sdk/swift/out \
-            --ignore-file-override /sdk/swift/.openapi-generator-ignore \
+          openapi-generator generate \
+            -i sdk/openapi-v4.json \
+            -c sdk/swift/config.yaml \
+            -o sdk/swift/out \
+            --ignore-file-override sdk/swift/.openapi-generator-ignore \
             --additional-properties=podVersion=${{ needs.generate-spec.outputs.sdk_version }}
 
       - name: Build
