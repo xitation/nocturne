@@ -279,6 +279,10 @@ jobs:
             --ignore-file-override sdk/swift/.openapi-generator-ignore \
             --additional-properties=podVersion=${{ needs.generate-spec.outputs.sdk_version }}
 
+      - name: Fix Swift type inference in generated code
+        run: |
+          python3 sdk/swift/fix-generated.py sdk/swift/out/Sources
+
       - name: Build
         working-directory: sdk/swift/out
         run: swift build
@@ -366,6 +370,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdk/python/out/dist/
+          skip-existing: true
 
   publish-java:
     needs: generate-spec
